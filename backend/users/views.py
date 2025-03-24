@@ -29,17 +29,31 @@ class RegisterInstructorAPIView(APIView):
 
     def post(self, request):
         data = request.data.copy()
-        data["role"] = "instructor"  # إجبار الدور أن يكون "instructor"
+        token = data.get("token")  # 🔹 استخراج التوكن من البيانات
 
-        # التحقق من وجود البريد الإلكتروني مسبقًا
-        if User.objects.filter(email=data['email']).exists():
+        if not token:
+            return Response({"error": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            instructor = User.objects.get(signup_token=token, role="instructor")
+        except User.DoesNotExist:
+            return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # التأكد أن الإيميل المستخدم هو نفس الإيميل المرتبط بالتوكن
+        if instructor.email != data.get("email"):
+            return Response({"error": "This email does not match the invitation."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # التحقق من وجود البريد الإلكتروني مسبقًا (احتياطيًا)
+        if User.objects.filter(email=data["email"]).exclude(id=instructor.id).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = RegisterSerializer(data=data)
+        serializer = RegisterSerializer(instance=instructor, data=data, partial=True)
         if serializer.is_valid():
-            # لا حاجة لإنشاء Instructor منفصل بعد الآن لأن Instructor هو المستخدم مباشرة
-            user = serializer.save()  # إنشاء المستخدم
-            # هنا لا تحتاج إلى Instructor.objects.create، لأن المستخدم هو نفسه المدرب
+            user = serializer.save()
+            user.set_password(data["password"])  # 🔹 تعيين الباسورد الجديد
+            user.signup_token = None  # 🔹 مسح التوكن بعد الاستخدام
+            user.save()
+
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
 
