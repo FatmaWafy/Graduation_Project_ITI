@@ -175,5 +175,4 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "Rahma Medhat <rahmamedhat503@gmail.com>"
 
 
-# رابط الواجهة الأمامية حيث سيتم توجيه المستخدم لإعادة تعيين كلمة المرور
 FRONTEND_URL = "http://localhost:3000"

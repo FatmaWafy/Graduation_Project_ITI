@@ -20,6 +20,7 @@ class InstructorSerializer(serializers.ModelSerializer):
         model = Instructor
         fields = "__all__"
 
+
     def create(self, validated_data):
         user_data = validated_data.pop("user")
         user_data["role"] = "instructor"  
@@ -32,6 +33,7 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = "__all__"
+
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
