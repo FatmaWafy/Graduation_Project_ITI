@@ -1,23 +1,28 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import  Student, Instructor
-
-class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'is_active', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_active')
-    fieldsets = (
-        (None, {'fields': ('username', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Additional Info', {'fields': ('phone', 'role')}),
-    )
+from .models import User, Student, Instructor
 
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ['username']
+    list_display = ("get_username", "get_email", "experience_years")
+
+    def get_username(self, obj):
+        return obj.user.username  # احصل على اسم المستخدم من الحقل المرتبط
+    get_username.short_description = "Username"
+
+    def get_email(self, obj):
+        return obj.user.email  # احصل على البريد الإلكتروني من الحقل المرتبط
+    get_email.short_description = "Email"
 
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ['username', 'university', 'graduation_year', 'college', 'leetcode_profile', 'github_profile']
+    list_display = ("get_username", "get_email", "university", "graduation_year")
 
+    def get_username(self, obj):
+        return obj.user.username
+    get_username.short_description = "Username"
+
+    def get_email(self, obj):
+        return obj.user.email
+    get_email.short_description = "Email"
+
+admin.site.register(User)
 admin.site.register(Instructor, InstructorAdmin)
 admin.site.register(Student, StudentAdmin)

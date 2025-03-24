@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
-from .models import Instructor
+from .models import Instructor, Student
 
 User = get_user_model()
 
@@ -12,8 +11,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
-        validated_data["password"] = make_password(validated_data["password"])
-        return User.objects.create(**validated_data)
+        return User.objects.create_user(**validated_data)
 
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
@@ -24,7 +22,19 @@ class InstructorSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
-        user_data["role"] = "instructor"  # تأكيد أن الدور Instructor
-        user = User.objects.create(**user_data)
-        instructor = Instructor.objects.create(user=user, **validated_data)
-        return instructor
+        user_data["role"] = "instructor"  
+        user = User.objects.create_user(**user_data)
+        return Instructor.objects.create(user=user, **validated_data)
+
+class StudentSerializer(serializers.ModelSerializer):
+    user = RegisterSerializer()
+
+    class Meta:
+        model = Student
+        fields = "__all__"
+
+    def create(self, validated_data):
+        user_data = validated_data.pop("user")
+        user_data["role"] = "student"
+        user = User.objects.create_user(**user_data)
+        return Student.objects.create(user=user, **validated_data)

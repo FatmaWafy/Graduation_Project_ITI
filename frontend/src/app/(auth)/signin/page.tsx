@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Cookies from "js-cookie";
 
 export default function SignIn() {
   const [formData, setFormData] = useState({
@@ -10,10 +11,12 @@ export default function SignIn() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+  console.log("🔹 Function Called!");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +31,24 @@ export default function SignIn() {
       });
 
       const data = await res.json();
+      console.log("🔹 API Response:", data); // المفروض يظهر
+
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // ✅ تأكدي إن فيه role و token
+
       if (!res.ok) throw new Error(data.error || "Login failed");
 
       setSuccess("Login successful!");
-      localStorage.setItem("token", data.token);
+      
+      Cookies.set("token", data.token, { expires: 7, secure: true });
+      Cookies.set("role", data.role, { expires: 7, secure: true });
+
+      if (data.role === "instructor") {
+        await router.push("/dashboard/instructor");
+      } else if (data.role === "student") {
+        await router.push("/dashboard/student");
+      } else {
+        setError("Unauthorized role");
+      }
     } catch (err: any) {
       setError(err.message);
     }

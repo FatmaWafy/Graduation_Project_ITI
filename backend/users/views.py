@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from .models import Instructor
-from .serializers import RegisterSerializer, InstructorSerializer
+from .models import Instructor, Student , User
+from rest_framework.permissions import IsAuthenticated
+from .serializers import RegisterSerializer, InstructorSerializer, StudentSerializer
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -19,9 +20,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_decode
+from rest_framework.permissions import IsAuthenticated
+from django.utils.crypto import get_random_string
 
 User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
+
 
 
 class RegisterInstructorAPIView(APIView):
@@ -29,23 +33,19 @@ class RegisterInstructorAPIView(APIView):
 
     def post(self, request):
         data = request.data.copy()
-        data["role"] = "instructor"  # إجبار الدور أن يكون "instructor"
+        data["role"] = "instructor"
 
-        # التحقق من وجود البريد الإلكتروني مسبقًا
-        if User.objects.filter(email=data['email']).exists():
+        if User.objects.filter(email=data["email"]).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = RegisterSerializer(data=data)
+        serializer = InstructorSerializer(data={"user": data})
         if serializer.is_valid():
-            # لا حاجة لإنشاء Instructor منفصل بعد الآن لأن Instructor هو المستخدم مباشرة
-            user = serializer.save()  # إنشاء المستخدم
-            # هنا لا تحتاج إلى Instructor.objects.create، لأن المستخدم هو نفسه المدرب
-            token, _ = Token.objects.get_or_create(user=user)
+            instructor = serializer.save()
+            token, _ = Token.objects.get_or_create(user=instructor.user)
             return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -142,3 +142,52 @@ class ResetPasswordAPIView(APIView):
         user.save()
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
+
+
+
+class RegisterStudentAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != "instructor":
+            return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data.copy()
+        data["role"] = "student"
+        password = get_random_string(length=12)
+        data["password"] = password
+
+        if User.objects.filter(email=data["email"]).exists():
+            return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = StudentSerializer(data={"user": data})
+        if serializer.is_valid():
+            student = serializer.save()
+
+            email_subject = "Your Student Account Credentials"
+            email_message = f"""
+            Hi {student.user.username},
+
+            Your student account has been created successfully.
+
+            Here are your login credentials:
+            Email: {student.user.email}
+            Password: {password}
+
+            Please change your password after logging in.
+
+            Best regards,
+            Your Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.user.email],
+                fail_silently=False,
+            )
+
+            return Response({"message": "Student registered successfully. Login credentials sent via email."}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
