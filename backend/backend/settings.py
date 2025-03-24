@@ -38,7 +38,6 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'users',
     'st_notifications.apps.StNotificationsConfig',
-    'api.apps.ApiConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +49,6 @@ INSTALLED_APPS = [
     'api',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-
 ]
 
 MIDDLEWARE = [
