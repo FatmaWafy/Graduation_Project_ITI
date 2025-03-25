@@ -9,11 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-<<<<<<< HEAD
     "next": "15.2.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-=======
+    "react-dom": "^19.0.0",
     "@radix-ui/react-slot": "^1.1.2",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
@@ -27,16 +25,12 @@
     "react-icons": "^5.5.0",
     "tailwind-merge": "^3.0.2",
     "tw-animate-css": "^1.2.4"
->>>>>>> eaa05a78c58e93af01cb034914a580b09e3436e9
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-<<<<<<< HEAD
     "@types/estree": "^1.0.6",
-=======
-    "@types/js-cookie": "^3.0.6",
->>>>>>> eaa05a78c58e93af01cb034914a580b09e3436e9
+    "@types/js-cookie": "^3.0.6", 
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
