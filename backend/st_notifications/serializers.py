@@ -14,3 +14,7 @@ class PredefinedNotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = PredefinedNotification
         fields = ['id', 'message']
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = '__all__'
