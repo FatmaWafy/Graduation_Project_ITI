@@ -14,3 +14,10 @@ class Command(BaseCommand):
         expired_notes.delete()
 
         self.stdout.write(self.style.SUCCESS(f"Deleted {count} expired notes."))
+
+
+
+
+# /home/sarah/PythonFullStack/Graduation_Project_ITI/venv
+# /home/sarah/PythonFullStack/Graduation_Project_ITI/backend
+# * * * * * /home/sarah/PythonFullStack/Graduation_Project_ITI/venv/bin/python /home/sarah/PythonFullStack/Graduation_Project_ITI/backend/manage.py delete_old_notes
