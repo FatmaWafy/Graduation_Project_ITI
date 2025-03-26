@@ -15,8 +15,8 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("role", "admin")  
-
+        if extra_fields.get("is_staff") is not True or extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_staff=True and is_superuser=True.")
         return self.create_user(email, username, password, **extra_fields)
 
 class User(AbstractUser):
@@ -28,7 +28,7 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     email = models.EmailField(unique=True)
-    signup_token = models.CharField(max_length=32, blank=True, null=True, unique=True)  # 🔹 توكن الدعوة
+    signup_token = models.CharField(max_length=32, blank=True, null=True, unique=True)  
 
     groups = models.ManyToManyField(
         Group,
