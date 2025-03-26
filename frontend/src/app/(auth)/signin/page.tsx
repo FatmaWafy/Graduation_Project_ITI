@@ -37,8 +37,8 @@ export default function SignIn() {
 
       setSuccess("Login successful!");
 
-      if (data.token) {
-        Cookies.set("token", data.token, { expires: 7, secure: true, sameSite: "Lax" });
+      if (data.access) {
+        Cookies.set("token", data.access, { expires: 7, secure: true, sameSite: "Lax" });
       } else {
         throw new Error("Token is missing");
       }

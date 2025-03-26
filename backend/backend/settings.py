@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from datetime import timedelta
 
 
@@ -74,9 +74,9 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],  # 🔴 تعطيل المصادقة تمامًا
+    'DEFAULT_AUTHENTICATION_CLASSES': [], 
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # ✅ السماح للجميع بالوصول
+        'rest_framework.permissions.AllowAny',  
     ],
 }
 

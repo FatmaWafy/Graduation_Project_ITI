@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from .models import Instructor, Student, User
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -13,6 +12,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import viewsets
+
+
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -30,8 +32,12 @@ class RegisterInstructorAPIView(APIView):
         serializer = InstructorSerializer(data={"user": data})
         if serializer.is_valid():
             instructor = serializer.save()
-            token, _ = Token.objects.get_or_create(user=instructor.user)
-            return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
+            refresh = RefreshToken.for_user(instructor.user)
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": serializer.data
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -51,8 +57,13 @@ class LoginAPIView(APIView):
         if not user.check_password(password):
             return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key, "role": user.role}, status=status.HTTP_200_OK)
+        # إنشاء التوكين باستخدام SimpleJWT
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "role": user.role
+        }, status=status.HTTP_200_OK)
 
 
 class ResetPasswordRequestAPIView(APIView):
@@ -172,4 +183,26 @@ class RegisterStudentAPIView(APIView):
                 "refresh": str(refresh),
             }, status=status.HTTP_201_CREATED)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class StudentViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Students
+    """
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new student
+        """
+        data = request.data.copy()
+        data["role"] = "student"
+        serializer = self.get_serializer(data={"user": data, **data})
+        if serializer.is_valid():
+            student = serializer.save()
+            return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
