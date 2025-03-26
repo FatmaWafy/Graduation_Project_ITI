@@ -10,10 +10,6 @@ from rest_framework import generics, serializers  # DRF classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
 
-# SendNotificationView
-
-# from rest_framework.permissions import AllowAny
-
 class SendNotificationView(APIView):
     permission_classes = [AllowAny]  # Disable authentication
     http_method_names = ['get', 'post', 'head', 'options']
@@ -45,7 +41,6 @@ class SendNotificationView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-
 class StudentNotificationListView(ListAPIView):
     """List all notifications for the logged-in student."""
     serializer_class = NotificationSerializer
@@ -55,7 +50,6 @@ class StudentNotificationListView(ListAPIView):
         """Filter notifications for the logged-in student."""
         return Note.objects.filter(receiver__user=self.request.user).order_by("-timestamp")
 
-    
 class PredefinedNotificationListCreateView(generics.ListCreateAPIView):
     queryset = PredefinedNotification.objects.all()
     serializer_class = PredefinedNotificationSerializer
