@@ -5,20 +5,14 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from users.models import Instructor, Student  # Import Instructor and Student from users app
 from st_notifications.models import Note , PredefinedNotification
-from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer
+from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer, StudentSerializer
 from rest_framework import generics, serializers  # DRF classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
-from .serializers import StudentSerializer
-from django.urls import path
-from .views import StudentListCreateView
-
-# SendNotificationView
-
-# from rest_framework.permissions import AllowAny
 
 class SendNotificationView(APIView):
     permission_classes = [AllowAny]  # Disable authentication
+    http_method_names = ['get', 'post', 'head', 'options']
 
     def post(self, request):
         """Allows instructors to send notes to students without authentication."""
@@ -47,7 +41,6 @@ class SendNotificationView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-
 class StudentNotificationListView(ListAPIView):
     """List all notifications for the logged-in student."""
     serializer_class = NotificationSerializer
@@ -57,32 +50,10 @@ class StudentNotificationListView(ListAPIView):
         """Filter notifications for the logged-in student."""
         return Note.objects.filter(receiver__user=self.request.user).order_by("-timestamp")
 
-    
-    
-# class NotificationListCreateView(generics.ListCreateAPIView):
-#     queryset = Note.objects.all()
-#     serializer_class = NotificationSerializer
-
-class StudentListCreateView(generics.ListCreateAPIView):
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
-
 class PredefinedNotificationListCreateView(generics.ListCreateAPIView):
     queryset = PredefinedNotification.objects.all()
     serializer_class = PredefinedNotificationSerializer
 
-# class SendNoteView(generics.CreateAPIView):
-#     queryset = Note.objects.all()
-#     serializer_class = NotificationSerializer
-
-#     def create(self, request, *args, **kwargs):
-#         instructor_id = request.data.get("instructor_id")
-#         student_id = request.data.get("student_id")
-
-#         if not Instructor.objects.filter(id=instructor_id).exists():
-#             return Response({"error": f"Instructor with id {instructor_id} not found!"}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         if not Student.objects.filter(id=student_id).exists():
-#             return Response({"error": f"Student with id {student_id} not found!"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         return super().create(request, *args, **kwargs)
+class StudentListCreateView(generics.ListCreateAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
