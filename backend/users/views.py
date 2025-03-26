@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from .models import Instructor, Student, User
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -12,7 +11,8 @@ from django.conf import settings
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
-from rest_framework import viewsets  
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -30,8 +30,12 @@ class RegisterInstructorAPIView(APIView):
         serializer = InstructorSerializer(data={"user": data})
         if serializer.is_valid():
             instructor = serializer.save()
-            token, _ = Token.objects.get_or_create(user=instructor.user)
-            return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
+            refresh = RefreshToken.for_user(instructor.user)
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": serializer.data
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -51,8 +55,13 @@ class LoginAPIView(APIView):
         if not user.check_password(password):
             return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key, "role": user.role}, status=status.HTTP_200_OK)
+        # إنشاء التوكين باستخدام SimpleJWT
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "role": user.role
+        }, status=status.HTTP_200_OK)
 
 
 class ResetPasswordRequestAPIView(APIView):
@@ -165,7 +174,12 @@ class RegisterStudentAPIView(APIView):
                 fail_silently=False,
             )
 
-            return Response({"message": "Student registered successfully. Login credentials sent via email."}, status=status.HTTP_201_CREATED)
+            refresh = RefreshToken.for_user(student.user)
+            return Response({
+                "message": "Student registered successfully. Login credentials sent via email.",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
