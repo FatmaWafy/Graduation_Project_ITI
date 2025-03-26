@@ -1,8 +1,6 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Permission
-
 from django.db import models
 import secrets
-
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):

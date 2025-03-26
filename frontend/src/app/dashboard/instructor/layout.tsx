@@ -38,6 +38,18 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
               Add Student
             </p>
           </Link>
+
+          <Link href="/dashboard/instructor/add-exam">
+            <p className="block px-4 py-3 my-4 bg-green-600 hover:bg-green-500 rounded-lg text-center cursor-pointer transition duration-300">
+              Add Exam
+            </p>
+          </Link>
+
+          <Link href="/dashboard/instructor/add-note">
+            <p className="block px-4 py-3 my-4 bg-green-600 hover:bg-green-500 rounded-lg text-center cursor-pointer transition duration-300">
+              Send Note
+            </p>
+          </Link>
         </nav>
       </aside>
 
