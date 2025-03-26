@@ -25,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-0i33=-)0e8n)*z_du4bw7lcf'
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key")
+SECRET_KEY = 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-0i33=-)0e8n)*z_du4bw7lcf'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
+from os import getenv
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 
 
 # Application definition
@@ -104,14 +104,24 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+#############################################################################################################################################################
 # تحميل متغيرات البيئة من .env
 load_dotenv()
 
-DATABASES = {
-    'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
-}
+# DATABASES = {
+#     'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
+# }
 
+DATABASES = {
+        'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'Exam123_',
+        'HOST': 'examinationsystem.cjki0o2memz5.eu-north-1.rds.amazonaws.com',
+        'PORT': '5432',
+}
+}
 
 
 # Password validation
