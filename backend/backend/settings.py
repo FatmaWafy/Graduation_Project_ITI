@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
+from datetime import timedelta
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -167,11 +169,11 @@ AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # ✅ This ensures public access
+        'rest_framework.permissions.AllowAny', # for login
+        'rest_framework.permissions.IsAuthenticated',       # ✅ This ensures public access
     ],
 }
 
@@ -182,6 +184,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "Rahma Medhat <rahmamedhat503@gmail.com>"
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=2),  # مدة صلاحية الـ access token (مثلاً ساعتين)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),  # مدة صلاحية الـ refresh token (مثلاً 30 يوم)
+    "ROTATE_REFRESH_TOKENS": True,  # تحديث refresh token عند استخدامه
+    "BLACKLIST_AFTER_ROTATION": True,  # منع استخدام الـ refresh القديم بعد تحديثه
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 
 FRONTEND_URL = "http://localhost:3000"
