@@ -15,7 +15,6 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 from datetime import timedelta
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 
@@ -50,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
 ]
 
@@ -172,19 +172,10 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  
+        'rest_framework.permissions.AllowAny', # for login
+        'rest_framework.permissions.IsAuthenticated',       # ✅ This ensures public access
     ],
 }
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),  # صلاحية التوكين ساعة
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # صلاحية الريفريش توكين يوم
-    'ROTATE_REFRESH_TOKENS': True,  # يتم إصدار ريفريش توكين جديد عند كل طلب
-    'BLACKLIST_AFTER_ROTATION': True,  # يمنع استخدام التوكين القديم بعد تحديثه
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),  # التوكين يتم إرساله على شكل Bearer Token
-}
-
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -193,6 +184,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "Rahma Medhat <rahmamedhat503@gmail.com>"
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=2),  # مدة صلاحية الـ access token (مثلاً ساعتين)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),  # مدة صلاحية الـ refresh token (مثلاً 30 يوم)
+    "ROTATE_REFRESH_TOKENS": True,  # تحديث refresh token عند استخدامه
+    "BLACKLIST_AFTER_ROTATION": True,  # منع استخدام الـ refresh القديم بعد تحديثه
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 
 FRONTEND_URL = "http://localhost:3000"
