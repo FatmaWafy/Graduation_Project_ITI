@@ -74,9 +74,9 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],  # 🔴 تعطيل المصادقة تمامًا
+    'DEFAULT_AUTHENTICATION_CLASSES': [], 
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # ✅ السماح للجميع بالوصول
+        'rest_framework.permissions.AllowAny',  
     ],
 }
 
