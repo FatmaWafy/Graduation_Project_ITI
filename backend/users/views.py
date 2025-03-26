@@ -144,10 +144,10 @@ class RegisterStudentAPIView(APIView):
 
         data = request.data.copy()
         data["role"] = "student"
-        password = get_random_string(length=12)  # 🔹 إنشاء كلمة مرور عشوائية
+        password = get_random_string(length=12)  
         data["password"] = password  
 
-        serializer = StudentSerializer(data={"user": data, **data})  # تمرير بيانات المستخدم والطالب
+        serializer = StudentSerializer(data={"user": data, **data})  
 
         if serializer.is_valid():
             student = serializer.save()
