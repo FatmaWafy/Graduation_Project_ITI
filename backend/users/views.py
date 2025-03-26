@@ -12,6 +12,7 @@ from django.conf import settings
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
+from rest_framework_simplejwt.tokens import RefreshToken
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -132,10 +133,10 @@ class RegisterStudentAPIView(APIView):
 
         data = request.data.copy()
         data["role"] = "student"
-        password = get_random_string(length=12)  
+        password = get_random_string(length=12)  # 🔹 إنشاء كلمة مرور عشوائية
         data["password"] = password  
 
-        serializer = StudentSerializer(data={"user": data, **data})  
+        serializer = StudentSerializer(data={"user": data, **data})  # تمرير بيانات المستخدم والطالب
 
         if serializer.is_valid():
             student = serializer.save()
@@ -164,8 +165,11 @@ class RegisterStudentAPIView(APIView):
                 fail_silently=False,
             )
 
-            return Response({"message": "Student registered successfully. Login credentials sent via email."}, status=status.HTTP_201_CREATED)
+            refresh = RefreshToken.for_user(student.user)
+            return Response({
+                "message": "Student registered successfully. Login credentials sent via email.",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-

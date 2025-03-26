@@ -16,7 +16,6 @@ export default function SignIn() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  console.log("🔹 Function Called!");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,28 +25,36 @@ export default function SignIn() {
     try {
       const res = await fetch("http://127.0.0.1:8000/users/login/", {
         method: "POST",
+        credentials: "include", // ✅ يسمح بإرسال الكوكيز
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       const data = await res.json();
-      console.log("🔹 API Response:", data); // المفروض يظهر
-
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // ✅ تأكدي إن فيه role و token
+      console.log("🔹 API Response:", data);
 
       if (!res.ok) throw new Error(data.error || "Login failed");
 
       setSuccess("Login successful!");
-      
-      Cookies.set("token", data.token, { expires: 7, secure: true });
-      Cookies.set("role", data.role, { expires: 7, secure: true });
 
-      if (data.role === "instructor") {
-        await router.push("/dashboard/instructor");
-      } else if (data.role === "student") {
-        await router.push("/dashboard/student");
+      if (data.token) {
+        Cookies.set("token", data.token, { expires: 7, secure: true, sameSite: "Lax" });
       } else {
-        setError("Unauthorized role");
+        throw new Error("Token is missing");
+      }
+
+      if (data.role) {
+        Cookies.set("role", data.role, { expires: 7, secure: true, sameSite: "Lax" });
+
+        if (data.role === "instructor") {
+          router.push("/dashboard/instructor");
+        } else if (data.role === "student") {
+          router.push("/dashboard/student");
+        } else {
+          throw new Error("Unauthorized role");
+        }
+      } else {
+        throw new Error("Role is missing");
       }
     } catch (err: any) {
       setError(err.message);
