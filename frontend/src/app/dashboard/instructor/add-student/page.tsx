@@ -23,9 +23,8 @@ export default function AddStudentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
-    // ✅ جلب التوكن من الكوكيز
     const accessToken = Cookies.get("token");
-    console.log("🔹 Token from Cookies:", accessToken);
+ 
   
     if (!accessToken) {
       alert("❌ Authentication Error: No token found. Please log in again.");
@@ -33,20 +32,28 @@ export default function AddStudentPage() {
     }
   
     setIsSubmitting(true);
-  
+
+    // تنظيف البيانات من القيم الفارغة
+    const formattedData = Object.fromEntries(
+      Object.entries(studentData).map(([key, value]) => [key, value || null])
+    );
+
+    
+
     try {
       const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`, // ✅ إرسال التوكن هنا
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(studentData),
+        body: JSON.stringify(formattedData),
       });
-  
+
       const data = await response.json();
-      console.log("🔹 API Response:", data); // ✅ طباعة الرد للتأكد من النتيجة
-  
+      console.log("🔹 Response Status:", response.status);
+      console.log("🔹 API Response:", data);
+
       if (response.ok) {
         alert("✅ Student added successfully!");
       } else {
@@ -59,7 +66,6 @@ export default function AddStudentPage() {
       setIsSubmitting(false);
     }
   };
-  
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
