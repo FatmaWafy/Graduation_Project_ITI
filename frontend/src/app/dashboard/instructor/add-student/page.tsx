@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Cookies from "js-cookie";
 
 export default function AddStudentPage() {
   const [studentData, setStudentData] = useState({
@@ -13,37 +14,56 @@ export default function AddStudentPage() {
     github_profile: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStudentData({ ...studentData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+  
+    const accessToken = Cookies.get("token");
+ 
+  
+    if (!accessToken) {
+      alert("❌ Authentication Error: No token found. Please log in again.");
+      return;
+    }
+  
+    setIsSubmitting(true);
 
-    const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(studentData),
-    });
+    // تنظيف البيانات من القيم الفارغة
+    const formattedData = Object.fromEntries(
+      Object.entries(studentData).map(([key, value]) => [key, value || null])
+    );
 
-    const data = await response.json();
-    if (response.ok) {
-      alert("✅ Student added successfully! Email sent.");
-      setStudentData({
-        username: "",
-        email: "",
-        university: "",
-        graduation_year: "",
-        college: "",
-        leetcode_profile: "",
-        github_profile: "",
+    
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(formattedData),
       });
-    } else {
-      alert(`❌ Error: ${data.error || "Failed to add student."}`);
+
+      const data = await response.json();
+      console.log("🔹 Response Status:", response.status);
+      console.log("🔹 API Response:", data);
+
+      if (response.ok) {
+        alert("✅ Student added successfully!");
+      } else {
+        alert(`❌ Error: ${data.detail || "Failed to add student."}`);
+      }
+    } catch (error) {
+      console.error("❌ Request Error:", error);
+      alert("❌ Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -120,8 +140,9 @@ export default function AddStudentPage() {
         <button
           type="submit"
           className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-green-500 transition-all duration-300 shadow-md"
+          disabled={isSubmitting}
         >
-           Register Student
+          {isSubmitting ? "Processing..." : "Register Student"}
         </button>
       </form>
     </div>

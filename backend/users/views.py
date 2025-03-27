@@ -12,6 +12,8 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import viewsets
+
 
 
 token_generator = PasswordResetTokenGenerator()
@@ -184,3 +186,23 @@ class RegisterStudentAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+class StudentViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Students
+    """
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new student
+        """
+        data = request.data.copy()
+        data["role"] = "student"
+        serializer = self.get_serializer(data={"user": data, **data})
+        if serializer.is_valid():
+            student = serializer.save()
+            return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

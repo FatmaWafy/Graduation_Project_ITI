@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from users.models import Instructor, Student  # Import Instructor and Student from users app
 from st_notifications.models import Note , PredefinedNotification
-from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer
+from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer, StudentSerializer
 from rest_framework import generics, serializers  # DRF classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
@@ -53,3 +53,7 @@ class StudentNotificationListView(ListAPIView):
 class PredefinedNotificationListCreateView(generics.ListCreateAPIView):
     queryset = PredefinedNotification.objects.all()
     serializer_class = PredefinedNotificationSerializer
+
+class StudentListCreateView(generics.ListCreateAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer

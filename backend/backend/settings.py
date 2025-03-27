@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from datetime import timedelta
 
 
@@ -73,12 +73,12 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],  # 🔴 تعطيل المصادقة تمامًا
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # ✅ السماح للجميع بالوصول
-    ],
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [], 
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.AllowAny',  
+#     ],
+# }
 
 
 
@@ -196,3 +196,21 @@ SIMPLE_JWT = {
 
 
 FRONTEND_URL = "http://localhost:3000"
+
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# ✅ السماح بقراءة الكوكيز من الفرونت
+SESSION_COOKIE_HTTPONLY = False  # اجعليها True إذا كنتِ ستستخدمينها في الـ Backend فقط
+CSRF_COOKIE_HTTPONLY = False  # اجعليها True إذا كنتِ ستستخدمينها في الـ Backend فقط
+
+# ✅ تأكدي من أن الكوكيز يتم إرسالها في الطلبات
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# ✅ السماح بإرسال الكوكيز بين الـ Backend والـ Frontend
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # ضيفي عنوان الـ Frontend هنا
+]
