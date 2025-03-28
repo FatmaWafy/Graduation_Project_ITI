@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Exam,StudentExam, StudentAnswer,MCQQuestion, CodingQuestion, TemporaryExamInstance,Answer,StudentExamAnswerSerializer
+from .models import Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 
 class ExamSerializer(serializers.ModelSerializer):
     class Meta:

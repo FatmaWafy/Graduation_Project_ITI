@@ -2,9 +2,9 @@ from datetime import timedelta
 from rest_framework import generics, permissions,viewsets,status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from backend.users.models import Student
-from .models import Exam, MCQQuestion, CodingQuestion, TemporaryExamInstance, StudentExamAnswer
-from .serializers import ExamSerializer, MCQQuestionSerializer, CodingQuestionSerializer, TempExamSerializer, StudentExamAnswerSerializer
+from users.models import Student
+from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
+from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer, StudentExamAnswerSerializer
 from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action

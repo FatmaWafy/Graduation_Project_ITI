@@ -1,7 +1,6 @@
 from django.urls import path,include
 from .views import (
-    ExamListCreateView, ExamDetailView
-   ,MCQQuestionViewSet, CodingQuestionViewSet, TempExamViewSet, StudentExamAnswerViewSet
+    ExamListCreateView, ExamDetailView, TempExamViewSet,MCQQuestionViewSet, StudentExamAnswerViewSet
 )
 from rest_framework.routers import DefaultRouter
 
