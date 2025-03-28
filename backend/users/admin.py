@@ -1,71 +1,50 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.core.mail import send_mail
-from django.conf import settings
-from .models import User, Student, Instructor
+from .models import User, Student, Instructor, Track
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'is_active', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_active')
+    model = User
+    list_display = ("email", "username", "role", "is_staff", "is_superuser")
+    list_filter = ("role", "is_staff", "is_superuser")
     fieldsets = (
-        (None, {'fields': ('username', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Additional Info', {'fields': ('role',)}),  # 🔹 حذف "phone" لأنه غير موجود
+        (None, {"fields": ("email", "username", "password")}),
+        ("Personal Info", {"fields": ("role", "signup_token")}),
+        ("Permissions", {"fields": ("is_staff", "is_superuser", "groups", "user_permissions")}),
     )
+    add_fieldsets = (
+        (None, {
+            "classes": ("wide",),
+            "fields": ("email", "username", "password1", "password2", "role", "is_staff", "is_superuser"),
+        }),
+    )
+    search_fields = ("email", "username")
+    ordering = ("email",)
+    filter_horizontal = ("groups", "user_permissions")
+
+# 🔹 تخصيص عرض الـ Student Model في Django Admin
+class StudentAdmin(admin.ModelAdmin):
+    list_display = ("user", "track", "university", "graduation_year")
+    list_filter = ("university", "graduation_year", "track")
+    search_fields = ("user__username", "user__email", "university", "track__name")
 
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ['get_username', 'get_email', 'experience_years']  # 🔹 جلب البيانات من `user`
+    list_display = ("user", "experience_years")
+    search_fields = ("user__username", "user__email")
 
-    def get_username(self, obj):
-        return obj.user.username
-    get_username.short_description = "Username"
 
-    def get_email(self, obj):
-        return obj.user.email
-    get_email.short_description = "Email"
+class TrackAdmin(admin.ModelAdmin):
+    list_display = ("name", "get_instructor", "get_students_count")
+    search_fields = ("name", "instructor__user__username")
 
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.user.generate_signup_token()  # 🔹 إنشاء توكن الدعوة من `User`
-            signup_url = f"http://localhost:3000/signup"  # 🔹 تضمين التوكن
+    def get_instructor(self, obj):
+        return obj.instructor.user.username if obj.instructor else "No Instructor"
+    get_instructor.short_description = "Instructor"
 
-            email_subject = "Instructor Registration Invitation"
-            email_message = f"""
-            Hello {obj.user.username},
+    def get_students_count(self, obj):
+        return obj.students.count()  # ✅ استخدمي related_name الصحيح
+    get_students_count.short_description = "Students Count"
 
-            You have been invited to register as an instructor.
-            Click the link below to complete your registration:
-            {signup_url}
-
-            If you did not request this, please ignore this email.
-
-            Regards,
-            Admin Team
-            """
-
-            send_mail(
-                subject=email_subject,
-                message=email_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[obj.user.email],
-                fail_silently=False,
-            )
-
-        super().save_model(request, obj, form, change)
-
-class StudentAdmin(admin.ModelAdmin):
-    list_display = ("get_username", "get_email", "university", "graduation_year")
-
-    def get_username(self, obj):
-        return obj.user.username
-    get_username.short_description = "Username"
-
-    def get_email(self, obj):
-        return obj.user.email
-    get_email.short_description = "Email"
-
-admin.site.register(User, CustomUserAdmin)  # 🔹 تسجيل `User` مع التعديلات الجديدة
-admin.site.register(Instructor, InstructorAdmin)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Student, StudentAdmin)
+admin.site.register(Instructor, InstructorAdmin)
+admin.site.register(Track, TrackAdmin)

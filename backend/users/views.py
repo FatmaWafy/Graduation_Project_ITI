@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from .models import Instructor, Student, User
+from .models import Instructor, Student, User ,Track
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import RegisterSerializer, InstructorSerializer, StudentSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -29,7 +29,7 @@ class RegisterInstructorAPIView(APIView):
         if User.objects.filter(email=data["email"]).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = InstructorSerializer(data={"user": data})
+        serializer = InstructorSerializer(data={"user": data, "track_name": data.get("track_name")})
         if serializer.is_valid():
             instructor = serializer.save()
             refresh = RefreshToken.for_user(instructor.user)
@@ -144,10 +144,25 @@ class RegisterStudentAPIView(APIView):
 
         data = request.data.copy()
         data["role"] = "student"
-        password = get_random_string(length=12)  # 🔹 إنشاء كلمة مرور عشوائية
+        password = get_random_string(length=12)
         data["password"] = password  
 
-        serializer = StudentSerializer(data={"user": data, **data})  # تمرير بيانات المستخدم والطالب
+        instructor = Instructor.objects.get(user=request.user)
+
+        # التأكد من أن المدرب لديه تراك واحد أو أكثر
+        if instructor.tracks.count() > 1:
+            if "track_name" not in data:
+                return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            track = instructor.tracks.filter(name=data["track_name"]).first()
+            if not track:
+                return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            track = instructor.tracks.first()
+
+        data["track_name"] = track.name  
+
+        serializer = StudentSerializer(data={"user": data, "track_name": data["track_name"]})
 
         if serializer.is_valid():
             student = serializer.save()
@@ -158,7 +173,7 @@ class RegisterStudentAPIView(APIView):
 
             Your student account has been created successfully.
 
-            Here are your login credentials:
+            Track: {student.track.name}
             Email: {student.user.email}
             Password: {password}
 
@@ -184,7 +199,6 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class StudentViewSet(viewsets.ModelViewSet):
