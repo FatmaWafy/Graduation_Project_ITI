@@ -2,6 +2,9 @@ from django.db import models
 from users.models import Track
 from users.models import Student
 from django.utils.translation import gettext_lazy as _
+import json
+import zlib
+from django.contrib.auth import get_user_model
 
 # Exam Model
 class Exam(models.Model):
@@ -59,65 +62,61 @@ class MCQQuestion(models.Model):
     points = models.FloatField(default=1.0)
 
 
-# Coding Questions Model
-class CodingQuestion(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField()
+# # Coding Questions Model
+# class CodingQuestion(models.Model):
+#     title = models.CharField(max_length=255)
+#     description = models.TextField()
     
-    difficulty = models.CharField(
-        max_length=20, 
-        choices=DifficultyLevel.choices
-    )
+#     difficulty = models.CharField(
+#         max_length=20, 
+#         choices=DifficultyLevel.choices
+#     )
 
-    starter_code = models.TextField()
-    test_cases = models.JSONField()
-    source = models.CharField(max_length=100)
-    points = models.FloatField(default=1.0)
-
-
-class Answer(models.Model):
-    question = models.ForeignKey(MCQQuestion, on_delete=models.CASCADE, related_name="answers")
-    text = models.TextField()
-    is_correct = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.text
+#     starter_code = models.TextField(default="None")
+#     test_cases = models.JSONField()
+#     source = models.CharField(max_length=100)
+#     points = models.FloatField(default=1.0)
 
 
-class StudentExam(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="exams")
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="student_exams")
-    submitted_at = models.DateTimeField(null=True, blank=True)
+User = get_user_model()
+
+class StudentExamAnswer(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
+    exam_instance = models.ForeignKey(TemporaryExamInstance, on_delete=models.CASCADE, related_name="student_answers")
+    
+    compressed_answers = models.BinaryField()  # Compressed MCQ answers
     score = models.FloatField(default=0.0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def set_answers(self, answers_dict):
+        """
+        Convert JSON to bytes and compress before storing
+        """
+        json_data = json.dumps(answers_dict).encode('utf-8')
+        self.compressed_answers = zlib.compress(json_data)
+
+    def get_answers(self):
+        """
+        Extract stored answers and return as JSON
+        """
+        if self.compressed_answers:
+            json_data = zlib.decompress(self.compressed_answers).decode('utf-8')
+            return json.loads(json_data)
+        return {}
 
     def calculate_score(self):
-        total_points = sum(q.points for q in self.exam.mcq_questions.all()) + \
-                    sum(q.points for q in self.exam.coding_questions.all())
+        """
+        Grade only MCQ questions and calculate the score
+        """
+        answers = self.get_answers()
+        total_score = 0
 
-        earned_points = 0
+        mcq_answers = answers.get("mcq_answers", {})
+        mcq_questions = MCQQuestion.objects.filter(id__in=mcq_answers.keys())
+        
+        for mcq in mcq_questions:
+            if mcq_answers.get(str(mcq.id)) == mcq.correct_option:
+                total_score += mcq.points
 
-        for student_answer in self.answers.all():
-            if student_answer.mcq_question:
-                if student_answer.selected_answer and student_answer.selected_answer.is_correct:
-                    earned_points += student_answer.mcq_question.points
-            elif student_answer.coding_question:
-                # TODO: Implement proper test case evaluation
-                if student_answer.code_answer and student_answer.code_answer.strip() == student_answer.coding_question.test_cases.strip():
-                    earned_points += student_answer.coding_question.points
-
-        self.score = (earned_points / total_points) * 100 if total_points > 0 else 0
+        self.score = total_score
         self.save()
-
-
-class StudentAnswer(models.Model):
-    student_exam = models.ForeignKey(StudentExam, on_delete=models.CASCADE, related_name="answers")
-    
-    mcq_question = models.ForeignKey(MCQQuestion, on_delete=models.CASCADE, blank=True, null=True)
-    selected_answer = models.ForeignKey(Answer, on_delete=models.CASCADE, blank=True, null=True)
-
-    coding_question = models.ForeignKey(CodingQuestion, on_delete=models.CASCADE, blank=True, null=True)
-    code_answer = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        question_text = self.mcq_question.question_text if self.mcq_question else self.coding_question.title
-        return f"{self.student_exam.student.user.username} - {question_text}"

@@ -1,15 +1,14 @@
 from datetime import timedelta
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions,viewsets,status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from backend.users.models import Student
-from .models import Exam, MCQQuestion, CodingQuestion, StudentExam, TemporaryExamInstance
-from .serializers import ExamSerializer, StudentExamSerializer,MCQQuestionSerializer, CodingQuestionSerializer, TempExamSerializer
-from rest_framework import viewsets
+from .models import Exam, MCQQuestion, CodingQuestion, TemporaryExamInstance, StudentExamAnswer
+from .serializers import ExamSerializer, MCQQuestionSerializer, CodingQuestionSerializer, TempExamSerializer, StudentExamAnswerSerializer
 from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action
+
 
 
 # ✅ عرض وإنشاء الامتحانات
@@ -94,20 +93,42 @@ class TempExamViewSet(viewsets.ModelViewSet):
 #         return Response({"message": "Exam submitted successfully", "score": student_exam.score})
 
 # ✅ عرض نتائج الطالب
-class StudentExamResultsView(generics.ListAPIView):
-    serializer_class = StudentExamSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        student_id = self.kwargs['student_id']
-        return StudentExam.objects.filter(student_id=student_id)
 
 class MCQQuestionViewSet(viewsets.ModelViewSet):
     queryset = MCQQuestion.objects.all()
     serializer_class = MCQQuestionSerializer
     permission_classes = [permissions.IsAuthenticated] 
 
-class CodingQuestionViewSet(viewsets.ModelViewSet):
-    queryset = CodingQuestion.objects.all()
-    serializer_class = CodingQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated] 
+# class CodingQuestionViewSet(viewsets.ModelViewSet):
+#     queryset = CodingQuestion.objects.all()
+#     serializer_class = CodingQuestionSerializer
+#     permission_classes = [permissions.IsAuthenticated] 
+
+
+# Views
+class StudentExamAnswerViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=['post'])
+    def submit_exam_answer(self, request):
+        student = request.user
+        exam_instance_id = request.data.get('exam_instance')
+        answers = request.data.get('mcq_answers', {})
+
+        try:
+            exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
+            exam_answer, created = StudentExamAnswer.objects.get_or_create(
+                student=student, exam_instance=exam_instance
+            )
+            exam_answer.set_answers({"mcq_answers": answers})
+            exam_answer.calculate_score()
+            return Response({"score": exam_answer.score}, status=status.HTTP_201_CREATED)
+        except TemporaryExamInstance.DoesNotExist:
+            return Response({"error": "Exam instance not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def get_student_answer(self, request, exam_instance_id):
+        student = request.user
+        try:
+            exam_answer = StudentExamAnswer.objects.get(student=student, exam_instance_id=exam_instance_id)
+            return Response(StudentExamAnswerSerializer(exam_answer).data, status=status.HTTP_200_OK)
+        except StudentExamAnswer.DoesNotExist:
+            return Response({"error": "Exam answer not found."}, status=status.HTTP_404_NOT_FOUND)
