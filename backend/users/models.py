@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Per
 from django.db import models
 import secrets
 
+# 🔹 User Manager 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -19,6 +20,7 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_staff=True and is_superuser=True.")
         return self.create_user(email, username, password, **extra_fields)
 
+# 🔹 Custom User Model
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('student', 'Student'),
@@ -48,8 +50,34 @@ class User(AbstractUser):
         self.signup_token = secrets.token_urlsafe(16)
         self.save()
 
+# 🔹 Instructor Model
+class Instructor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor", null=True, blank=True)
+    experience_years = models.PositiveIntegerField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Instructor"
+        verbose_name_plural = "Instructors"
+
+    def __str__(self):
+        return f"Instructor: {self.user.username}"
+
+# 🔹 Track Model (بعد التعديل)
+class Track(models.Model):
+    name = models.CharField(max_length=255)  # اسم التراك
+    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True, related_name="tracks")  # 🔹 كل مدرب يستطيع تدريس أكثر من تراك
+
+    class Meta:
+        verbose_name = "Track"
+        verbose_name_plural = "Tracks"
+
+    def __str__(self):
+        return self.name
+
+# 🔹 Student Model (مع إضافة التراك)
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    track = models.ForeignKey(Track, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")  
 
     university = models.CharField(max_length=100, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
@@ -62,15 +90,4 @@ class Student(models.Model):
         verbose_name_plural = "Students"
 
     def __str__(self):
-        return f"Student: {self.user.username}"
-
-class Instructor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor", null=True, blank=True)
-    experience_years = models.PositiveIntegerField(blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Instructor"
-        verbose_name_plural = "Instructors"
-
-    def __str__(self):
-        return f"Instructor: {self.user.username}"
+        return f"Student: {self.user.username} - Track: {self.track.name if self.track else 'No Track'}"

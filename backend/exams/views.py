@@ -2,9 +2,8 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Exam, MCQQuestion, CodingQuestion, StudentExam, StudentAnswer
-from .serializers import ExamSerializer, QuestionSerializer, StudentExamSerializer, StudentAnswerSerializer
+from .serializers import ExamSerializer, StudentExamSerializer, StudentAnswerSerializer,MCQQuestionSerializer, CodingQuestionSerializer
 from rest_framework import viewsets
-from exams.serializers import MCQQuestionSerializer, CodingQuestionSerializer
 
 # ✅ عرض وإنشاء الامتحانات
 class ExamListCreateView(generics.ListCreateAPIView):
