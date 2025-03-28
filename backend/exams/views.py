@@ -1,9 +1,16 @@
+from datetime import timedelta
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Exam, MCQQuestion, CodingQuestion, StudentExam, StudentAnswer
-from .serializers import ExamSerializer, StudentExamSerializer, StudentAnswerSerializer,MCQQuestionSerializer, CodingQuestionSerializer
+
+from backend.users.models import Student
+from .models import Exam, MCQQuestion, CodingQuestion, StudentExam, TemporaryExamInstance
+from .serializers import ExamSerializer, StudentExamSerializer,MCQQuestionSerializer, CodingQuestionSerializer, TempExamSerializer
 from rest_framework import viewsets
+from django.core.mail import send_mail
+from django.utils.timezone import now
+from rest_framework.decorators import action
+
 
 # ✅ عرض وإنشاء الامتحانات
 class ExamListCreateView(generics.ListCreateAPIView):
@@ -17,6 +24,45 @@ class ExamDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ExamSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
+class TempExamViewSet(viewsets.ModelViewSet):
+    queryset = TemporaryExamInstance.objects.all()
+    serializer_class = TempExamSerializer
+
+    @action(detail=False, methods=['post'])
+    def assign_exam(self, request):
+        """ Assigns an exam to students and sends an email """
+        exam_id = request.data.get('exam_id')
+        student_emails = request.data.get('students', [])  # List of student emails
+        duration = request.data.get('duration', 60)  # Default 60 mins
+
+        try:
+            exam = Exam.objects.get(id=exam_id)
+        except Exam.DoesNotExist:
+            return Response({"error": "Exam not found"}, status=400)
+
+        assigned_students = []
+        for email in student_emails:
+            student = Student.objects.filter(email=email).first()
+            if student:
+                temp_exam = TemporaryExamInstance.objects.create(
+                    exam=exam,
+                    student=student,
+                    start_time=now(),
+                    end_time=now() + timedelta(minutes=duration)
+                )
+                assigned_students.append(temp_exam.student.email)
+
+                # Send email
+                send_mail(
+                    subject=f"Your Exam: {exam.title}",
+                    message=f"Hello {student.name},\nYou have been assigned the exam '{exam.title}'.\nStart Time: {temp_exam.start_time}\nEnd Time: {temp_exam.end_time}",
+                    from_email="admin@example.com",
+                    recipient_list=[student.email],
+                    fail_silently=True
+                )
+
+        return Response({"message": "Exam assigned", "students": assigned_students})
 # # ✅ تقديم إجابات الطالب للامتحان
 # class StudentExamSubmitView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]

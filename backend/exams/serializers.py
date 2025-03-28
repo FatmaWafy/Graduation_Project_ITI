@@ -1,10 +1,16 @@
 from rest_framework import serializers
-from .models import Exam, Answer, StudentExam, StudentAnswer,MCQQuestion, CodingQuestion
+from .models import Exam,StudentExam, StudentAnswer,MCQQuestion, CodingQuestion, TemporaryExamInstance,Answer
 
 class ExamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exam
         fields = '__all__'
+
+
+class TempExamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemporaryExamInstance
+        fields = "__all__"
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:

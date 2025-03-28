@@ -1,18 +1,28 @@
 from django.db import models
-# from tracks.models import Track
+from users.models import Track
 from users.models import Student
 from django.utils.translation import gettext_lazy as _
 
-
+# Exam Model
 class Exam(models.Model):
     title = models.CharField(max_length=255)
-    # track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="exams")
     created_at = models.DateTimeField(auto_now_add=True)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
 
     def __str__(self):
         return self.title
+    
+# Temporary Exam Instance Model
+class TemporaryExamInstance(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
+    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)    
+    students = models.ManyToManyField(Student, blank=True) 
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
 
+    def __str__(self):
+        return f"{self.exam.title} - {self.start_datetime}"
+    
 
 # Enum for Difficulty Levels
 class DifficultyLevel(models.TextChoices):
