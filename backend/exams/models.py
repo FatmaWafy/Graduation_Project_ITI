@@ -1,5 +1,5 @@
 from django.db import models
-from tracks.models import Track
+from users.models import Track
 from users.models import Student
 
 
