@@ -134,7 +134,6 @@ class ResetPasswordAPIView(APIView):
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
 
-
 class RegisterStudentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -149,7 +148,10 @@ class RegisterStudentAPIView(APIView):
 
         instructor = Instructor.objects.get(user=request.user)
 
-        # التأكد من أن المدرب لديه تراك واحد أو أكثر
+        # التحقق من وجود Tracks للمدرب
+        if instructor.tracks.count() == 0:
+            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
         if instructor.tracks.count() > 1:
             if "track_name" not in data:
                 return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
@@ -159,6 +161,9 @@ class RegisterStudentAPIView(APIView):
                 return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             track = instructor.tracks.first()
+
+        if not track:
+            return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
 
         data["track_name"] = track.name  
 
@@ -220,3 +225,14 @@ class StudentViewSet(viewsets.ModelViewSet):
             student = serializer.save()
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TrackListAPIView(APIView):
+    """
+    API endpoint to get all available tracks.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        tracks = Track.objects.all().values_list("name", flat=True)
+        return Response({"tracks": list(tracks)}, status=status.HTTP_200_OK)

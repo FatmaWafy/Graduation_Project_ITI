@@ -1,8 +1,10 @@
 from django.urls import path,include
+from django.urls import path,include
 from .views import (
     ExamListCreateView, ExamDetailView, TempExamViewSet,MCQQuestionViewSet, StudentExamAnswerViewSet
 )
 from rest_framework.routers import DefaultRouter
+
 
 router = DefaultRouter()
 router.register(r"mcq-questions", MCQQuestionViewSet, basename="mcq-question")
