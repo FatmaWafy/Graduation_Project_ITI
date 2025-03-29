@@ -1,8 +1,7 @@
 from django.contrib import admin
-from .models import Exam, Question, Answer, StudentExam, StudentAnswer
+from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 # Register your models here.
 admin.site.register(Exam)
-admin.site.register(Question)
-admin.site.register(Answer)
-admin.site.register(StudentExam)
-admin.site.register(StudentAnswer)
+admin.site.register(MCQQuestion)
+admin.site.register(TemporaryExamInstance)
+admin.site.register(StudentExamAnswer)
