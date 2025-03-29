@@ -199,7 +199,8 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
             )
             exam_answer.set_answers({"mcq_answers": answers})
             exam_answer.calculate_score()
-            return Response({"score": exam_answer.score}, status=status.HTTP_201_CREATED)
+            return Response({"message": "Answers submitted successfully.", "score": exam_answer.score},
+                status=status.HTTP_201_CREATED)
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "Exam instance not found."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -208,6 +209,25 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         student = request.user
         try:
             exam_answer = StudentExamAnswer.objects.get(student=student, exam_instance_id=exam_instance_id)
-            return Response(StudentExamAnswerSerializer(exam_answer).data, status=status.HTTP_200_OK)
+            return Response({ "exam_instance": exam_instance_id,
+                "score": exam_answer.score,
+                "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
+            }, status=status.HTTP_200_OK)
         except StudentExamAnswer.DoesNotExist:
             return Response({"error": "Exam answer not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'])
+    def get_all_student_scores(self, request):
+            """Retrieve all the student's scores and answers for all exam instances"""
+            student = request.user
+            exam_answers = StudentExamAnswer.objects.filter(student=student)
+
+            result = []
+            for exam_answer in exam_answers:
+                result.append({
+                    "exam_instance": exam_answer.exam_instance_id,
+                    "score": exam_answer.score,
+                    "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
+                })
+
+            return Response({"scores": result}, status=status.HTTP_200_OK)

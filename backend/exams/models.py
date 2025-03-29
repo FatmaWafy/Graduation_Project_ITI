@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 # Exam Model
 class Exam(models.Model):
     title = models.CharField(max_length=255)
+    MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
 
