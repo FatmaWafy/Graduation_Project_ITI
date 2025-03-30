@@ -2,18 +2,32 @@ from rest_framework import serializers
 from .models import Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 
 class ExamSerializer(serializers.ModelSerializer):
+    MCQQuestions = serializers.PrimaryKeyRelatedField(
+        queryset=MCQQuestion.objects.all(), many=True, required=False
+    )
+        
     class Meta:
         model = Exam
         fields = '__all__'
+
 
 
 class TempExamSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemporaryExamInstance
         fields = "__all__"
+        model = TemporaryExamInstance
+        fields = "__all__"
 
 class MCQQuestionSerializer(serializers.ModelSerializer):
     class Meta:
+        model = MCQQuestion
+        fields = "__all__"  # Include all fields
+
+# class CodingQuestionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CodingQuestion
+#         fields = "__all__"
         model = MCQQuestion
         fields = "__all__"  # Include all fields
 
