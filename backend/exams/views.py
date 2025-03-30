@@ -25,7 +25,7 @@ from rest_framework.decorators import action
 class ExamListCreateView(generics.ListCreateAPIView):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
-    permission_classes = [permissions.IsAuthenticated]  # لازم المستخدم يكون مسجل دخول
+    permission_classes = [permissions.IsAuthenticated] # لازم المستخدم يكون مسجل دخول
 
 # ✅ تفاصيل امتحان معين
 class ExamDetailView(generics.RetrieveUpdateDestroyAPIView):
