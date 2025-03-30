@@ -1,27 +1,28 @@
 from rest_framework import serializers
-from .models import Exam, Question, Answer, StudentExam, StudentAnswer
+from .models import Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 
 class ExamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exam
         fields = '__all__'
 
-class QuestionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Question
-        fields = '__all__'
 
-class AnswerSerializer(serializers.ModelSerializer):
+class TempExamSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Answer
-        fields = '__all__'
+        model = TemporaryExamInstance
+        fields = "__all__"
 
-class StudentExamSerializer(serializers.ModelSerializer):
+class MCQQuestionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StudentExam
-        fields = '__all__'
+        model = MCQQuestion
+        fields = "__all__"  # Include all fields
 
-class StudentAnswerSerializer(serializers.ModelSerializer):
+# class CodingQuestionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CodingQuestion
+#         fields = "__all__"
+
+class StudentExamAnswerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StudentAnswer
-        fields = '__all__'
+        model = StudentExamAnswer
+        fields = ['student', 'exam_instance', 'score', 'submitted_at']

@@ -1,81 +1,122 @@
 from django.db import models
 from users.models import Track
 from users.models import Student
+from django.utils.translation import gettext_lazy as _
+import json
+import zlib
+from django.contrib.auth import get_user_model
 
-
+# Exam Model
 class Exam(models.Model):
     title = models.CharField(max_length=255)
-    track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="exams")
     created_at = models.DateTimeField(auto_now_add=True)
-    duration = models.PositiveIntegerField(help_text="Duration in minutes")  # مدة الامتحان بالدقائق
+    duration = models.PositiveIntegerField(help_text="Duration in minutes")
 
     def __str__(self):
         return self.title
-
-
-class Question(models.Model):
-    QUESTION_TYPES = [
-        ('mcq', 'Multiple Choice'),
-        ('code', 'Code Editor'),
-    ]
-
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="questions")
-    text = models.TextField()
-    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES)
-
-    # الإجابة الصحيحة لأسئلة الكود
-    correct_answer = models.TextField(blank=True, null=True)
+    
+# Temporary Exam Instance Model
+class TemporaryExamInstance(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
+    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)    
+    students = models.ManyToManyField(Student, blank=True) 
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
 
     def __str__(self):
-        return self.text
+        return f"{self.exam.title} - {self.start_datetime}"
+    
+
+# Enum for Difficulty Levels
+class DifficultyLevel(models.TextChoices):
+    EASY = "Easy", _("Easy")
+    MEDIUM = "Medium", _("Medium")
+    HARD = "Hard", _("Hard")
+
+# Enum for MCQ Options
+class MCQOptions(models.TextChoices):
+    A = "A", _("Option A")
+    B = "B", _("Option B")
+    C = "C", _("Option C")
+    D = "D", _("Option D")
+
+# MCQ Model
+class MCQQuestion(models.Model):
+    question_text = models.TextField()
+    option_a = models.CharField(max_length=255)
+    option_b = models.CharField(max_length=255)
+    option_c = models.CharField(max_length=255, null=True, blank=True)
+    option_d = models.CharField(max_length=255, null=True, blank=True)
+    
+    correct_option = models.CharField(
+        max_length=1, 
+        choices=MCQOptions.choices
+    )
+    
+    difficulty = models.CharField(
+        max_length=20, 
+        choices=DifficultyLevel.choices
+    )
+
+    source = models.CharField(max_length=100)
+    points = models.FloatField(default=1.0)
 
 
-class Answer(models.Model):
-    """ يستخدم فقط لأسئلة الـ MCQ """
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
-    text = models.TextField()
-    is_correct = models.BooleanField(default=False)
+# # Coding Questions Model
+# class CodingQuestion(models.Model):
+#     title = models.CharField(max_length=255)
+#     description = models.TextField()
+    
+#     difficulty = models.CharField(
+#         max_length=20, 
+#         choices=DifficultyLevel.choices
+#     )
 
-    def __str__(self):
-        return self.text
+#     starter_code = models.TextField(default="None")
+#     test_cases = models.JSONField()
+#     source = models.CharField(max_length=100)
+#     points = models.FloatField(default=1.0)
 
 
-class StudentExam(models.Model):
-    """ يربط الطالب بالامتحان، ويحفظ النتيجة بعد التصحيح """
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="exams")
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="student_exams")
-    submitted_at = models.DateTimeField(null=True, blank=True)
+User = get_user_model()
+
+class StudentExamAnswer(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
+    exam_instance = models.ForeignKey(TemporaryExamInstance, on_delete=models.CASCADE, related_name="student_answers")
+    
+    compressed_answers = models.BinaryField()  # Compressed MCQ answers
     score = models.FloatField(default=0.0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def set_answers(self, answers_dict):
+        """
+        Convert JSON to bytes and compress before storing
+        """
+        json_data = json.dumps(answers_dict).encode('utf-8')
+        self.compressed_answers = zlib.compress(json_data)
+
+    def get_answers(self):
+        """
+        Extract stored answers and return as JSON
+        """
+        if self.compressed_answers:
+            json_data = zlib.decompress(self.compressed_answers).decode('utf-8')
+            return json.loads(json_data)
+        return {}
 
     def calculate_score(self):
-        correct_answers = 0
-        total_questions = self.exam.questions.count()
+        """
+        Grade only MCQ questions and calculate the score
+        """
+        answers = self.get_answers()
+        total_score = 0
 
-        for student_answer in self.answers.all():
-            if student_answer.question.question_type == 'mcq':
-                if student_answer.selected_answer and student_answer.selected_answer.is_correct:
-                    correct_answers += 1
-            elif student_answer.question.question_type == 'code':
-                if student_answer.code_answer and student_answer.code_answer.strip() == student_answer.question.correct_answer.strip():
-                    correct_answers += 1
+        mcq_answers = answers.get("mcq_answers", {})
+        mcq_questions = MCQQuestion.objects.filter(id__in=mcq_answers.keys())
+        
+        for mcq in mcq_questions:
+            if mcq_answers.get(str(mcq.id)) == mcq.correct_option:
+                total_score += mcq.points
 
-        self.score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        self.score = total_score
         self.save()
-
-    def __str__(self):
-        return f"{self.student.user.username} - {self.exam.title}"
-
-
-class StudentAnswer(models.Model):
-    """ تخزين إجابات الطالب لكل سؤال سواء كان MCQ أو Code """
-    student_exam = models.ForeignKey(StudentExam, on_delete=models.CASCADE, related_name="answers")
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-
-    # MCQ
-    selected_answer = models.ForeignKey(Answer, on_delete=models.CASCADE, blank=True, null=True)
-
-    # Code Editor
-    code_answer = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.student_exam.student.user.username} - {self.question.text}"
