@@ -188,7 +188,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cookies } from "next/headers";
 import Cookies from "js-cookie";
 
 export default function LoginPage() {
@@ -198,9 +197,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [activeTab, setActiveTab] = useState<"login" | "forgot-password">(
-    "login"
-  );
+  const [activeTab, setActiveTab] = useState<"login" | "forgot-password">("login");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -224,43 +221,35 @@ export default function LoginPage() {
 
         if (!res.ok) throw new Error(data.error || "Invalid email or password");
 
-        // ✅ حفظ التوكن والدور
         if (data.access) {
-          Cookies.set("token", data.access, { expires: 7 }); // Set cookie for 7 days
+          Cookies.set("token", data.access, { expires: 7 });
           Cookies.set("refresh", data.refresh, { expires: 7 });
           Cookies.set("role", data.role, { expires: 7 });
+          console.log("Token saved:", Cookies.get("token"));
+          console.log("Role saved:", Cookies.get("role"));
         } else {
           throw new Error("No access token received from server!");
         }
+        
 
-        if (data.access) {
-          Cookies.set("token", data.access, { expires: 7 }); // Store token for 7 days
-          Cookies.set("refresh", data.refresh, { expires: 7 });
-          Cookies.set("role", data.role, { expires: 7 });
+        const { role } = data;
+        console.log("User Role:", role); // تحقق من الدور
 
-          // Redirect based on user role
-          const { role } = data;
-          if (role === "student") {
-            router.push("/dashboard_student");
-          } else if (role === "instructor") {
-            router.push("/dashboard_instructor");
-          } else {
-            router.push("/dashboard");
-          }
+        if (data.role === "student") {
+          router.replace("/dashboard_student");
+        } else if (data.role === "instructor") {
+          router.replace("/dashboard_instructor");
         } else {
-          throw new Error("No access token received from server!");
+          router.replace("/dashboard");
         }
-      }
-      // Move forgot password logic out of the login block
-      else if (activeTab === "forgot-password") {
-        const res = await fetch(
-          "http://127.0.0.1:8000/users/reset-password-request/",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-          }
-        );
+        
+
+      } else if (activeTab === "forgot-password") {
+        const res = await fetch("http://127.0.0.1:8000/users/reset-password-request/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
 
         const data = await res.json();
         if (res.ok) {
@@ -279,6 +268,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="mx-auto w-full max-w-md">
@@ -290,12 +280,7 @@ export default function LoginPage() {
           <CardDescription>Access your academic dashboard</CardDescription>
         </CardHeader>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) =>
-            setActiveTab(value as "login" | "forgot-password")
-          }
-        >
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "forgot-password")}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="forgot-password">Forgot Password</TabsTrigger>
@@ -305,84 +290,27 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-                    {error}
-                  </div>
+                  <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="student@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <Input id="email" type="email" placeholder="student@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
                   </div>
                   <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">
-                        Toggle password visibility
-                      </span>
+                    <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">Toggle password visibility</span>
                     </Button>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Processing..." : "Login"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="forgot-password">
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
-                {message && (
-                  <div className="rounded-md bg-green-100 p-3 text-sm text-green-700">
-                    {message}
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Enter your email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="student@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Sending..." : "Send Reset Link"}
-                </Button>
+                <Button type="submit" className="w-full" disabled={loading}>{loading ? "Processing..." : "Login"}</Button>
               </CardFooter>
             </form>
           </TabsContent>
