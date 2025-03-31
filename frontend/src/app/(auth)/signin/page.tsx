@@ -1,104 +1,123 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Cookies from "js-cookie";
+"use client"
 
-export default function SignIn() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const router = useRouter();
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { BookOpen, Eye, EyeOff } from "lucide-react"
+import Cookies from "js-cookie"
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+import { Button } from "@/src/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Input } from "@/src/components/ui/input"
+import { Label } from "@/src/components/ui/label"
+import { Checkbox } from "@/src/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [activeTab, setActiveTab] = useState<"login" | "forgot-password">("login")
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+    e.preventDefault()
+    setError("")
 
     try {
       const res = await fetch("http://127.0.0.1:8000/users/login/", {
         method: "POST",
-        credentials: "include", // ✅ يسمح بإرسال الكوكيز
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+        body: JSON.stringify({ email, password }),
+      })
 
-      const data = await res.json();
-      console.log("🔹 API Response:", data);
-
-      if (!res.ok) throw new Error(data.error || "Login failed");
-
-      setSuccess("Login successful!");
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Login failed")
 
       if (data.access) {
-        Cookies.set("token", data.access, { expires: 7, secure: true, sameSite: "Lax" });
+        Cookies.set("token", data.access, { expires: 7, secure: true, sameSite: "Lax" })
       } else {
-        throw new Error("Token is missing");
+        throw new Error("Token is missing")
       }
 
       if (data.role) {
-        Cookies.set("role", data.role, { expires: 7, secure: true, sameSite: "Lax" });
-
-        if (data.role === "instructor") {
-          router.push("/dashboard_instructor");
-        } else if (data.role === "student") {
-          router.push("/dashboard_student");
-        } else {
-          throw new Error("Unauthorized role");
-        }
+        Cookies.set("role", data.role, { expires: 7, secure: true, sameSite: "Lax" })
+        const dashboardPath = data.role === "instructor" ? "/dashboard_instructor" : "/dashboard_student"
+        router.push(dashboardPath)
       } else {
-        throw new Error("Role is missing");
+        throw new Error("Role is missing")
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <form 
-        onSubmit={handleSubmit} 
-        className="bg-white p-8 shadow-2xl rounded-2xl w-full max-w-md border border-gray-200">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-700">Sign In</h2>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        {success && <p className="text-green-500 text-center mb-4">{success}</p>}
-        
-        <div className="space-y-4">
-          <input 
-            type="email" 
-            name="email" 
-            placeholder="Email" 
-            onChange={handleChange} 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring focus:ring-indigo-300" 
-            required 
-          />
-          <input 
-            type="password" 
-            name="password" 
-            placeholder="Password" 
-            onChange={handleChange} 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring focus:ring-indigo-300" 
-            required 
-          />
-        </div>
-        
-        <div className="text-right text-sm text-indigo-500 mt-2">
-          <Link href="/forget_pass">Forgot Password?</Link>
-        </div>
-        
-        <button 
-          type="submit" 
-          className="w-full bg-indigo-600 text-white p-3 rounded-lg mt-4 hover:bg-indigo-700 transition">
-          Sign In
-        </button>
-      </form>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="mx-auto w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center">
+            <BookOpen className="h-10 w-10 text-primary" />
+          </div>
+          <CardTitle className="text-2xl font-bold">Student Portal</CardTitle>
+          <CardDescription>Access your academic dashboard</CardDescription>
+        </CardHeader>
+
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {error && <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="student@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              />
+              <Label htmlFor="remember" className="text-sm">Remember me</Label>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white">Sign In</Button>
+            <div className="text-center text-sm">
+              Don't have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
-  );
+  )
 }
