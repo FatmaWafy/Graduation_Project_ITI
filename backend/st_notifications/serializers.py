@@ -3,12 +3,13 @@ from .models import Note, PredefinedNotification
 from users.models import Instructor, Student
 
 class NotificationSerializer(serializers.ModelSerializer):
-    instructor_id = serializers.IntegerField(source="instructor.id",write_only=True)
-    student_id = serializers.IntegerField(source="student.id",write_only=True) 
+    instructor_name = serializers.CharField(source='instructor.user.username', read_only=True)
+    student_id = serializers.IntegerField(source="student.id", read_only=True)  # Make this read-only
 
     class Meta:
         model = Note
-        fields = ['id', 'message', 'created_at', 'instructor_id', 'student_id', 'instructor', 'student']
+        fields = ['id', 'message', 'created_at', 'read', 'instructor_name', 'student_id']
+
 
 class PredefinedNotificationSerializer(serializers.ModelSerializer):
     class Meta:

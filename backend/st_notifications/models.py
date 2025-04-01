@@ -8,6 +8,7 @@ class Note(models.Model):
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE, related_name='sent_notes', null=True, blank=True)  
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Note from {self.instructor.user.username} to {self.student.user.username}"
