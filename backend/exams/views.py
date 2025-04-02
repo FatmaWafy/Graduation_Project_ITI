@@ -194,40 +194,56 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
 
         try:
             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
+            
+            # التحقق إذا انتهى وقت الامتحان
+            if now() > exam_instance.end_datetime:
+                return Response({"error": "Time is up! You can't submit this exam."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # جلب أو إنشاء إجابة الطالب
             exam_answer, created = StudentExamAnswer.objects.get_or_create(
                 student=student, exam_instance=exam_instance
             )
+
+            # حفظ الإجابات وحساب الدرجة
             exam_answer.set_answers({"mcq_answers": answers})
             exam_answer.calculate_score()
+
             return Response({"message": "Answers submitted successfully.", "score": exam_answer.score},
                 status=status.HTTP_201_CREATED)
+
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "Exam instance not found."}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def get_student_answer(self, request, exam_instance_id):
+        """ استرجاع إجابة الطالب لامتحان معين """
         student = request.user
         try:
             exam_answer = StudentExamAnswer.objects.get(student=student, exam_instance_id=exam_instance_id)
-            return Response({ "exam_instance": exam_instance_id,
+            return Response({
+                "exam_instance": exam_instance_id,
                 "score": exam_answer.score,
                 "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
             }, status=status.HTTP_200_OK)
+
         except StudentExamAnswer.DoesNotExist:
             return Response({"error": "Exam answer not found."}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def get_all_student_scores(self, request):
-            """Retrieve all the student's scores and answers for all exam instances"""
-            student = request.user
-            exam_answers = StudentExamAnswer.objects.filter(student=student)
+        """ استرجاع جميع درجات الطالب لكل الامتحانات """
+        student = request.user
+        exam_answers = StudentExamAnswer.objects.filter(student=student)
 
-            result = []
-            for exam_answer in exam_answers:
-                result.append({
-                    "exam_instance": exam_answer.exam_instance_id,
-                    "score": exam_answer.score,
-                    "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
-                })
+        result = [
+            {
+                "exam_instance": exam_answer.exam_instance_id,
+                "score": exam_answer.score,
+                "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
+            }
+            for exam_answer in exam_answers
+        ]
 
-            return Response({"scores": result}, status=status.HTTP_200_OK)
+        return Response({"scores": result}, status=status.HTTP_200_OK)
+
+
