@@ -10,6 +10,7 @@ from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializ
 from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action
+import jwt
 
 
 
@@ -277,3 +278,4 @@ class GetTempExamByStudent(APIView):
 
         # Return the serialized data in the response
         return Response({"temp_exams": serializer.data}, status=200)
+    
