@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import Link from "next/link";
-
+ 
 export default function InstructorLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,11 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
               Send Note
             </p>
           </Link>
+          <Link href="/dashboard_instructor/students" >
+             <p className="block px-4 py-3 my-4 bg-green-600 hover:bg-green-500 rounded-lg text-center cursor-pointer transition duration-300">Student Management</p>
+          </Link>
+
+          
         </nav>
       </aside>
 
