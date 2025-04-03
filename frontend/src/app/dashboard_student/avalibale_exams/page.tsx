@@ -42,7 +42,7 @@ export default function StudentDashboardPage() {
               <h3 className="text-xl font-semibold">{exam.title}</h3>
               <p className="text-sm text-gray-600">Duration: {exam.duration} minutes</p>
             </div>
-            {/* استخدم Link لتوجيه الطالب لصفحة الامتحان */}
+            
             <Link href={`/dashboard_student/exam/${exam.id}`}>
               <button className="btn btn-primary">
                 Start Now
