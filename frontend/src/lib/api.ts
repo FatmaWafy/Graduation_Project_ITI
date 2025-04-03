@@ -195,11 +195,13 @@ export async function getExams(token: string): Promise<Exam[]> {
       },
     });
 
+
     if (!response.ok) {
-      throw new Error('Failed to fetch exams');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch exams');
     }
-    const data =  await response.json();
-    return data.temp_exams
+
+    return await response.json();
   } catch (error) {
     console.error('Error fetching exams:', error);
     throw error;

@@ -80,6 +80,7 @@ class MCQQuestion(models.Model):
 
 
 User = get_user_model()
+from django.utils.timezone import now
 
 class StudentExamAnswer(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
@@ -114,10 +115,23 @@ class StudentExamAnswer(models.Model):
 
         mcq_answers = answers.get("mcq_answers", {})
         mcq_questions = MCQQuestion.objects.filter(id__in=mcq_answers.keys())
-        
+
         for mcq in mcq_questions:
             if mcq_answers.get(str(mcq.id)) == mcq.correct_option:
                 total_score += mcq.points
 
         self.score = total_score
         self.save()
+
+    def submit_exam(self, answers_dict):
+        """
+        Handle exam submission with time validation.
+        """
+        # التحقق إذا كان الامتحان قد انتهى
+        if now() > self.exam_instance.end_datetime:
+            return {"error": "Time is up! You can't submit this exam."}
+
+        # حفظ الإجابات إذا لم ينتهِ الوقت
+        self.set_answers(answers_dict)
+        self.calculate_score()
+        return {"message": "Exam submitted successfully.", "score": self.score}

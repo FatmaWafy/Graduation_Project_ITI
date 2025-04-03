@@ -28,29 +28,34 @@ export default function ExamsPage() {
     }
     throw new Error("No authentication token found in cookies");
   };
+
   function calculateDuration(start: string, end: string): number {
     const startDate = new Date(start);
     const endDate = new Date(end);
     return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
   }
+
   useEffect(() => {
     const fetchExams = async () => {
       try {
         const token = getTokenFromCookies();
-        const response = await getExams(token);
+        const response = await getExams(token); // Add studentId if needed
 
-        // Transform API data to match your frontend Exam type
-        const examsData = (response.temp_exams || []).map((apiExam: any) => ({
-          id: apiExam.id,
-          title: `Exam ${apiExam.exam}`,
+        if (!response.temp_exams) {
+          throw new Error("No exams data found in response");
+        }
+
+        const examsData = response.temp_exams.map((apiExam: any) => ({
+          id: apiExam.id.toString(),
+          title: `Exam ${apiExam.exam || apiExam.id}`,
           courseName: apiExam.track ? `Track ${apiExam.track}` : "General Exam",
           date: apiExam.start_datetime,
           duration: calculateDuration(
             apiExam.start_datetime,
             apiExam.end_datetime
           ),
-          questionsCount: 10, // Replace with actual data
-          preparationProgress: 0, // Replace with actual data
+          questionsCount: apiExam.questions_count || 10, // Use actual data if available
+          preparationProgress: apiExam.preparation_progress || 0, // Use actual data if available
         }));
 
         setExams(examsData);
@@ -65,6 +70,7 @@ export default function ExamsPage() {
     fetchExams();
   }, []);
 
+  // Rest of your component remains the same...
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">

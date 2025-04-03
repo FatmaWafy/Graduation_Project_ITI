@@ -1,9 +1,8 @@
 from datetime import timedelta
-from rest_framework import generics, permissions,viewsets,status
-from datetime import timedelta
-from rest_framework import generics, permissions,viewsets,status
+from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from users.models import Student
 from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer
@@ -11,6 +10,7 @@ from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action
 import jwt
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -18,7 +18,7 @@ import jwt
 class ExamListCreateView(generics.ListCreateAPIView):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
-    permission_classes = [permissions.IsAuthenticated] # لازم المستخدم يكون مسجل دخول
+    permission_classes = [permissions.IsAuthenticated]  # لازم المستخدم يكون مسجل دخول
 
 # ✅ تفاصيل امتحان معين
 class ExamDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -202,44 +202,58 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         answers = request.data.get('mcq_answers', {})
 
         try:
+            # Get the exam instance
             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
-            exam_answer, created = StudentExamAnswer.objects.get_or_create(
+
+            # Get or create the student's exam answer
+            exam_answer = StudentExamAnswer.objects.get_or_create(
                 student=student, exam_instance=exam_instance
-            )
-            exam_answer.set_answers({"mcq_answers": answers})
-            exam_answer.calculate_score()
-            return Response({"message": "Answers submitted successfully.", "score": exam_answer.score},
-                status=status.HTTP_201_CREATED)
+            )[0]
+
+            # Submit the exam answer using the method in models.py
+            response = exam_answer.submit_exam({"mcq_answers": answers})
+
+            # If the response contains an error (like time expired), return that error
+            if "error" in response:
+                return Response({"error": response["error"]}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Otherwise, return success and the calculated score
+            return Response({"message": response["message"], "score": response["score"]}, status=status.HTTP_201_CREATED)
+
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "Exam instance not found."}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def get_student_answer(self, request, exam_instance_id):
+        """ استرجاع إجابة الطالب لامتحان معين """
         student = request.user
         try:
             exam_answer = StudentExamAnswer.objects.get(student=student, exam_instance_id=exam_instance_id)
-            return Response({ "exam_instance": exam_instance_id,
+            return Response({
+                "exam_instance": exam_instance_id,
                 "score": exam_answer.score,
                 "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
             }, status=status.HTTP_200_OK)
+
         except StudentExamAnswer.DoesNotExist:
             return Response({"error": "Exam answer not found."}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def get_all_student_scores(self, request):
-            """Retrieve all the student's scores and answers for all exam instances"""
-            student = request.user
-            exam_answers = StudentExamAnswer.objects.filter(student=student)
+        """ استرجاع جميع درجات الطالب لكل الامتحانات """
+        student = request.user
+        exam_answers = StudentExamAnswer.objects.filter(student=student)
 
-            result = []
-            for exam_answer in exam_answers:
-                result.append({
-                    "exam_instance": exam_answer.exam_instance_id,
-                    "score": exam_answer.score,
-                    "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
-                })
+        result = [
+            {
+                "exam_instance": exam_answer.exam_instance_id,
+                "score": exam_answer.score,
+                "mcq_answers": exam_answer.get_answers().get("mcq_answers", {})
+            }
+            for exam_answer in exam_answers
+        ]
 
-            return Response({"scores": result}, status=status.HTTP_200_OK)
+        return Response({"scores": result}, status=status.HTTP_200_OK)
 
 
 class GetTempExamByTrack(APIView):
@@ -279,3 +293,72 @@ class GetTempExamByStudent(APIView):
         # Return the serialized data in the response
         return Response({"temp_exams": serializer.data}, status=200)
     
+
+
+# ✅ عرض الأسئلة ذات الإجابة المتعددة الاختيارات
+class MCQQuestionViewSet(viewsets.ModelViewSet):
+    queryset = MCQQuestion.objects.all()
+    serializer_class = MCQQuestionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+# ✅ إنشاء الامتحان
+class CreateExamView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        title = data.get("title")
+        duration = data.get("duration")
+        questions = data.get("questions", [])
+
+        if not title or not duration:
+            return Response({"error": "Title and duration are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        exam = Exam.objects.create(title=title, duration=duration)
+
+        for q in questions:
+            if q["type"] == "mcq":
+                mcq = MCQQuestion.objects.create(
+                    question_text=q["question"],
+                    option_a=q["options"][0],
+                    option_b=q["options"][1],
+                    option_c=q["options"][2] if len(q["options"]) > 2 else None,
+                    option_d=q["options"][3] if len(q["options"]) > 3 else None,
+                    correct_option=q["correctAnswers"][0] if q["correctAnswers"] else None,
+                    difficulty="Medium",  # افتراضيًا
+                    source="Exam System",
+                    points=1.0
+                )
+                exam.MCQQuestions.add(mcq)
+
+        exam.save()
+        return Response({"message": "Exam created successfully!"}, status=status.HTTP_201_CREATED)
+
+
+# ✅ عرض الأسئلة
+def get_questions(request):
+    # استلام المعرفات للأسئلة
+    question_ids = request.data.get('questionIds', [])
+    
+    # البحث عن الأسئلة بناءً على المعرفات
+    questions = MCQQuestion.objects.filter(id__in=question_ids)
+    
+    # تسلسل البيانات لعرضها
+    serialized_questions = MCQQuestionSerializer(questions, many=True)
+    
+    # إرجاع الأسئلة كاستجابة
+    return Response({"questions": serialized_questions.data})
+class ExamQuestionsView(generics.ListAPIView):
+    """ Fetch all questions related to a specific exam """
+    serializer_class = MCQQuestionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """ Return questions related to the specified exam """
+        exam_id = self.kwargs.get('exam_id')
+        try:
+            exam = Exam.objects.get(id=exam_id)
+            return MCQQuestion.objects.filter(exam=exam)  # assuming there's a relationship between MCQQuestion and Exam
+        except Exam.DoesNotExist:
+            return MCQQuestion.objects.none()  # return empty queryset if exam doesn't exist
