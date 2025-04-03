@@ -247,3 +247,50 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         return Response({"scores": result}, status=status.HTTP_200_OK)
 
 
+
+class CreateExamView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        title = data.get("title")
+        duration = data.get("duration")
+        questions = data.get("questions", [])
+
+        if not title or not duration:
+            return Response({"error": "Title and duration are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        exam = Exam.objects.create(title=title, duration=duration)
+
+        for q in questions:
+            if q["type"] == "mcq":
+                mcq = MCQQuestion.objects.create(
+                    question_text=q["question"],
+                    option_a=q["options"][0],
+                    option_b=q["options"][1],
+                    option_c=q["options"][2] if len(q["options"]) > 2 else None,
+                    option_d=q["options"][3] if len(q["options"]) > 3 else None,
+                    correct_option=q["correctAnswers"][0] if q["correctAnswers"] else None,
+                    difficulty="Medium",  # افتراضيًا
+                    source="Exam System",
+                    points=1.0
+                )
+                exam.MCQQuestions.add(mcq)
+
+        exam.save()
+        return Response({"message": "Exam created successfully!"}, status=status.HTTP_201_CREATED)
+
+
+
+def get_questions(request):
+    # استلام المعرفات للأسئلة
+    question_ids = request.data.get('questionIds', [])
+    
+    # البحث عن الأسئلة بناءً على المعرفات
+    questions = MCQQuestion.objects.filter(id__in=question_ids)
+    
+    # تسلسل البيانات لعرضها
+    serialized_questions = MCQQuestionSerializer(questions, many=True)
+    
+    # إرجاع الأسئلة كاستجابة
+    return Response({"questions": serialized_questions.data})

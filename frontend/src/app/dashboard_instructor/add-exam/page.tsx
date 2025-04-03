@@ -1,11 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Cookies from "js-cookie";
 
 export default function AddExamPage() {
   const [questions, setQuestions] = useState([
     { type: "mcq", question: "", options: ["", "", "", ""], correctAnswers: [], code: "" },
   ]);
+  const [duration, setDuration] = useState(60);
+  const [selectedTrack, setSelectedTrack] = useState<string | null>(null); // التراك المحدد
+
+  const [tracks, setTracks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/");
+        const data = await response.json();
+        console.log("Fetched data:", data); // عرض البيانات المستلمة من API
+  
+        // تحقق إذا كانت 'tracks' موجودة
+        if (Array.isArray(data.tracks)) {
+          setTracks(data.tracks); // إذا كانت tracks مصفوفة
+        } else {
+          console.error("Data is not in the expected format:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+      }
+    };
+  
+    fetchTracks();
+  }, []);
+  
+
 
   const handleTypeChange = (index: number, type: "mcq" | "code") => {
     const updatedQuestions = [...questions];
@@ -53,26 +81,113 @@ export default function AddExamPage() {
     setQuestions([...questions, { type: "mcq", question: "", options: ["", "", "", ""], correctAnswers: [], code: "" }]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleDeleteQuestion = (index: number) => {
+    const updatedQuestions = questions.filter((_, qIndex) => qIndex !== index);
+    setQuestions(updatedQuestions);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Exam Data:", questions);
+
+    if (!selectedTrack) {
+      alert("Please select a track for the exam.");
+      return;
+    }
+
+    const examData = {
+      title: "Sample Exam",
+      duration: duration,
+      track: selectedTrack,
+      questions: questions.map((q) => ({
+        type: q.type,
+        question: q.question,
+        options: q.options,
+        correctAnswers: q.correctAnswers,
+        code: q.code
+      })),
+    };
+
+    const token = Cookies.get('token');
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/exam/create-exam/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(examData),
+      });
+
+      if (response.ok) {
+        alert("Exam submitted successfully!");
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to submit exam: ${errorData.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error submitting exam:", error);
+    }
   };
 
   return (
     <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
       <h2 className="text-3xl font-bold text-blue-700 text-center mb-6">📝 Add Exam Questions</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* إدخال المدة */}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700">Exam Duration (in minutes)</label>
+          <input
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            min={1}
+            className="input input-bordered w-full"
+            required
+          />
+        </div>
+
+        {/* إضافة Dropdown لاختيار التراك */}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700">Select Track</label>
+          <select
+            value={selectedTrack || ""}
+            onChange={(e) => setSelectedTrack(e.target.value)}
+            className="select select-bordered w-full"
+            required
+          >
+            <option value="">Select Track</option>
+            {tracks.map((track, index) => (
+              <option key={index} value={track}>
+                {track}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
         {questions.map((q, qIndex) => (
           <div key={qIndex} className="p-4 border rounded-lg shadow-md bg-gray-50 space-y-4">
-            <select
-              className="select select-bordered w-full"
-              value={q.type}
-              onChange={(e) => handleTypeChange(qIndex, e.target.value as "mcq" | "code")}
-            >
-              <option value="mcq">Multiple Choice Question</option>
-              <option value="code">Code Editor Question</option>
-            </select>
-            
+            <div className="flex justify-between">
+              <select
+                className="select select-bordered w-full"
+                value={q.type}
+                onChange={(e) => handleTypeChange(qIndex, e.target.value as "mcq" | "code")}
+              >
+                <option value="mcq">Multiple Choice Question</option>
+                <option value="code">Code Editor Question</option>
+              </select>
+
+              {/* زر الحذف */}
+              <button
+                type="button"
+                onClick={() => handleDeleteQuestion(qIndex)}
+                className="text-red-600 hover:text-red-800"
+              >
+                ❌
+              </button>
+            </div>
+
             <input
               type="text"
               placeholder="Enter the question"
@@ -81,7 +196,7 @@ export default function AddExamPage() {
               onChange={(e) => handleQuestionChange(qIndex, e.target.value)}
               required
             />
-            
+
             {q.type === "mcq" && (
               <div className="space-y-2">
                 <label className="block font-medium">Select correct answer type:</label>
@@ -105,7 +220,7 @@ export default function AddExamPage() {
                     Multiple Correct Answers
                   </label>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {q.options.map((option, oIndex) => (
                     <div key={oIndex} className="flex items-center gap-2">
@@ -128,7 +243,7 @@ export default function AddExamPage() {
                 </div>
               </div>
             )}
-            
+
             {q.type === "code" && (
               <textarea
                 placeholder="Enter the code question"
@@ -139,7 +254,7 @@ export default function AddExamPage() {
             )}
           </div>
         ))}
-        
+
         <button type="button" onClick={addQuestion} className="btn btn-outline btn-primary w-full">
           ➕ Add Another Question
         </button>

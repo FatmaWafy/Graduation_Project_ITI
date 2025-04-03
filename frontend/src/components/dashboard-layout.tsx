@@ -34,11 +34,13 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard_student", icon: Home },
   { title: "Courses", href: "/dashboard_student/courses", icon: BookOpen },
-  { title: "Assignments", href: "/dashboard_student/assignments", icon: ClipboardList },
+  
+  { title: "Avalibale Exams", href: "/dashboard_student/avalibale_exams", icon: ClipboardList },
   { title: "Grades", href: "/dashboard_student/grades", icon: PieChart },
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },
   { title: "Profile", href: "/dashboard_student/profile", icon: User },
   { title: "Settings", href: "/dashboard_student/settings", icon: Settings },
+
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
