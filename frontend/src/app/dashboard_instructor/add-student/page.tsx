@@ -19,7 +19,8 @@ export default function AddStudentPage() {
     track_name: "",
   });
 
-  const [tracks, setTracks] = useState<string[]>([]);
+  const [tracks, setTracks] = useState<{ id: number; name: string }[]>([]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -37,17 +38,20 @@ export default function AddStudentPage() {
 
         const data = await response.json();
         if (response.ok) {
-          setTracks(data.tracks);
+          setTracks(data || []); // ✅ استخدم `data` مباشرة بدل `data.tracks`
         } else {
           console.error("❌ Failed to fetch tracks:", data);
+          setTracks([]);
         }
       } catch (error) {
         console.error("❌ Error fetching tracks:", error);
+        setTracks([]);
       }
     };
 
     fetchTracks();
   }, []);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStudentData({ ...studentData, [e.target.name]: e.target.value });
@@ -114,12 +118,13 @@ export default function AddStudentPage() {
             <SelectTrigger className="w-full">{studentData.track_name || "Select Track"}</SelectTrigger>
             <SelectContent>
               {tracks.map((track) => (
-                <SelectItem key={track} value={track}>
-                  {track}
+                <SelectItem key={track.id} value={track.name}>
+                  {track.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+
 
           <Button type="submit" className="w-full bg-green-600 hover:bg-green-500" disabled={isSubmitting}>
             {isSubmitting ? "Processing..." : "Register Student"}
