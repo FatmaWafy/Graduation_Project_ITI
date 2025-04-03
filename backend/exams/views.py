@@ -76,6 +76,20 @@ class TempExamViewSet(viewsets.ModelViewSet):
 # class StudentExamSubmitView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
 
+#filtered MCQ Questions
+class FilteredMCQQuestionListView(generics.ListAPIView):
+    serializer_class = MCQQuestionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = MCQQuestion.objects.all()
+        difficulty = self.request.query_params.get('difficulty')
+        if difficulty and difficulty.lower() != "all":
+            # Assuming your model stores values as "Easy", "Medium", "Hard"
+            queryset = queryset.filter(difficulty__iexact=difficulty)
+        return queryset
+    
+
 class TempExamViewSet(viewsets.ModelViewSet):
     queryset = TemporaryExamInstance.objects.all()
     serializer_class = TempExamSerializer
@@ -170,13 +184,15 @@ class TempExamViewSet(viewsets.ModelViewSet):
 
 class MCQQuestionViewSet(viewsets.ModelViewSet):
     queryset = MCQQuestion.objects.all()
-    serializer_class = MCQQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated] 
+    serializer_class = MCQQuestionSerializer  # ✅ Corrected name
+    permission_classes = [permissions.IsAuthenticated]
 
-class MCQQuestionViewSet(viewsets.ModelViewSet):
-    queryset = MCQQuestion.objects.all()
-    serializer_class = MCQQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated] 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, many=True)  # ✅ Uses get_serializer()
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class CodingQuestionViewSet(viewsets.ModelViewSet):
 #     queryset = CodingQuestion.objects.all()
