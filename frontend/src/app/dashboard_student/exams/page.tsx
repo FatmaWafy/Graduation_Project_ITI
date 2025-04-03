@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock, BookOpen, FileText } from "lucide-react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Progress } from "@/src/components/ui/progress";
+import { Button } from "@/src/components/ui/button";
 import { Exam, getExams } from "@/src/lib/api";
 
 export default function ExamsPage() {
@@ -39,7 +41,7 @@ export default function ExamsPage() {
     const fetchExams = async () => {
       try {
         const token = getTokenFromCookies();
-        const response = await getExams(token); // Add studentId if needed
+        const response = await getExams(token);
 
         if (!response.temp_exams) {
           throw new Error("No exams data found in response");
@@ -54,8 +56,9 @@ export default function ExamsPage() {
             apiExam.start_datetime,
             apiExam.end_datetime
           ),
-          questionsCount: apiExam.questions_count || 10, // Use actual data if available
-          preparationProgress: apiExam.preparation_progress || 0, // Use actual data if available
+          questionsCount: apiExam.questions_count || 10,
+          preparationProgress: apiExam.preparation_progress || 0,
+          examId: apiExam.id, // Make sure we have the exam ID for the start button
         }));
 
         setExams(examsData);
@@ -70,7 +73,6 @@ export default function ExamsPage() {
     fetchExams();
   }, []);
 
-  // Rest of your component remains the same...
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -99,7 +101,7 @@ export default function ExamsPage() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {exams?.length ? (
           exams.map((exam) => (
-            <Card key={exam.id} className="overflow-hidden">
+            <Card key={exam.id} className="overflow-hidden flex flex-col">
               <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
                 <FileText className="h-16 w-16 text-gray-400" />
               </div>
@@ -107,7 +109,7 @@ export default function ExamsPage() {
                 <CardTitle>{exam.title}</CardTitle>
                 <CardDescription>{exam.courseName}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 flex-grow">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
@@ -129,7 +131,7 @@ export default function ExamsPage() {
                   <Progress value={exam.preparationProgress} />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex justify-between items-center">
                 <div className="text-sm text-muted-foreground">
                   {exam.preparationProgress < 30
                     ? "Need to start preparing"
@@ -137,6 +139,13 @@ export default function ExamsPage() {
                     ? "In progress"
                     : "Well prepared"}
                 </div>
+                <Link
+                  href={`/dashboard_student/exam/${exam.examId || exam.id}`}
+                >
+                  <Button variant="default" className="ml-4">
+                    Start Exam
+                  </Button>
+                </Link>
               </CardFooter>
             </Card>
           ))

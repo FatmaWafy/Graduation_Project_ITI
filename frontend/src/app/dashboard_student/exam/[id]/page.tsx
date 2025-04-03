@@ -23,6 +23,8 @@ const ExamPage = () => {
         const response = await fetch(
           `http://127.0.0.1:8000/exam/temp-exams/${id}`,
           {
+            method: "GET",
+
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -33,7 +35,7 @@ const ExamPage = () => {
 
         // Fetch questions related to this exam
         const questionsResponse = await fetch(
-          `http://127.0.0.1:8000/exam/mcq-questions/?exam_id=${id}`,
+          `http://127.0.0.1:8000/exam/temp-exams/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
