@@ -41,6 +41,19 @@ class MCQOptions(models.TextChoices):
     C = "C", _("Option C")
     D = "D", _("Option D")
 
+# class Language(models.TextChoices):
+#     PYTHON = "Python", _("Python")
+#     JAVA = "Java", _("Java")
+#     C = "C", _("C")
+#     CPP = "C++", _("C++")
+#     JAVASCRIPT = "JavaScript", _("JavaScript")
+#     PHP = "PHP", _("PHP")
+#     GO = "Go", _("Go")
+#     CSHARP = "C#", _("C#")
+#     HTML = "HTML", _("HTML")
+#     CSS = "CSS", _("CSS")
+#     SQL = "SQL", _("SQL")
+
 # MCQ Model
 class MCQQuestion(models.Model):
     question_text = models.TextField()
@@ -58,7 +71,10 @@ class MCQQuestion(models.Model):
         max_length=20, 
         choices=DifficultyLevel.choices
     )
-
+    # Language= models.CharField(
+    #     max_length=20, 
+    #     choices=Language.choices
+    # )
     source = models.CharField(max_length=100)
     points = models.FloatField(default=1.0)
 
