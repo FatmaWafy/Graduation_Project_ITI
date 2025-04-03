@@ -1,8 +1,7 @@
 from django.urls import path,include
 from django.urls import path,include
 from .views import (
-    ExamListCreateView, ExamDetailView, TempExamViewSet,MCQQuestionViewSet, StudentExamAnswerViewSet,FilteredMCQQuestionListView
-)
+    ExamListCreateView, ExamDetailView, TempExamViewSet,MCQQuestionViewSet, StudentExamAnswerViewSet,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
 from rest_framework.routers import DefaultRouter
 
 
@@ -17,6 +16,8 @@ urlpatterns = [
     path('get-student-answer/<int:exam_instance_id>/', StudentExamAnswerViewSet.as_view({'get': 'get_student_answer'}), name='get-student-answer'),
     path('questions/', FilteredMCQQuestionListView.as_view(), name='filtered-questions'),
     # This endpoint will allow queries like /questions/?difficulty=easy
+    path('temp-exams-by-track/<int:track_id>/', GetTempExamByTrack.as_view(), name='temp_exam_by_track'),
+    path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
     path("", include(router.urls)),  # Auto-generates CRUD URLs
 
 ]

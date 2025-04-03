@@ -1,14 +1,5 @@
 // Types
-export type Course = {
-  id: string
-  title: string
-  instructor: string
-  progress: number
-  credits: number
-  department: string
-  schedule: string
-  image: string
-}
+
 
 export type Assignment = {
   id: string
@@ -41,54 +32,6 @@ export type PerformanceData = {
   average: number
 }
 
-// Mock data functions
-export async function getCourses(): Promise<Course[]> {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  return [
-    {
-      id: "course-1",
-      title: "Introduction to Computer Science",
-      instructor: "Dr. Sarah Miller",
-      progress: 75,
-      credits: 4,
-      department: "Computer Science",
-      schedule: "Mon, Wed, Fri 10:00 AM - 11:30 AM",
-      image: "/placeholder.svg?height=100&width=200",
-    },
-    {
-      id: "course-2",
-      title: "Calculus II",
-      instructor: "Prof. James Wilson",
-      progress: 60,
-      credits: 3,
-      department: "Mathematics",
-      schedule: "Tue, Thu 1:00 PM - 2:30 PM",
-      image: "/placeholder.svg?height=100&width=200",
-    },
-    {
-      id: "course-3",
-      title: "Introduction to Psychology",
-      instructor: "Dr. Emily Chen",
-      progress: 90,
-      credits: 3,
-      department: "Psychology",
-      schedule: "Mon, Wed 3:00 PM - 4:30 PM",
-      image: "/placeholder.svg?height=100&width=200",
-    },
-    {
-      id: "course-4",
-      title: "World History: Modern Era",
-      instructor: "Prof. Michael Brown",
-      progress: 45,
-      credits: 3,
-      department: "History",
-      schedule: "Tue, Thu 9:00 AM - 10:30 AM",
-      image: "/placeholder.svg?height=100&width=200",
-    },
-  ]
-}
 
 export async function getAssignments(): Promise<Assignment[]> {
   // Simulate API call
@@ -231,3 +174,33 @@ export async function getPerformanceData(): Promise<PerformanceData[]> {
   ]
 }
 
+
+export type Exam = {
+  id: string;
+  title: string;
+  courseName: string;
+  date: string; // ISO date string
+  duration: number; // in minutes
+  questionsCount: number;
+  preparationProgress: number; // 0-100
+  // Add any other exam-specific fields you need
+}
+export async function getExams(token: string): Promise<Exam[]> {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/exam/temp-exams', {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch exams');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching exams:', error);
+    throw error;
+  }
+}

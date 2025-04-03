@@ -6,15 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import Student
 from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
-from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer, StudentExamAnswerSerializer
-from django.core.mail import send_mail
-from django.utils.timezone import now
-from rest_framework.decorators import action
-
-
-from users.models import Student
-from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
-from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer, StudentExamAnswerSerializer
+from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action
@@ -247,3 +239,41 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 })
 
             return Response({"scores": result}, status=status.HTTP_200_OK)
+
+
+class GetTempExamByTrack(APIView):
+    def get(self, request, track_id):
+        """
+        View to get temporary exam instances filtered by track ID.
+        """
+        # Filter TemporaryExamInstance by track_id
+        temp_exams = TemporaryExamInstance.objects.filter(track_id=track_id)
+
+        # If no exams found, return an error message
+        if not temp_exams:
+            return Response({"error": "No temporary exams found for this track"}, status=404)
+
+        # Serialize the results using TempExamSerializer
+        serializer = TempExamSerializer(temp_exams, many=True)
+
+        # Return the serialized data in the response
+        return Response({"temp_exams": serializer.data}, status=200)
+    
+
+class GetTempExamByStudent(APIView):
+    def get(self, request, student_id):
+        """
+        View to get temporary exam instances filtered by student ID.
+        """
+        # Filter TemporaryExamInstance by student_id
+        temp_exams = TemporaryExamInstance.objects.filter(students=student_id)
+
+        # If no exams found, return an error message
+        if not temp_exams:
+            return Response({"error": "No temporary exams found for this student"}, status=404)
+
+        # Serialize the results using TempExamSerializer
+        serializer = TempExamSerializer(temp_exams, many=True)
+
+        # Return the serialized data in the response
+        return Response({"temp_exams": serializer.data}, status=200)

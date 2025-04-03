@@ -16,8 +16,6 @@ class TempExamSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemporaryExamInstance
         fields = "__all__"
-        model = TemporaryExamInstance
-        fields = "__all__"
 
 class MCQQuestionSerializer(serializers.ModelSerializer):
     class Meta:

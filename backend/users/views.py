@@ -234,5 +234,5 @@ class TrackListAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        tracks = Track.objects.all().values_list("name", flat=True)
-        return Response({"tracks": list(tracks)}, status=status.HTTP_200_OK)
+        tracks = Track.objects.all().values('id', 'name')  # Get both id and name
+        return Response((tracks), status=status.HTTP_200_OK)
