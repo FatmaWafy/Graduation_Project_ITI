@@ -28,6 +28,7 @@ export default function RootLayout({
         <AuthProvider>
           <NotificationsProvider> {/* ✅ لف التطبيق بمزود الإشعارات */}
             {children}
+            
           </NotificationsProvider>
         </AuthProvider>
       </body>

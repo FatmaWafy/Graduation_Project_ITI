@@ -18,16 +18,19 @@ class SendNotificationView(APIView):
         """Allows instructors to send notes to students without authentication."""
         
         # Retrieve data from request
-        instructor_id = request.data.get("instructor_id")  
+        instructor_name = request.data.get("instructor_name")  # Use instructor_name instead of instructor_id
         student_id = request.data.get("student_id")
         message = request.data.get("message")
 
         # Ensure required fields are provided
-        if not all([instructor_id, student_id, message]):
+        if not all([instructor_name, student_id, message]):
             return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
-        instructor = get_object_or_404(Instructor, id=instructor_id)  # Fetch instructor by ID
+        # Fetch instructor by name
+        instructor = get_object_or_404(Instructor, name=instructor_name)
+  # Search by name instead of id
         student = get_object_or_404(Student, id=student_id)  # Fetch student by ID
+        print(response_data) 
 
         # Create Note
         note = Note.objects.create(
@@ -36,10 +39,31 @@ class SendNotificationView(APIView):
             message=message
         )
 
+        # Serialize the note and add instructor_name to the response
+        response_data = NotificationSerializer(note).data
+        response_data["instructor_name"] = instructor.name  # Add instructor name to the response
+
         return Response(
-            {"message": "Note sent successfully!", "note": NotificationSerializer(note).data},
+            {"message": "Note sent successfully!", "note": response_data},
             status=status.HTTP_201_CREATED
         )
+
+
+class MarkNotificationAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        notification = get_object_or_404(Note, id=pk, student__user=request.user)
+        notification.read = True
+        notification.save()  
+        return Response({"message": "Notification marked as read."}, status=status.HTTP_200_OK)
+    
+class MarkAllNotificationsAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+    def patch(self, request):
+        student = get_object_or_404(Student, user=request.user)
+        Note.objects.filter(student=student, read=False).update(read=True)
+        return Response({"message": "All notifications marked as read."}, status=status.HTTP_200_OK)
 
 class StudentNotificationListView(ListAPIView):
     """List all notifications for the logged-in student."""
@@ -47,9 +71,10 @@ class StudentNotificationListView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Filter notifications for the logged-in student."""
-        return Note.objects.filter(receiver__user=self.request.user).order_by("-timestamp")
-
+        student = Student.objects.get(user=self.request.user)  
+        print(student)
+        return Note.objects.filter(student_id=student.id).order_by("-created_at")
+    
 class PredefinedNotificationListCreateView(generics.ListCreateAPIView):
     queryset = PredefinedNotification.objects.all()
     serializer_class = PredefinedNotificationSerializer
@@ -57,3 +82,5 @@ class PredefinedNotificationListCreateView(generics.ListCreateAPIView):
 class StudentListCreateView(generics.ListCreateAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
+
+

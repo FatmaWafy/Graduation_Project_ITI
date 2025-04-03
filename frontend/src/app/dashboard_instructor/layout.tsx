@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import Link from "next/link";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function InstructorLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
