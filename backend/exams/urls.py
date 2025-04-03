@@ -14,7 +14,8 @@ router.register(r'temp-exams', TempExamViewSet)
 urlpatterns = [
     path('exams/', ExamListCreateView.as_view(), name='exam-list-create'),
     path('exams/<int:pk>/', ExamDetailView.as_view(), name='exam-detail'),
-    path('submit-exam-answer/', StudentExamAnswerViewSet.as_view({'post': 'submit_exam_answer'}), name='submit-exam-answer'),
+    path('exam/temp-exams/<int:pk>/questions/', TempExamViewSet.as_view({'get': 'get_questions'}), name='temp-exam-questions'),
+    path('exams/submit-exam-answer/', StudentExamAnswerViewSet.as_view({'post': 'submit_exam_answer'}), name='submit-exam-answer'),
     path('get-student-answer/<int:exam_instance_id>/', StudentExamAnswerViewSet.as_view({'get': 'get_student_answer'}), name='get-student-answer'),
     path('questions/', FilteredMCQQuestionListView.as_view(), name='filtered-questions'),
     # This endpoint will allow queries like /questions/?difficulty=easy

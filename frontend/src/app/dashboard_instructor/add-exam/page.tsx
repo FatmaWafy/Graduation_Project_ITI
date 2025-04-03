@@ -205,22 +205,22 @@ export default function AddExamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (isSubmitting) return; // Prevent double submission
-
+  
     setIsSubmitting(true); // Lock submission
-
+  
     try {
       const token = getTokenFromCookies();
       if (!token) {
         throw new Error("No authentication token found in cookies");
       }
-
+  
       if (!examTitle.trim()) {
         alert("Please enter an exam title");
         return;
       }
-
+  
       // Prepare the exam data
       const examData = {
         title: examTitle,
@@ -230,22 +230,24 @@ export default function AddExamPage() {
           ...questions.filter((q) => q.question_text.trim() !== ""),
         ],
       };
-
+  
       // First submit MCQ questions (if any)
       const mcqQuestions = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
-          question_text: q.question_text,
-          option_a: q.option_a,
-          option_b: q.option_b,
-          option_c: q.option_c,
-          option_d: q.option_d,
-          correct_option: q.correct_option,
-          difficulty: q.difficulty,
+          question_text: q.question_text[0], // Ensure it's not an array
+          option_a: q.option_a[0],           // Ensure it's not an array
+          option_b: q.option_b[0],           // Ensure it's not an array
+          option_c: q.option_c[0],           // Ensure it's not an array
+          option_d: q.option_d[0],           // Ensure it's not an array
+          correct_option: q.correct_option[0], // Ensure it's not an array
+          difficulty: q.difficulty[0],        // Ensure it's not an array
           source: "exam_ui",
           points: q.points || 1.0,
         }));
-
+  
+      const mcqData = { questions: mcqQuestions }; // Wrap the questions in a "questions" key
+  
       if (mcqQuestions.length > 0) {
         const mcqResponse = await fetch(
           "http://127.0.0.1:8000/exam/mcq-questions/",
@@ -255,19 +257,18 @@ export default function AddExamPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(mcqQuestions), // Send as an array of MCQs
+            body: JSON.stringify(mcqData), // Send as a wrapped object
           }
         );
-
+  
+        const mcqErrorData = await mcqResponse.json().catch(() => ({}));
+        console.log("MCQ Questions Payload:", mcqData);
         if (!mcqResponse.ok) {
-          const errorData = await mcqResponse.json().catch(() => ({}));
-          console.error("MCQ Submission Error:", errorData);
-          throw new Error(
-            errorData.message || "Failed to submit MCQ questions"
-          );
+          console.error("MCQ Submission Error:", mcqErrorData);
+          throw new Error(mcqErrorData.message || "Failed to submit MCQ questions");
         }
       }
-
+  
       // Then submit the exam
       const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
@@ -277,13 +278,13 @@ export default function AddExamPage() {
         },
         body: JSON.stringify(examData),
       });
-
+  
       if (!examResponse.ok) {
         const errorData = await examResponse.json().catch(() => ({}));
         console.error("Exam Submission Error:", errorData);
         throw new Error(errorData.message || "Failed to submit exam");
       }
-
+  
       alert("Exam submitted successfully!");
     } catch (error) {
       console.error("Error submitting exam:", error);
@@ -294,7 +295,7 @@ export default function AddExamPage() {
       );
     } finally {
       setIsSubmitting(false); // Unlock submission
-
+  
       // Reset the state after successful submission
       setSelectedQuestions([]);
       setQuestions([
@@ -316,6 +317,7 @@ export default function AddExamPage() {
       setShowCreateQuestion(false);
     }
   };
+  
 
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">

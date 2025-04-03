@@ -8,17 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src
 import { useAuth } from "@/src/lib/auth-context"
 import {
   type Assignment,
-  type Course,
   type Grade,
   getAssignments,
-  getCourses,
   getGradeDistribution,
   getGrades,
 } from "@/src/lib/api"
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [grades, setGrades] = useState<Grade[]>([])
   const [gradeDistribution, setGradeDistribution] = useState<{ grade: string; count: number }[]>([])
@@ -27,14 +24,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [coursesData, assignmentsData, gradesData, gradeDistData] = await Promise.all([
-          getCourses(),
+        const [assignmentsData, gradesData, gradeDistData] = await Promise.all([
           getAssignments(),
           getGrades(),
           getGradeDistribution(),
         ])
 
-        setCourses(coursesData)
         setAssignments(assignmentsData)
         setGrades(gradesData)
         setGradeDistribution(gradeDistData)
@@ -78,16 +73,6 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{courses.length}</div>
-            <p className="text-xs text-muted-foreground">Current semester</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -126,31 +111,6 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4 bg-card">
-          <CardHeader>
-            <CardTitle>Course Progress</CardTitle>
-            <CardDescription>Your progress across all enrolled courses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={courses} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="title" className="text-muted-foreground" />
-                  <YAxis className="text-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      color: "var(--card-foreground)",
-                    }}
-                  />
-                  <Bar dataKey="progress" fill="hsl(var(--primary))" name="Progress (%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3 bg-card">
           <CardHeader>
             <CardTitle>Grade Distribution</CardTitle>
             <CardDescription>Your grade distribution across all courses</CardDescription>

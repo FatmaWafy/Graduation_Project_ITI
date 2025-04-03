@@ -136,16 +136,14 @@ export default function ExamsPage() {
                   {exam.preparationProgress < 30
                     ? "Need to start preparing"
                     : exam.preparationProgress < 70
-                    ? "In progress"
-                    : "Well prepared"}
+                      ? "In progress"
+                      : "Well prepared"}
                 </div>
-                <Link
-                  href={`/dashboard_student/exam/${exam.examId || exam.id}`}
-                >
-                  <Button variant="default" className="ml-4">
-                    Start Exam
-                  </Button>
-                </Link>
+             
+                  <Link href={`/dashboard_student/exam/${exam.id}`}>
+                    <button className="btn btn-primary">Start Now</button>
+                  </Link>
+              
               </CardFooter>
             </Card>
           ))

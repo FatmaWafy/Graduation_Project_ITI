@@ -33,7 +33,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard_student", icon: Home },
-  { title: "Courses", href: "/dashboard_student/courses", icon: BookOpen },
+  { title: "Exams", href: "/dashboard_student/exams", icon: BookOpen },
   { title: "Avalibale Exams", href: "/dashboard_student/avalibale_exams", icon: ClipboardList },
   { title: "Grades", href: "/dashboard_student/grades", icon: PieChart },
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },

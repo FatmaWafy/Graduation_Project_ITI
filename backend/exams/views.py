@@ -11,7 +11,8 @@ from django.utils.timezone import now
 from rest_framework.decorators import action
 import jwt
 from rest_framework.permissions import IsAuthenticated
-
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 # ✅ عرض وإنشاء الامتحانات
@@ -25,7 +26,6 @@ class ExamDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
     permission_classes = [permissions.IsAuthenticated]
-
 
 class TempExamViewSet(viewsets.ModelViewSet):
     queryset = TemporaryExamInstance.objects.all()
@@ -65,6 +65,19 @@ class TempExamViewSet(viewsets.ModelViewSet):
                 )
 
         return Response({"message": "Exam assigned", "students": assigned_students})
+
+    @action(detail=True, methods=['get'])
+    def get_questions(self, request, pk=None):
+        """ Fetches all MCQ questions for a specific TempExam """
+        try:
+            temp_exam = self.get_object()  # جلب الامتحان المؤقت
+            exam = temp_exam.exam  # جلب الامتحان المرتبط
+            questions = MCQQuestion.objects.filter(exam=exam)  # جلب الأسئلة المرتبطة بالامتحان
+            serializer = MCQQuestionSerializer(questions, many=True)
+            return Response(serializer.data)
+        except TemporaryExamInstance.DoesNotExist:
+            return Response({"error": "TempExam not found"}, status=404)
+
 # # ✅ تقديم إجابات الطالب للامتحان
 # class StudentExamSubmitView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
@@ -83,44 +96,6 @@ class FilteredMCQQuestionListView(generics.ListAPIView):
         return queryset
     
 
-class TempExamViewSet(viewsets.ModelViewSet):
-    queryset = TemporaryExamInstance.objects.all()
-    serializer_class = TempExamSerializer
-
-    @action(detail=False, methods=['post'])
-    def assign_exam(self, request):
-        """ Assigns an exam to students and sends an email """
-        exam_id = request.data.get('exam_id')
-        student_emails = request.data.get('students', [])  # List of student emails
-        duration = request.data.get('duration', 60)  # Default 60 mins
-
-        try:
-            exam = Exam.objects.get(id=exam_id)
-        except Exam.DoesNotExist:
-            return Response({"error": "Exam not found"}, status=400)
-
-        assigned_students = []
-        for email in student_emails:
-            student = Student.objects.filter(email=email).first()
-            if student:
-                temp_exam = TemporaryExamInstance.objects.create(
-                    exam=exam,
-                    student=student,
-                    start_time=now(),
-                    end_time=now() + timedelta(minutes=duration)
-                )
-                assigned_students.append(temp_exam.student.email)
-
-                # Send email
-                send_mail(
-                    subject=f"Your Exam: {exam.title}",
-                    message=f"Hello {student.name},\nYou have been assigned the exam '{exam.title}'.\nStart Time: {temp_exam.start_time}\nEnd Time: {temp_exam.end_time}",
-                    from_email="admin@example.com",
-                    recipient_list=[student.email],
-                    fail_silently=True
-                )
-
-        return Response({"message": "Exam assigned", "students": assigned_students})
 # # ✅ تقديم إجابات الطالب للامتحان
 # class StudentExamSubmitView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]

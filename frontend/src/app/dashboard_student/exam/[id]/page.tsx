@@ -7,46 +7,67 @@ import Cookies from "js-cookie";
 const ExamPage = () => {
   const { id } = useParams(); // Get the dynamic 'id' from the URL
   const [exam, setExam] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]); // To store the questions of the exam
+  const [questions, setQuestions] = useState<any[]>([]); // Store exam questions
   const [loading, setLoading] = useState(true);
   const [remainingTime, setRemainingTime] = useState(0); // Timer state
   const [selectedAnswers, setSelectedAnswers] = useState<any>({}); // Store selected answers
-  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null); // For showing submit status
+  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null); // Show submission status
+
+  const optionMap: { [key: string]: string } = {
+    option_a: "A",
+    option_b: "B",
+    option_c: "C",
+    option_d: "D",
+  };
 
   useEffect(() => {
-    if (!id) return; // If 'id' is not available, return early
+    if (!id) return; // Return early if 'id' is missing
+    console.log("Exam ID:", id); // Debugging line
 
-    const fetchExam = async () => {
+    const fetchExamData = async () => {
       const token = Cookies.get("token");
+
       try {
-        // Fetch exam details
-        const response = await fetch(
-          `http://127.0.0.1:8000/exam/temp-exams/${id}`,
+        // Fetch all exams to find the exam with the matching ID
+        const examResponse = await fetch(
+          `http://127.0.0.1:8000/exam/exams/`,
           {
             method: "GET",
-
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        const data = await response.json();
-        setExam(data);
+
+        if (!examResponse.ok) throw new Error("Failed to fetch exams");
+
+        const examsData = await examResponse.json();
+        const examData = examsData.find((exam: any) => exam.id === parseInt(id)); // Find the exam by ID
+        if (!examData) throw new Error("Exam not found");
+
+        setExam(examData);
+
+        // Set remaining time based on the exam duration
+        if (typeof examData.duration === "number" && !isNaN(examData.duration)) {
+          setRemainingTime(examData.duration * 60); // Convert to seconds
+        } else {
+          setRemainingTime(0); // Set to 0 if duration is invalid
+        }
 
         // Fetch questions related to this exam
         const questionsResponse = await fetch(
-          `http://127.0.0.1:8000/exam/temp-exams/${id}`,
+          `http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        const questionsData = await questionsResponse.json();
-        setQuestions(questionsData);
 
-        // Set initial timer duration based on exam duration
-        setRemainingTime(data.duration * 60); // Assuming duration is in minutes
+        if (!questionsResponse.ok) throw new Error("Failed to fetch questions");
+
+        const questionsData = await questionsResponse.json();
+        setQuestions(Array.isArray(questionsData) ? questionsData : []);
       } catch (error) {
         console.error("Error fetching exam or questions:", error);
       } finally {
@@ -54,7 +75,7 @@ const ExamPage = () => {
       }
     };
 
-    fetchExam();
+    fetchExamData();
   }, [id]);
 
   // Timer logic: counts down every second
@@ -89,16 +110,17 @@ const ExamPage = () => {
   const handleOptionChange = (questionId: number, selectedOption: string) => {
     setSelectedAnswers((prev) => ({
       ...prev,
-      [questionId]: selectedOption,
+      [questionId]: optionMap[selectedOption], // حفظ الإجابة كـ A أو B أو C أو D
     }));
   };
 
   // Submit exam answers
   const handleSubmit = async () => {
     const token = Cookies.get("token");
-    const answers = {
-      mcq_answers: selectedAnswers, // This is the structure you're sending to the backend
-    };
+
+    const answers = selectedAnswers; // الإجابات تكون في الشكل الصحيح الآن
+
+    console.log("Submitting answers:", answers); // لعمل debug
 
     try {
       const response = await fetch(
@@ -110,19 +132,21 @@ const ExamPage = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            exam_instance: id, // Use the 'id' (exam instance ID) here instead of 'examInstanceId'
-            mcq_answers: answers,
+            exam_instance: id, // ID بتاع الامتحان
+            mcq_answers: answers, // إرسال الإجابات بالهيكل الجديد
           }),
         }
       );
 
       if (response.ok) {
         const result = await response.json();
+        console.log(result); // لعمل debug
+
         setSubmissionStatus(
           `Exam submitted successfully. Your score: ${result.score}`
         );
       } else {
-        const errorText = await response.text(); // Get error response as text
+        const errorText = await response.text();
         setSubmissionStatus(`Error: ${errorText}`);
       }
     } catch (error) {
@@ -144,42 +168,44 @@ const ExamPage = () => {
       </p>
 
       <div className="space-y-6">
-        {questions.map((question: any) => (
-          <div
-            key={question.id}
-            className="bg-gray-100 p-4 rounded-lg shadow-md"
-          >
-            <p className="text-xl font-semibold">{question.question_text}</p>
-            <div className="mt-4 space-y-2">
-              {["option_a", "option_b", "option_c", "option_d"].map(
-                (optionKey, index) => {
-                  const option = question[optionKey];
-                  return (
-                    <div key={index} className="flex items-center">
-                      <input
-                        type="radio"
-                        id={`${question.id}-option-${optionKey}`}
-                        name={`question-${question.id}`}
-                        value={optionKey}
-                        checked={selectedAnswers[question.id] === optionKey}
-                        onChange={() =>
-                          handleOptionChange(question.id, optionKey)
-                        }
-                        className="mr-2"
-                      />
-                      <label
-                        htmlFor={`${question.id}-option-${optionKey}`}
-                        className="text-lg"
-                      >
-                        {option}
-                      </label>
-                    </div>
-                  );
-                }
-              )}
+        {questions.length > 0 ? (
+          questions.map((question: any) => (
+            <div
+              key={question.id}
+              className="bg-gray-100 p-4 rounded-lg shadow-md"
+            >
+              <p className="text-xl font-semibold">{question.question_text}</p>
+              <div className="mt-4 space-y-2">
+                {["option_a", "option_b", "option_c", "option_d"].map(
+                  (optionKey, index) => {
+                    const option = question[optionKey];
+                    return (
+                      <div key={index} className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`${question.id}-option-${optionKey}`}
+                          name={`question-${question.id}`}
+                          value={optionKey}
+                          checked={selectedAnswers[question.id] === optionMap[optionKey]} // مقارنة الإجابة المخزنة مع الخيار
+                          onChange={() => handleOptionChange(question.id, optionKey)}
+                          className="mr-2"
+                        />
+                        <label
+                          htmlFor={`${question.id}-option-${optionKey}`}
+                          className="text-lg"
+                        >
+                          {option}
+                        </label>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-center text-gray-600">No questions available</p>
+        )}
       </div>
 
       {/* Submit Button */}
