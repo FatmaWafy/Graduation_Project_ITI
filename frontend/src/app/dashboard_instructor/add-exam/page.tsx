@@ -382,7 +382,7 @@ export default function AddExamPage() {
                 }
                 className="select select-bordered"
               >
-                <option value="mcq">Multiple Choice</option>
+                <option value="mcq">MCQ</option>
                 <option value="code">Code</option>
               </select>
             </div>
@@ -421,9 +421,7 @@ export default function AddExamPage() {
                       <td className="max-w-md truncate">
                         {question.question_text}
                       </td>
-                      <td>
-                        {question.type === "mcq" ? "Multiple Choice" : "Code"}
-                      </td>
+                      <td>{questionType === "mcq" ? "mcq" : "Code"}</td>
                       <td>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -484,8 +482,8 @@ export default function AddExamPage() {
                 <div className="flex-1">
                   <div className="font-medium">{question.question_text}</div>
                   <div className="text-sm text-gray-600">
-                    Type: {question.type === "mcq" ? "Multiple Choice" : "Code"}{" "}
-                    | Difficulty:{" "}
+                    Type: {questionType === "mcq" ? "mcq" : "Code"} |
+                    Difficulty:{" "}
                     <span
                       className={`${
                         question.difficulty === "Easy"
