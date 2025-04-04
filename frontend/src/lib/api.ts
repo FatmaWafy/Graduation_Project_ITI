@@ -185,9 +185,9 @@ export type Exam = {
   preparationProgress: number; // 0-100
   // Add any other exam-specific fields you need
 }
-export async function getExams(token: string): Promise<Exam[]> {
+export async function getExams(token: string, userId: string): Promise<Exam[]> {
   try {
-    const response = await fetch('http://127.0.0.1:8000/exam/temp-exams-by-student/18/', {
+    const response = await fetch(`http://127.0.0.1:8000/exam/temp-exams-by-student/${userId}/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -195,15 +195,35 @@ export async function getExams(token: string): Promise<Exam[]> {
       },
     });
 
-
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to fetch exams');
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Transform the API response to match your Exam type
+    return data.temp_exams.map((exam: any) => ({
+      id: exam.id.toString(),
+      title: exam.exam?.title || `Exam ${exam.exam || exam.id}`,
+      courseName: exam.track ? `Track ${exam.track}` : 'General Exam',
+      date: exam.start_datetime,
+      duration: calculateDurationInMinutes(exam.start_datetime, exam.end_datetime),
+      questionsCount: exam.questions_count || 0,
+      preparationProgress: Math.min(Math.max(exam.preparation_progress || 0, 0), 100),
+      examId: exam.exam || exam.id, // Use exam.exam if it exists, otherwise fall back to exam.id
+      startDatetime: exam.start_datetime,
+      endDatetime: exam.end_datetime,
+      track: exam.track,
+    }));
   } catch (error) {
     console.error('Error fetching exams:', error);
     throw error;
   }
+}
+
+// Helper function to calculate duration in minutes
+function calculateDurationInMinutes(start: string, end: string): number {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }

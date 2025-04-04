@@ -204,8 +204,6 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
@@ -218,14 +216,65 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         Create a new student
         """
+        # نسخ البيانات القادمة من الـ request
         data = request.data.copy()
+
+        # تعيين الدور "student" في البيانات
         data["role"] = "student"
+        
+        # تحقق من وجود track_name
+        track_name = data.get("track_name")
+        if not track_name:
+            return Response({"error": "Track name is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # تحقق من وجود التراك
+        track = Track.objects.filter(name=track_name).first()
+        if not track:
+            return Response({"error": "No track found with this name."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # إنشاء الـ serializer
         serializer = self.get_serializer(data={"user": data, **data})
+
+        # التحقق من صحة البيانات
         if serializer.is_valid():
+            # حفظ الطالب
             student = serializer.save()
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
+        
+        # إذا كانت البيانات غير صحيحة، أرجع الأخطاء
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update an existing student
+        """
+        instance = self.get_object()
+        data = request.data.copy()
+
+        # التحقق من وجود track وتحديثه إذا لزم الأمر
+        if 'track' in data:  # هنا نستخدم track كـ ID
+            track_id = data.get('track')
+            try:
+                track = Track.objects.get(id=track_id)  # نبحث عن track باستخدام ID
+                instance.track = track  # نعيّن الكائن نفسه
+            except Track.DoesNotExist:
+                return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # تحديث بيانات المستخدم
+        if 'user' in data:
+            user_data = data.pop('user')
+            instance.user.username = user_data.get('username', instance.user.username)
+            instance.user.email = user_data.get('email', instance.user.email)
+            instance.user.save()
+
+        # تحديث باقي الحقول
+        for attr, value in data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return Response({"message": "Student updated successfully!", "student": self.get_serializer(instance).data}, status=status.HTTP_200_OK)
 
 class TrackListAPIView(APIView):
     """

@@ -42,10 +42,9 @@ class InstructorSerializer(serializers.ModelSerializer):
 
         return instructor
 
-
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
-    track_name = serializers.CharField(write_only=True, required=True)  # 🔹 التأكد من أن track_name مطلوب
+    track = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all())  # هنا هنخليها تستقبل الـ ID مباشرة
 
     class Meta:
         model = Student
@@ -53,17 +52,12 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
-        track_name = validated_data.pop("track_name")
+        track = validated_data.pop("track")
 
-        # تعيين دور المستخدم كطالب
         user_data["role"] = "student"
         user = User.objects.create_user(**user_data)
-
-        # البحث عن التراك
-        track = Track.objects.filter(name=track_name).first()
-        if not track:
-            raise serializers.ValidationError({"track_name": "No track with this name."})
 
         student = Student.objects.create(user=user, track=track, **validated_data)
 
         return student
+

@@ -12,6 +12,7 @@ const ExamPage = () => {
   const [remainingTime, setRemainingTime] = useState(0); // Timer state
   const [selectedAnswers, setSelectedAnswers] = useState<any>({}); // Store selected answers
   const [submissionStatus, setSubmissionStatus] = useState<string | null>(null); // Show submission status
+  const [showResultModal, setShowResultModal] = useState(false); // Modal visibility
 
   const optionMap: { [key: string]: string } = {
     option_a: "A",
@@ -26,35 +27,31 @@ const ExamPage = () => {
 
     const fetchExamData = async () => {
       const token = Cookies.get("token");
-
+    
       try {
-        // Fetch all exams to find the exam with the matching ID
-        const examResponse = await fetch(
-          `http://127.0.0.1:8000/exam/exams/`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        console.log("Fetching exam data...");
+        const examResponse = await fetch(`http://127.0.0.1:8000/exam/exams/`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
         if (!examResponse.ok) throw new Error("Failed to fetch exams");
-
+    
         const examsData = await examResponse.json();
-        const examData = examsData.find((exam: any) => exam.id === parseInt(id)); // Find the exam by ID
+        const examData = examsData.find((exam: any) => exam.id === parseInt(id));
         if (!examData) throw new Error("Exam not found");
-
+    
         setExam(examData);
-
-        // Set remaining time based on the exam duration
+    
         if (typeof examData.duration === "number" && !isNaN(examData.duration)) {
           setRemainingTime(examData.duration * 60); // Convert to seconds
         } else {
           setRemainingTime(0); // Set to 0 if duration is invalid
         }
-
-        // Fetch questions related to this exam
+    
+        console.log("Fetching questions...");
         const questionsResponse = await fetch(
           `http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`,
           {
@@ -63,9 +60,9 @@ const ExamPage = () => {
             },
           }
         );
-
+    
         if (!questionsResponse.ok) throw new Error("Failed to fetch questions");
-
+    
         const questionsData = await questionsResponse.json();
         setQuestions(Array.isArray(questionsData) ? questionsData : []);
       } catch (error) {
@@ -74,11 +71,11 @@ const ExamPage = () => {
         setLoading(false);
       }
     };
+    
 
     fetchExamData();
   }, [id]);
 
-  // Timer logic: counts down every second
   useEffect(() => {
     if (remainingTime <= 0) return;
 
@@ -99,14 +96,12 @@ const ExamPage = () => {
 
   if (!exam) return <div>Exam not found</div>;
 
-  // Format the timer as MM:SS
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  // Handle answer selection
   const handleOptionChange = (questionId: number, selectedOption: string) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -114,13 +109,10 @@ const ExamPage = () => {
     }));
   };
 
-  // Submit exam answers
   const handleSubmit = async () => {
     const token = Cookies.get("token");
 
     const answers = selectedAnswers; // الإجابات تكون في الشكل الصحيح الآن
-
-    console.log("Submitting answers:", answers); // لعمل debug
 
     try {
       const response = await fetch(
@@ -132,19 +124,18 @@ const ExamPage = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            exam_instance: id, // ID بتاع الامتحان
-            mcq_answers: answers, // إرسال الإجابات بالهيكل الجديد
+            exam_instance: id,
+            mcq_answers: answers,
           }),
         }
       );
 
       if (response.ok) {
         const result = await response.json();
-        console.log(result); // لعمل debug
-
         setSubmissionStatus(
           `Exam submitted successfully. Your score: ${result.score}`
         );
+        setShowResultModal(true); // Show result modal after successful submission
       } else {
         const errorText = await response.text();
         setSubmissionStatus(`Error: ${errorText}`);
@@ -153,6 +144,10 @@ const ExamPage = () => {
       setSubmissionStatus("Error submitting the exam. Please try again.");
       console.error(error);
     }
+  };
+
+  const handleModalClose = () => {
+    setShowResultModal(false); // Close the modal when user clicks OK
   };
 
   return (
@@ -212,7 +207,7 @@ const ExamPage = () => {
       <div className="mt-6 text-center">
         <button
           onClick={handleSubmit}
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow-md"
+          className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition"
         >
           Submit Exam
         </button>
@@ -222,6 +217,30 @@ const ExamPage = () => {
       {submissionStatus && (
         <div className="mt-4 text-center text-xl text-green-600">
           {submissionStatus}
+        </div>
+      )}
+
+      {/* Result Modal */}
+      {showResultModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-2xl font-semibold text-center mb-4">Exam Result</h2>
+            <p className="text-lg text-center mb-6">{submissionStatus}</p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={handleModalClose}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              >
+                OK
+              </button>
+              <button
+                onClick={handleModalClose}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

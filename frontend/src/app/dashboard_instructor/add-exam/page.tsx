@@ -205,50 +205,40 @@ export default function AddExamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    if (isSubmitting) return; // Prevent double submission
-  
-    setIsSubmitting(true); // Lock submission
-  
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
       const token = getTokenFromCookies();
       if (!token) {
-        throw new Error("No authentication token found in cookies");
+        throw new Error("No authentication token found");
       }
-  
+
+      // Validate exam title
       if (!examTitle.trim()) {
         alert("Please enter an exam title");
         return;
       }
-  
-      // Prepare the exam data
-      const examData = {
-        title: examTitle,
-        duration: examDuration,
-        questions: [
-          ...selectedQuestions,
-          ...questions.filter((q) => q.question_text.trim() !== ""),
-        ],
-      };
-  
-      // First submit MCQ questions (if any)
-      const mcqQuestions = questions
+
+      // Prepare new questions (only those with actual content)
+      const newQuestions = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
-          question_text: q.question_text[0], // Ensure it's not an array
-          option_a: q.option_a[0],           // Ensure it's not an array
-          option_b: q.option_b[0],           // Ensure it's not an array
-          option_c: q.option_c[0],           // Ensure it's not an array
-          option_d: q.option_d[0],           // Ensure it's not an array
-          correct_option: q.correct_option[0], // Ensure it's not an array
-          difficulty: q.difficulty[0],        // Ensure it's not an array
+          question_text: q.question_text,
+          option_a: q.option_a,
+          option_b: q.option_b,
+          option_c: q.option_c || "", // Ensure empty string if null
+          option_d: q.option_d || "", // Ensure empty string if null
+          correct_option: q.correct_option,
+          difficulty: q.difficulty,
           source: "exam_ui",
           points: q.points || 1.0,
         }));
-  
-      const mcqData = { questions: mcqQuestions }; // Wrap the questions in a "questions" key
-  
-      if (mcqQuestions.length > 0) {
+
+      // First, create new questions if any
+      let createdQuestionIds: number[] = [];
+      if (newQuestions.length > 0) {
         const mcqResponse = await fetch(
           "http://127.0.0.1:8000/exam/mcq-questions/",
           {
@@ -257,19 +247,32 @@ export default function AddExamPage() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(mcqData), // Send as a wrapped object
+            body: JSON.stringify(newQuestions),
           }
         );
-  
-        const mcqErrorData = await mcqResponse.json().catch(() => ({}));
-        console.log("MCQ Questions Payload:", mcqData);
+
         if (!mcqResponse.ok) {
-          console.error("MCQ Submission Error:", mcqErrorData);
-          throw new Error(mcqErrorData.message || "Failed to submit MCQ questions");
+          const errorData = await mcqResponse.json();
+          throw new Error(
+            errorData.message || "Failed to create new questions"
+          );
         }
+
+        const createdQuestions = await mcqResponse.json();
+        createdQuestionIds = createdQuestions.map((q: any) => q.id);
       }
-  
-      // Then submit the exam
+
+      // Prepare exam data
+      const examData = {
+        title: examTitle,
+        duration: examDuration,
+        MCQQuestions: [
+          ...selectedQuestions.map((q) => q.id),
+          ...createdQuestionIds,
+        ],
+      };
+
+      // Create the exam
       const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
         headers: {
@@ -278,26 +281,18 @@ export default function AddExamPage() {
         },
         body: JSON.stringify(examData),
       });
-  
+
       if (!examResponse.ok) {
-        const errorData = await examResponse.json().catch(() => ({}));
-        console.error("Exam Submission Error:", errorData);
-        throw new Error(errorData.message || "Failed to submit exam");
+        const errorData = await examResponse.json();
+        throw new Error(errorData.message || "Failed to create exam");
       }
-  
-      alert("Exam submitted successfully!");
-    } catch (error) {
-      console.error("Error submitting exam:", error);
-      alert(
-        `Error submitting exam: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setIsSubmitting(false); // Unlock submission
-  
-      // Reset the state after successful submission
-      setSelectedQuestions([]);
+
+      const examResult = await examResponse.json();
+
+      // Success - reset form and show success message
+      alert("Exam created successfully!");
+      setExamTitle("");
+      setExamDuration(60);
       setQuestions([
         {
           id: Date.now(),
@@ -309,16 +304,24 @@ export default function AddExamPage() {
           option_d: "",
           correct_option: "A",
           difficulty: "Easy",
+          source: "exam_ui",
           points: 1.0,
         },
       ]);
-      setExamTitle("");
-      setExamDuration(60);
+      setSelectedQuestions([]);
       setShowCreateQuestion(false);
+
+      // Optional: Redirect or refresh question bank
+      fetchQuestions();
+    } catch (error) {
+      console.error("Error:", error);
+      alert(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
       <h2 className="text-3xl font-bold text-blue-700 text-center mb-6">
