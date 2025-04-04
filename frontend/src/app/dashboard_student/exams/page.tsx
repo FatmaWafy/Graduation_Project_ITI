@@ -21,6 +21,10 @@ export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isExamFinished = (exam: Exam) => {
+    const examEndTime = new Date(exam.date).getTime() + exam.duration * 60000;
+    return Date.now() > examEndTime;
+  };
 
   function calculateDuration(start: string, end: string): number {
     const startDate = new Date(start);
@@ -45,9 +49,6 @@ export default function ExamsPage() {
         }
 
         const examsData = await getExams(token, decoded.user_id);
-
-        console.log("Fetched exams:", examsData);
-        // console.log("Decoded user ID:", decoded.user_id);
         setExams(examsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load exams");
@@ -76,6 +77,10 @@ export default function ExamsPage() {
     );
   }
 
+  const isExamSubmitted = (examId: number) => {
+    return localStorage.getItem(`submitted_exam_${examId}`) === "true";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -87,55 +92,69 @@ export default function ExamsPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {exams.length > 0 ? (
-          exams.map((exam) => (
-            <Card key={exam.id} className="overflow-hidden flex flex-col">
-              <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                <FileText className="h-16 w-16 text-gray-400" />
-              </div>
-              <CardHeader>
-                <CardTitle>{exam.title}</CardTitle>
-                <CardDescription>{exam.courseName}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 flex-grow">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {new Date(exam.date).toLocaleDateString()} • {exam.duration}{" "}
-                    minutes
-                  </span>
+          exams.map((exam) => {
+            const submitted = isExamSubmitted(exam.id);
+
+            return (
+              <Card key={exam.id} className="overflow-hidden flex flex-col">
+                <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  <FileText className="h-16 w-16 text-gray-400" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {exam.questionsCount} questions
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Preparation</span>
-                    <span>{exam.preparationProgress}%</span>
+                <CardHeader>
+                  <CardTitle>{exam.title}</CardTitle>
+                  <CardDescription>{exam.courseName}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-grow">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {new Date(exam.date).toLocaleDateString()} • {exam.duration}{" "}
+                      minutes
+                    </span>
                   </div>
-                  <Progress value={exam.preparationProgress} />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">
-                  {exam.preparationProgress < 30
-                    ? "Need to start preparing"
-                    : exam.preparationProgress < 70
-                    ? "In progress"
-                    : "Well prepared"}
-                </div>
-                <Link
-                  href={`/dashboard_student/exam/${ exam.id}`}
-                >
-                  <Button variant="default" className="ml-4">
-                    Start Exam
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {exam.questionsCount} questions
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Preparation</span>
+                      <span>{exam.preparationProgress}%</span>
+                    </div>
+                    <Progress value={exam.preparationProgress} />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between items-center">
+                  <div className="text-sm text-muted-foreground">
+                    {exam.preparationProgress < 30
+                      ? "Need to start preparing"
+                      : exam.preparationProgress < 70
+                        ? "In progress"
+                        : "Well prepared"}
+                  </div>
+
+                  {submitted ? (
+                    <Button variant="secondary" disabled>
+                      Submitted ✅
+                    </Button>
+                  ) : isExamFinished(exam) ? (
+                    <Button variant="secondary" disabled>
+                      Finished ⏳
+                    </Button>
+                  ) : (
+                    <Link href={`/dashboard_student/exam/${exam.id}`}>
+                      <Button variant="default" className="ml-4">
+                        Start Exam
+                      </Button>
+                    </Link>
+                  )}
+
+                </CardFooter>
+              </Card>
+            );
+          })
         ) : (
           <p className="text-muted-foreground col-span-full text-center py-8">
             No exams found.

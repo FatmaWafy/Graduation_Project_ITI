@@ -11,26 +11,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView
 
 class SendNotificationView(APIView):
-    permission_classes = [AllowAny]  # Disable authentication
+    permission_classes = [AllowAny]
     http_method_names = ['get', 'post', 'head', 'options']
 
     def post(self, request):
         """Allows instructors to send notes to students without authentication."""
-        
+
         # Retrieve data from request
-        instructor_name = request.data.get("instructor_name")  # Use instructor_name instead of instructor_id
+        instructor_id = request.data.get("instructor_id")
         student_id = request.data.get("student_id")
         message = request.data.get("message")
 
         # Ensure required fields are provided
-        if not all([instructor_name, student_id, message]):
+        if not all([instructor_id, student_id, message]):
             return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch instructor by name
-        instructor = get_object_or_404(Instructor, name=instructor_name)
-  # Search by name instead of id
-        student = get_object_or_404(Student, id=student_id)  # Fetch student by ID
-        print(response_data) 
+        # Fetch instructor by ID
+        instructor = get_object_or_404(Instructor, id=instructor_id)
+        student = get_object_or_404(Student, id=student_id)
 
         # Create Note
         note = Note.objects.create(
@@ -39,15 +37,15 @@ class SendNotificationView(APIView):
             message=message
         )
 
-        # Serialize the note and add instructor_name to the response
+        # Serialize the note and add instructor info to the response
         response_data = NotificationSerializer(note).data
-        response_data["instructor_name"] = instructor.name  # Add instructor name to the response
+        response_data["instructor_name"] = instructor.user.username
+        response_data["instructor_id"] = instructor.id
 
         return Response(
             {"message": "Note sent successfully!", "note": response_data},
             status=status.HTTP_201_CREATED
         )
-
 
 class MarkNotificationAsReadView(APIView):
     permission_classes = [IsAuthenticated]

@@ -1,5 +1,5 @@
 "use server"
-
+import Cookies from "js-cookie"
 import { revalidatePath } from "next/cache"
 
 interface BaseNotificationParams {
@@ -29,40 +29,42 @@ interface Notification {
   is_track_notification?: boolean
 }
 
+ 
+ 
 export async function sendNotification(params: SendNotificationParams): Promise<NotificationResponse> {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/notifications/send-note/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(params),
-      })
-  
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        throw new Error(
-          `Failed to send notification: ${response.status} ${response.statusText}${
-            errorData ? ` - ${JSON.stringify(errorData)}` : ""
-          }`,
-        )
-      }
-  
-      const data = await response.json()
-  
-      // طباعة الاستجابة في الـ console
-      console.log("Notification sent:", data)
-  
-      // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
-      revalidatePath("/dashboard_student/notifications")
-  
-      return data
-    } catch (error) {
-      console.error("Error sending notification:", error)
-      throw error
+  try {
+    const response = await fetch("http://127.0.0.1:8000/notifications/send-note/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(
+        `Failed to send notification: ${response.status} ${response.statusText}${
+          errorData ? ` - ${JSON.stringify(errorData)}` : ""
+        }`,
+      )
     }
+
+    const data = await response.json()
+
+    // طباعة الاستجابة في الـ console
+    console.log("Notification sent:", data)
+
+    // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
+    revalidatePath("/dashboard_student/notifications")
+
+    return data
+  } catch (error) {
+    console.error("Error sending notification:", error)
+    throw error
   }
-  
+}
+ 
 export async function getStudentNotifications(): Promise<Notification[]> {
   try {
     const response = await fetch("http://127.0.0.1:8000/notifications/notes/", {
