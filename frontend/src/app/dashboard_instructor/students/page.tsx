@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { PlusCircle } from "lucide-react"
 
-import { Button } from "@/src/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { StudentTable } from "./components/student-table"
 import { StudentModal } from "./components/student-modal"
 import { useStudents } from "./hooks/use-students"

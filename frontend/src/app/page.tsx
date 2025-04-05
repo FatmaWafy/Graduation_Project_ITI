@@ -11,23 +11,23 @@ export default function Home() {
   const [selectedStudent, setSelectedStudent] = useState("");
   const [error, setError] = useState(null);
 
-  const [predefinedNotifications, setPredefinedNotifications] = useState([]);
+  // const [predefinedNotifications, setPredefinedNotifications] = useState([]);
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/notifications/predefined/")
-      .then((res) => res.json())
-      .then((data) => setPredefinedNotifications(data))
-      .catch((err) =>
-        console.error("Error fetching predefined notifications:", err)
-      );
-  }, []);
+  // useEffect(() => {
+  //   fetch("http://127.0.0.1:8000/notifications/predefined/")
+  //     .then((res) => res.json())
+  //     .then((data) => setPredefinedNotifications(data))
+  //     .catch((err) =>
+  //       console.error("Error fetching predefined notifications:", err)
+  //     );
+  // }, []);
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/tasks/")
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((err) => setError("Failed to fetch tasks"));
-  }, []);
+  // useEffect(() => {
+  //   fetch("http://127.0.0.1:8000/api/tasks/")
+  //     .then((res) => res.json())
+  //     .then((data) => setTasks(data))
+  //     .catch((err) => setError("Failed to fetch tasks"));
+  // }, []);
 
   useEffect(() => {
     fetch("http://127.0.0.1:8000/notifications/students/")
@@ -129,7 +129,7 @@ export default function Home() {
         </button>
       </div>
 
-      <div className='bg-gray-100 p-4 rounded-lg'>
+      {/* <div className='bg-gray-100 p-4 rounded-lg'>
         <h2 className='text-lg font-semibold'>إرسال ملاحظة</h2>
         <select
           className='border p-2 w-full my-2 rounded'
@@ -166,7 +166,7 @@ export default function Home() {
         >
           إرسال الإشعار
         </button>
-      </div>
+      </div> */}
 
       <div className='bg-gray-100 p-4 rounded-lg'>
         <h2 className='text-lg font-semibold'>قائمة الطلاب</h2>

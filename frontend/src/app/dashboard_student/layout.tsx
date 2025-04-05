@@ -4,8 +4,8 @@ import type React from "react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Cookies from "js-cookie" // ✅ استيراد مكتبة الكوكيز
-import { useAuth } from "@/src/lib/auth-context"
-import DashboardLayout from "@/src/components/dashboard-layout"
+import { useAuth } from "@/lib/auth-context"
+import DashboardLayout from "@/components/dashboard-layout"
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()

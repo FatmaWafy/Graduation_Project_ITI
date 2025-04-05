@@ -10,12 +10,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/src/components/ui/card";
-import { Progress } from "@/src/components/ui/progress";
-import { Button } from "@/src/components/ui/button";
-import { Exam, getExams } from "@/src/lib/api";
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Exam, getExams } from "@/lib/api";
 import { jwtDecode } from "jwt-decode";
-import { getClientSideToken } from "@/src/lib/cookies";
+import { getClientSideToken } from "@/lib/cookies";
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);

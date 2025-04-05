@@ -7,7 +7,7 @@ import { z } from "zod";
 import { CalendarIcon, Loader2, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/src/components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -23,23 +23,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/src/components/ui/form";
-import { Input } from "@/src/components/ui/input";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/src/components/ui/select";
-import { Textarea } from "@/src/components/ui/textarea";
-import { Calendar } from "@/src/components/ui/calendar";
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/src/components/ui/popover";
-import { useToast } from "@/src/components/ui/use-toast";
+} from "@/components/ui/popover";
+import { useToast } from "@/components/ui/use-toast";
 import { useAddStudent, useUpdateStudent } from "../hooks/use-students";
 import type { Student } from "../types";
 
