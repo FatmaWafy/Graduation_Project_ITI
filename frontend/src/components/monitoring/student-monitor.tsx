@@ -10,11 +10,16 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function StudentMonitor() {
+// Accept examId as a prop
+interface StudentMonitorProps {
+  examId: string;
+}
+
+export default function StudentMonitor({ examId }: StudentMonitorProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
-  const [noFaceCount, setNoFaceCount] = useState(0); // Track number of consecutive alerts
+  const [noFaceCount, setNoFaceCount] = useState(0);
   const [lastFaceDetectionTime, setLastFaceDetectionTime] = useState<number>(performance.now());
 
   useEffect(() => {
@@ -29,12 +34,11 @@ export default function StudentMonitor() {
             baseOptions: {
               modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
             },
-            outputFaceBlendshapes: false, // No need for blendshapes in face detection
+            outputFaceBlendshapes: false,
             runningMode: "VIDEO",
             numFaces: 1,
           });
           
-
         console.log("FaceLandmarker initialized successfully");
         setFaceLandmarker(landmarker);
         startCamera();
@@ -50,8 +54,8 @@ export default function StudentMonitor() {
         logCheating("User switched to a new tab or minimized the browser");
         toast.warn("You switched to a new tab or minimized the browser.", {
           style: {
-            backgroundColor: "#FFD700", // اللون الأصفر
-            color: "black", // النص باللون الأسود
+            backgroundColor: "#FFD700",
+            color: "black",
           },
         });
       }
@@ -121,7 +125,7 @@ export default function StudentMonitor() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
   
       const result = faceLandmarker.detectForVideo(video, performance.now());
-      console.log("Detection result:", result);  // Log the result for debugging
+      console.log("Detection result:", result);
   
       if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
         console.log("No face detected");
@@ -130,7 +134,6 @@ export default function StudentMonitor() {
         const timeSinceLastDetection = performance.now() - lastFaceDetectionTime;
   
         if (timeSinceLastDetection > 5000 && noFaceCount >= 2) {
-          // Trigger the alert using toast
           toast.error("You have been removed from the exam due to suspicious activity.");
           window.location.href = "/exam-end";
         }
@@ -153,13 +156,13 @@ export default function StudentMonitor() {
   };
 
   const logCheating = async (reason: string) => {
-    const token = getCookie("token"); // Assuming access token is saved in cookies
+    const token = getCookie("token");
     try {
       console.log("Sending log to server...");
       await axios.post(
         "http://127.0.0.1:8000/exam/exams/logs/",
         {
-          exam_id: "17", // Replace with actual exam ID dynamically if needed
+          exam_id: examId, // Use the dynamic exam ID passed as a prop
           reason,
           timestamp: new Date().toISOString(),
         },
@@ -189,7 +192,6 @@ export default function StudentMonitor() {
           style={{ position: "absolute", top: 0, left: 0 }}
         />
       </div>
-      {/* Add ToastContainer here */}
       <ToastContainer />
     </>
   );

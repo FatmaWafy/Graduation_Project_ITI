@@ -238,7 +238,8 @@ const ExamPage = () => {
         </div>
       )}
 
-      <StudentMonitor /> {/* إضافة الكومبوننت هنا */}
+    <StudentMonitor examId={id} /> {/* Pass the dynamic exam ID */}
+
     </div>
   );
 };
