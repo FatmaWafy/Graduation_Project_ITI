@@ -40,3 +40,11 @@ class StudentExamAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentExamAnswer
         fields = ['student', 'exam_instance', 'score', 'submitted_at']
+
+
+from .models import CheatingLog
+
+class CheatingLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CheatingLog
+        fields = ['exam_id', 'reason', 'timestamp']

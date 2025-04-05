@@ -1,9 +1,9 @@
-"use client";
-
+"use client"
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { AlarmClock } from "lucide-react"; // أيقونة المنبّه
+import { AlarmClock } from "lucide-react";
+import StudentMonitor from "../../../../components/monitoring/student-monitor"; // استيراد الكومبوننت الجديد
 
 const ExamPage = () => {
   const { id } = useParams();
@@ -77,9 +77,9 @@ const ExamPage = () => {
 
   useEffect(() => {
     if (remainingTime <= 0) {
-      setIsSubmitted(true);  // اعتبر الامتحان مُقدّم عند انتهاء الوقت
+      setIsSubmitted(true);
     }
-  
+
     const timer = setInterval(() => {
       setRemainingTime((prev) => {
         if (prev <= 1) {
@@ -89,10 +89,9 @@ const ExamPage = () => {
         return prev - 1;
       });
     }, 1000);
-  
+
     return () => clearInterval(timer);
   }, [remainingTime]);
-  
 
   const formatTime = (time: number) => {
     const m = Math.floor(time / 60);
@@ -238,6 +237,8 @@ const ExamPage = () => {
           </div>
         </div>
       )}
+
+      <StudentMonitor /> {/* إضافة الكومبوننت هنا */}
     </div>
   );
 };
