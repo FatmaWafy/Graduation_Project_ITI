@@ -14,22 +14,13 @@ import {
 import { Progress } from "@/src/components/ui/progress";
 import { Button } from "@/src/components/ui/button";
 import { Exam, getExams } from "@/src/lib/api";
+import { jwtDecode } from "jwt-decode";
+import { getClientSideToken } from "../../../lib/cookies";
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const getTokenFromCookies = (): string => {
-    const cookies = document.cookie.split(";");
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split("=");
-      if (name === "token" || name === "authToken") {
-        return value;
-      }
-    }
-    throw new Error("No authentication token found in cookies");
-  };
 
   function calculateDuration(start: string, end: string): number {
     const startDate = new Date(start);
@@ -40,27 +31,22 @@ export default function ExamsPage() {
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const token = getTokenFromCookies();
-        const response = await getExams(token);
+        setLoading(true);
+        setError(null);
 
-        if (!response.temp_exams) {
-          throw new Error("No exams data found in response");
+        const token = getClientSideToken();
+        if (!token) {
+          throw new Error("No authentication token found");
         }
 
-        const examsData = response.temp_exams.map((apiExam: any) => ({
-          id: apiExam.id.toString(),
-          title: `Exam ${apiExam.exam || apiExam.id}`,
-          courseName: apiExam.track ? `Track ${apiExam.track}` : "General Exam",
-          date: apiExam.start_datetime,
-          duration: calculateDuration(
-            apiExam.start_datetime,
-            apiExam.end_datetime
-          ),
-          questionsCount: apiExam.questions_count || 10,
-          preparationProgress: apiExam.preparation_progress || 0,
-          examId: apiExam.id, // Make sure we have the exam ID for the start button
-        }));
+        const decoded = jwtDecode(token) as { user_id?: string };
+        if (!decoded.user_id) {
+          throw new Error("User ID not found in token");
+        }
 
+        const examsData = await getExams(token, decoded.user_id);
+        console.log("Fetched exams:", examsData);
+        console.log("Decoded user ID:", decoded.user_id);
         setExams(examsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load exams");
@@ -99,7 +85,7 @@ export default function ExamsPage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {exams?.length ? (
+        {exams.length > 0 ? (
           exams.map((exam) => (
             <Card key={exam.id} className="overflow-hidden flex flex-col">
               <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">

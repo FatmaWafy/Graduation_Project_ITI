@@ -21,7 +21,7 @@ const ExamPage = () => {
       try {
         // Fetch exam details
         const response = await fetch(
-          `http://127.0.0.1:8000/exam/temp-exams/${id}`,
+          `http://127.0.0.1:8000//exam/exam/temp-exams/${id}/questions/`,
           {
             method: "GET",
 

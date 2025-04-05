@@ -2,7 +2,7 @@ from django.urls import path, include
 
 from .views import (
     ExamListCreateView, ExamDetailView, TempExamViewSet, MCQQuestionViewSet, 
-    StudentExamAnswerViewSet, CreateExamView, ExamQuestionsView ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
+    StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets

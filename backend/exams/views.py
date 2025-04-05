@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from users.models import Student
+from users.models import Student, User
 from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
 from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.core.mail import send_mail
@@ -101,15 +101,23 @@ class FilteredMCQQuestionListView(generics.ListAPIView):
 
 class MCQQuestionViewSet(viewsets.ModelViewSet):
     queryset = MCQQuestion.objects.all()
-    serializer_class = MCQQuestionSerializer  # ✅ Corrected name
+    serializer_class = MCQQuestionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, many=True)  # ✅ Uses get_serializer()
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the input data is a list (bulk create) or a single object
+        many = isinstance(request.data, list)
+        
+        serializer = self.get_serializer(data=request.data, many=many)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
 
 # class CodingQuestionViewSet(viewsets.ModelViewSet):
 #     queryset = CodingQuestion.objects.all()
@@ -201,88 +209,33 @@ class GetTempExamByTrack(APIView):
 
 class GetTempExamByStudent(APIView):
     def get(self, request, student_id):
-        """
-        View to get temporary exam instances filtered by student ID.
-        """
-        # Filter TemporaryExamInstance by student_id
-        temp_exams = TemporaryExamInstance.objects.filter(students=student_id)
-
-        # If no exams found, return an error message
-        if not temp_exams:
-            return Response({"error": "No temporary exams found for this student"}, status=404)
-
-        # Serialize the results using TempExamSerializer
-        serializer = TempExamSerializer(temp_exams, many=True)
-
-        # Return the serialized data in the response
-        return Response({"temp_exams": serializer.data}, status=200)
-    
-
-
-# ✅ عرض الأسئلة ذات الإجابة المتعددة الاختيارات
-class MCQQuestionViewSet(viewsets.ModelViewSet):
-    queryset = MCQQuestion.objects.all()
-    serializer_class = MCQQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-# ✅ إنشاء الامتحان
-class CreateExamView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        data = request.data
-        title = data.get("title")
-        duration = data.get("duration")
-        questions = data.get("questions", [])
-
-        if not title or not duration:
-            return Response({"error": "Title and duration are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        exam = Exam.objects.create(title=title, duration=duration)
-
-        for q in questions:
-            if q["type"] == "mcq":
-                mcq = MCQQuestion.objects.create(
-                    question_text=q["question"],
-                    option_a=q["options"][0],
-                    option_b=q["options"][1],
-                    option_c=q["options"][2] if len(q["options"]) > 2 else None,
-                    option_d=q["options"][3] if len(q["options"]) > 3 else None,
-                    correct_option=q["correctAnswers"][0] if q["correctAnswers"] else None,
-                    difficulty="Medium",  # افتراضيًا
-                    source="Exam System",
-                    points=1.0
-                )
-                exam.MCQQuestions.add(mcq)
-
-        exam.save()
-        return Response({"message": "Exam created successfully!"}, status=status.HTTP_201_CREATED)
-
-
-# ✅ عرض الأسئلة
-def get_questions(request):
-    # استلام المعرفات للأسئلة
-    question_ids = request.data.get('questionIds', [])
-    
-    # البحث عن الأسئلة بناءً على المعرفات
-    questions = MCQQuestion.objects.filter(id__in=question_ids)
-    
-    # تسلسل البيانات لعرضها
-    serialized_questions = MCQQuestionSerializer(questions, many=True)
-    
-    # إرجاع الأسئلة كاستجابة
-    return Response({"questions": serialized_questions.data})
-class ExamQuestionsView(generics.ListAPIView):
-    """ Fetch all questions related to a specific exam """
-    serializer_class = MCQQuestionSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        """ Return questions related to the specified exam """
-        exam_id = self.kwargs.get('exam_id')
         try:
-            exam = Exam.objects.get(id=exam_id)
-            return MCQQuestion.objects.filter(exam=exam)  # assuming there's a relationship between MCQQuestion and Exam
-        except Exam.DoesNotExist:
-            return MCQQuestion.objects.none()  # return empty queryset if exam doesn't exist
+            # 1. Get the User object
+            user = User.objects.get(id=student_id)
+            
+            # 2. Get the Student profile
+            try:
+                student = Student.objects.get(user=user)
+            except Student.DoesNotExist:
+                return Response(
+                    {"error": "No student profile found for this user"}, 
+                    status=404
+                )
+            
+            # 3. Filter exams by student ID
+            temp_exams = TemporaryExamInstance.objects.filter(students=student.id)
+            
+            if not temp_exams.exists():
+                return Response(
+                    {"error": "No temporary exams found for this student"}, 
+                    status=404
+                )
+            
+            serializer = TempExamSerializer(temp_exams, many=True)
+            return Response({"temp_exams": serializer.data}, status=200)
+            
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, 
+                status=404
+            )
