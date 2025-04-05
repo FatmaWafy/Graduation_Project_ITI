@@ -10,9 +10,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/src/components/ui/alert-dialog"
-import { Button } from "@/src/components/ui/button"
-import { useToast } from "@/src/components/ui/use-toast"
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/use-toast"
 import { useDeleteStudent } from "../hooks/use-students"
 import type { Student } from "../types"
 

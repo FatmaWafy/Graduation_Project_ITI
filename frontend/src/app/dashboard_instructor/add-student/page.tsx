@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { Input } from "@/src/components/ui/input";
-import { Button } from "@/src/components/ui/button";
-import { Card } from "@/src/components/ui/card";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@/src/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function AddStudentPage() {
   const [studentData, setStudentData] = useState({

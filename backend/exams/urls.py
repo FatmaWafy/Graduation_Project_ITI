@@ -1,8 +1,9 @@
 from django.urls import path, include
-
 from .views import (
     ExamListCreateView, ExamDetailView, TempExamViewSet, MCQQuestionViewSet, 
-    StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
+    StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,
+    GetTempExamByStudent,CheatingLogView, get_cheating_logs
+)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets
@@ -21,6 +22,8 @@ urlpatterns = [
     # This endpoint will allow queries like /questions/?difficulty=easy
     path('temp-exams-by-track/<int:track_id>/', GetTempExamByTrack.as_view(), name='temp_exam_by_track'),
     path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
+    path("exams/logs/", CheatingLogView.as_view()),
+    path('exams/logs/<int:exam_id>/', get_cheating_logs, name='get_cheating_logs'),
     path("", include(router.urls)),  # Auto-generates CRUD URLs
 
 ]

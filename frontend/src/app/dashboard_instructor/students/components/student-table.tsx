@@ -22,8 +22,8 @@ import {
   Search,
 } from "lucide-react";
 
-import { Button } from "@/src/components/ui/button";
-import { Input } from "@/src/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -31,8 +31,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/src/components/ui/table";
-import { Skeleton } from "@/src/components/ui/skeleton";
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteStudentDialog } from "./delete-student-dialog";
 import type { Student } from "../types";
 import dayjs from "dayjs";

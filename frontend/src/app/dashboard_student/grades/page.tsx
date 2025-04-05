@@ -19,9 +19,9 @@ import {
   Radar,
 } from "recharts"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
-import { type Grade, type PerformanceData, getGrades, getPerformanceData } from "@/src/lib/api"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { type Grade, type PerformanceData, getGrades, getPerformanceData } from "@/lib/api"
 
 export default function GradesPage() {
   const [grades, setGrades] = useState<Grade[]>([])

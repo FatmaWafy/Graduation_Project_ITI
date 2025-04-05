@@ -18,12 +18,12 @@ import {
   User,
 } from "lucide-react"
 
-import { useAuth } from "@/src/lib/auth-context"
-import { Button } from "@/src/components/ui/button"
-import { ThemeToggle } from "@/src/components/theme-toggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger } from "@/src/components/ui/sheet"
-import { NotificationsDropdown } from "@/src/components/notifications-dropdown"
+import { useAuth } from "@/lib/auth-context"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { NotificationsDropdown } from "@/components/notifications-dropdown"
 
 interface NavItem {
   title: string

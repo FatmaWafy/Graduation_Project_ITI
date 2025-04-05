@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from users.models import Student, User
-from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
-from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer
+from .models import Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CheatingLog
+from .serializers import ExamSerializer, MCQQuestionSerializer, TempExamSerializer,CheatingLogSerializer
 from django.core.mail import send_mail
 from django.utils.timezone import now
 from rest_framework.decorators import action
@@ -239,3 +239,38 @@ class GetTempExamByStudent(APIView):
                 {"error": "User not found"}, 
                 status=404
             )
+
+class CheatingLogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Fetch all the cheating logs
+        logs = CheatingLog.objects.all()
+        serializer = CheatingLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        # Handle POST request to log cheating
+        serializer = CheatingLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({"status": "logged"})
+        return Response(serializer.errors, status=400)
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_cheating_logs(request, exam_id):
+    """
+    Endpoint to get all cheating logs for a specific exam.
+    """
+    try:
+        logs = CheatingLog.objects.filter(exam_id=exam_id)
+        if not logs.exists():
+            return Response({"message": "No logs found for this exam."}, status=404)
+
+        serializer = CheatingLogSerializer(logs, many=True)
+        return Response(serializer.data, status=200)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

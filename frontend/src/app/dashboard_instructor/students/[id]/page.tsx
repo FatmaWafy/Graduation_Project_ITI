@@ -16,11 +16,11 @@ import {
 } from "lucide-react"
 import { useParams } from "next/navigation"
 
-import { Button } from "@/src/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
-import { Badge } from "@/src/components/ui/badge"
-import { Separator } from "@/src/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { StudentModal } from "../components/student-modal"
 import { useStudentById } from "../hooks/use-students"
 

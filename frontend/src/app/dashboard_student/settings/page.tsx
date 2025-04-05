@@ -5,12 +5,12 @@ import type React from "react"
 import { useState } from "react"
 import { Lock, Eye, EyeOff } from "lucide-react"
 
-import { Button } from "@/src/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/src/components/ui/card"
-import { Input } from "@/src/components/ui/input"
-import { Label } from "@/src/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
-import { Switch } from "@/src/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
 
 export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false)

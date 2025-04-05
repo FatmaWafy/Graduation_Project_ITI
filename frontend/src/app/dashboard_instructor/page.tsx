@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { Calendar } from "@/src/components/ui/calendar";
-import { Progress } from "@/src/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { UserCircle, Bell } from "lucide-react";
 
 const data = [
