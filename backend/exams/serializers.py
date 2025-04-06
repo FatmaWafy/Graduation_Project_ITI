@@ -1,15 +1,18 @@
-from unittest import TestCase
 from rest_framework import serializers
-from .models import CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer
+from .models import CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer, CodingTestCase
 
 class ExamSerializer(serializers.ModelSerializer):
-    questions = serializers.PrimaryKeyRelatedField(
-        queryset=MCQQuestion.objects.all(), 
-        many=True, 
-        required=False,
-        source='MCQQuestions'  # This maps 'questions' in JSON to 'MCQQuestions' in model
+    mcq_questions = serializers.PrimaryKeyRelatedField(
+        queryset=MCQQuestion.objects.all(),
+        many=True,
+        required=False
     )
-        
+    coding_questions = serializers.PrimaryKeyRelatedField(
+        queryset=CodingQuestion.objects.all(),
+        many=True,
+        required=False
+    )
+
     class Meta:
         model = Exam
         fields = '__all__'
@@ -42,15 +45,14 @@ class StudentExamAnswerSerializer(serializers.ModelSerializer):
         model = StudentExamAnswer
         fields = "__all__"
         
-class TestCaseSerializer(serializers.ModelSerializer):
+class CodingTestCaseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TestCase
+        model = CodingTestCase
         fields = "__all__"
-
+        
 class CodingQuestionSerializer(serializers.ModelSerializer):
-    test_cases = TestCaseSerializer(many=True, read_only=True)
+    test_cases = CodingTestCaseSerializer(many=True, read_only=True)
     
     class Meta:
         model = CodingQuestion
-        fields = "__all__"  # Include all fields
-
+        fields = "__all__"  

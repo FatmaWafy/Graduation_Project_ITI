@@ -5,11 +5,14 @@ from django.utils.translation import gettext_lazy as _
 import json
 import zlib
 from django.contrib.auth import get_user_model
+User = get_user_model()
+from django.utils.timezone import now
 
 # Exam Model
 class Exam(models.Model):
     title = models.CharField(max_length=255)
     MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
+    CodingQuestions = models.ManyToManyField("CodingQuestion", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
 
@@ -41,6 +44,14 @@ class MCQOptions(models.TextChoices):
     C = "C", _("Option C")
     D = "D", _("Option D")
 
+class language(models.TextChoices):
+    PYTHON = "Python", _("Python")
+    JAVASCRIPT = "JavaScript", _("JavaScript")
+    JAVA = "Java", _("Java")
+    SQL = "SQL", _("SQL")
+    
+
+
 # MCQ Model
 class MCQQuestion(models.Model):
     question_text = models.TextField()
@@ -58,29 +69,16 @@ class MCQQuestion(models.Model):
         max_length=20, 
         choices=DifficultyLevel.choices
     )
-
+    language = models.CharField(
+        max_length=20, 
+        choices=language.choices
+    )
     source = models.CharField(max_length=100)
     points = models.FloatField(default=1.0)
 
 
-# # Coding Questions Model
-# class CodingQuestion(models.Model):
-#     title = models.CharField(max_length=255)
-#     description = models.TextField()
-    
-#     difficulty = models.CharField(
-#         max_length=20, 
-#         choices=DifficultyLevel.choices
-#     )
-
-#     starter_code = models.TextField(default="None")
-#     test_cases = models.JSONField()
-#     source = models.CharField(max_length=100)
-#     points = models.FloatField(default=1.0)
 
 
-User = get_user_model()
-from django.utils.timezone import now
 
 class StudentExamAnswer(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
@@ -137,8 +135,6 @@ class StudentExamAnswer(models.Model):
         return {"message": "Exam submitted successfully.", "score": self.score}
 
 class CodingQuestion(models.Model):
-    
-    # question_id = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=255)
     description = models.TextField()
     difficulty = models.CharField(max_length=10, choices=DifficultyLevel.choices)
@@ -148,16 +144,17 @@ class CodingQuestion(models.Model):
     tags = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    language = models.CharField(
+        max_length=20, 
+        choices=language.choices
+    )    
     def __str__(self):
-        return f"{self.title} ({self.difficulty})"
+        return f"{self.title} ({self.difficulty})({self.language})"
 
-class TestCase(models.Model):
+class CodingTestCase(models.Model):
     question = models.ForeignKey(CodingQuestion, related_name='test_cases', on_delete=models.CASCADE)
     input_data = models.TextField()
     expected_output = models.TextField()
-    
+
     def __str__(self):
         return f"Test case for {self.question.title}"
-    
-    

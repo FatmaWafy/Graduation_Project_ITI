@@ -23,11 +23,25 @@ interface Student {
   track: number | null;
 }
 
+interface MCQQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correct_answer: string;
+}
+
+interface CodingQuestion {
+  id: number;
+  question: string;
+  template_code: string;
+}
+
 interface Exam {
   id: number;
   title: string;
   duration: number;
-  MCQQuestions: any[];
+  MCQQuestions: MCQQuestion[];
+  CodingQuestions: CodingQuestion[];
 }
 
 interface TemporaryExamData {
@@ -259,7 +273,6 @@ export default function SetExamPage() {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Set Exam</h1>

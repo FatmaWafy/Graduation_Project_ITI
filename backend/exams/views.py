@@ -5,19 +5,12 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action
 from exams.utils import run_code_by_language
 from users.models import Student, User
-from .models import CodingQuestion, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer
-from .serializers import CodingQuestionSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
-from django.core.mail import send_mail
+from .models import CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
+from .serializers import CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.utils.timezone import now
-from rest_framework.decorators import action
 import jwt
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view
 import sqlite3
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework import status, viewsets
-from .models import TemporaryExamInstance, StudentExamAnswer, CodingQuestion
 
 
 # ✅ عرض وإنشاء الامتحانات
@@ -74,13 +67,31 @@ class TempExamViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def get_questions(self, request, pk=None):
-        """ Fetches all MCQ questions for a specific TempExam """
+        """ Fetches all MCQ and Coding questions for a specific TempExam """
         try:
-            temp_exam = self.get_object()  # جلب الامتحان المؤقت
-            exam = temp_exam.exam  # جلب الامتحان المرتبط
-            questions = MCQQuestion.objects.filter(exam=exam)  # جلب الأسئلة المرتبطة بالامتحان
-            serializer = MCQQuestionSerializer(questions, many=True)
-            return Response(serializer.data)
+            temp_exam = self.get_object()  # Fetch the Temporary Exam
+            exam = temp_exam.exam  # Get the associated exam
+            
+            # Fetch MCQ and Coding questions for the exam
+            mcq_questions = MCQQuestion.objects.filter(exam=exam)
+            coding_questions = CodingQuestion.objects.filter(exam=exam)
+
+            # Combine the two sets of questions
+            combined_questions = list(mcq_questions) + list(coding_questions)
+            
+            # Serialize the questions
+            # Assuming you have separate serializers for both question types
+            mcq_serializer = MCQQuestionSerializer(mcq_questions, many=True)
+            coding_serializer = CodingQuestionSerializer(coding_questions, many=True)
+
+            # Combine the serialized data from both serializers
+            data = {
+                'mcq_questions': mcq_serializer.data,
+                'coding_questions': coding_serializer.data,
+            }
+
+            return Response(data)
+        
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "TempExam not found"}, status=404)
 
@@ -96,12 +107,37 @@ class FilteredMCQQuestionListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = MCQQuestion.objects.all()
+        
+        # Filter by language if specified
+        language = self.request.query_params.get('language')
+        if language and language.lower() != "all":
+            queryset = queryset.filter(language__iexact=language)
+
+        # Filter by difficulty if specified
         difficulty = self.request.query_params.get('difficulty')
         if difficulty and difficulty.lower() != "all":
-            # Assuming your model stores values as "Easy", "Medium", "Hard"
             queryset = queryset.filter(difficulty__iexact=difficulty)
+
         return queryset
-    
+
+class FilteredCodingQuestionListView(generics.ListAPIView):
+    serializer_class = CodingQuestionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = CodingQuestion.objects.all()
+        
+        # Filter by language if specified
+        language = self.request.query_params.get('language')
+        if language and language.lower() != "all":
+            queryset = queryset.filter(language__iexact=language)
+
+        # Filter by difficulty if specified
+        difficulty = self.request.query_params.get('difficulty')
+        if difficulty and difficulty.lower() != "all":
+            queryset = queryset.filter(difficulty__iexact=difficulty)
+
+        return queryset
 
 # ✅ عرض نتائج الطالب
 
@@ -247,7 +283,8 @@ class GetTempExamByStudent(APIView):
             )
             
 
-class CodingQuestionViewSet(viewsets.ReadOnlyModelViewSet):
+class CodingQuestionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = CodingQuestion.objects.all()
     serializer_class = CodingQuestionSerializer
     
@@ -266,8 +303,19 @@ class CodingQuestionViewSet(viewsets.ReadOnlyModelViewSet):
         
         return queryset
 
+class CodingtestCaseViewSet(viewsets.ModelViewSet):
+    queryset = CodingTestCase.objects.all()
+    serializer_class = CodingTestCaseSerializer
 
-
+    def get_queryset(self):
+        queryset = TestCase.objects.all()
+        
+        # Filter by question ID (if you want to filter by question)
+        question_id = self.request.query_params.get('question_id')
+        if question_id:
+            queryset = queryset.filter(question_id=question_id)
+        
+        return queryset
 
 class StudentExamAnswerViewSet(viewsets.ViewSet):
 

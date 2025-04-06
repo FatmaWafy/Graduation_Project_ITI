@@ -2,15 +2,15 @@ from django.urls import path, include
 
 from .views import (
     CodingQuestionViewSet, ExamListCreateView, ExamDetailView, TempExamViewSet, MCQQuestionViewSet, 
-    StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
+    StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent, CodingtestCaseViewSet,FilteredCodingQuestionListView)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets
 router = DefaultRouter()
 router.register(r"mcq-questions", MCQQuestionViewSet, basename="mcq-question")
 router.register(r'temp-exams', TempExamViewSet),
-router.register(r'coding-questions', CodingQuestionViewSet)
-
+router.register(r'code-questions', CodingQuestionViewSet)
+router.register(r'test-cases', CodingtestCaseViewSet)
 # router.register(r'student-exam-answers', StudentExamAnswerViewSet, basename="student-exam-answer")
 
 urlpatterns = [
@@ -19,7 +19,8 @@ urlpatterns = [
     path('exam/temp-exams/<int:pk>/questions/', TempExamViewSet.as_view({'get': 'get_questions'}), name='temp-exam-questions'),
     path('exams/submit-exam-answer/', StudentExamAnswerViewSet.as_view({'post': 'submit_exam_answer'}), name='submit-exam-answer'),
     path('get-student-answer/<int:exam_instance_id>/', StudentExamAnswerViewSet.as_view({'get': 'get_student_answer'}), name='get-student-answer'),
-    path('questions/', FilteredMCQQuestionListView.as_view(), name='filtered-questions'),
+    path('mcq-filter/' , FilteredMCQQuestionListView.as_view(), name='filtered-questions'),
+    path('coding-filter/' , FilteredCodingQuestionListView.as_view(), name='filtered-coding-questions'),
     # This endpoint will allow queries like /questions/?difficulty=easy
     path('temp-exams-by-track/<int:track_id>/', GetTempExamByTrack.as_view(), name='temp_exam_by_track'),
     path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
