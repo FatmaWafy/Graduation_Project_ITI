@@ -38,7 +38,6 @@ const navItems: NavItem[] = [
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },
   { title: "Profile", href: "/dashboard_student/profile", icon: User },
   { title: "Settings", href: "/dashboard_student/settings", icon: Settings },
-
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
