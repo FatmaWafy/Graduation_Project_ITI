@@ -135,3 +135,29 @@ class StudentExamAnswer(models.Model):
         self.set_answers(answers_dict)
         self.calculate_score()
         return {"message": "Exam submitted successfully.", "score": self.score}
+
+class CodingQuestion(models.Model):
+    
+    # question_id = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    difficulty = models.CharField(max_length=10, choices=DifficultyLevel.choices)
+    starter_code = models.TextField(default="None")
+    source = models.CharField(max_length=100)
+    points = models.FloatField(default=1.0)
+    tags = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.title} ({self.difficulty})"
+
+class TestCase(models.Model):
+    question = models.ForeignKey(CodingQuestion, related_name='test_cases', on_delete=models.CASCADE)
+    input_data = models.TextField()
+    expected_output = models.TextField()
+    
+    def __str__(self):
+        return f"Test case for {self.question.title}"
+    
+    

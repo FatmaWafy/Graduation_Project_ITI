@@ -1,14 +1,16 @@
 from django.urls import path, include
 
 from .views import (
-    ExamListCreateView, ExamDetailView, TempExamViewSet, MCQQuestionViewSet, 
+    CodingQuestionViewSet, ExamListCreateView, ExamDetailView, TempExamViewSet, MCQQuestionViewSet, 
     StudentExamAnswerViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets
 router = DefaultRouter()
 router.register(r"mcq-questions", MCQQuestionViewSet, basename="mcq-question")
-router.register(r'temp-exams', TempExamViewSet)
+router.register(r'temp-exams', TempExamViewSet),
+router.register(r'coding-questions', CodingQuestionViewSet)
+
 # router.register(r'student-exam-answers', StudentExamAnswerViewSet, basename="student-exam-answer")
 
 urlpatterns = [
@@ -22,5 +24,6 @@ urlpatterns = [
     path('temp-exams-by-track/<int:track_id>/', GetTempExamByTrack.as_view(), name='temp_exam_by_track'),
     path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
     path("", include(router.urls)),  # Auto-generates CRUD URLs
+    path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
 
 ]
