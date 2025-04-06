@@ -100,7 +100,7 @@ const ExamPage = () => {
   };
 
   const handleOptionChange = (questionId: number, selectedOption: string) => {
-    setSelectedAnswers((prev) => ({
+    setSelectedAnswers((prev: { [key: number]: string }) => ({
       ...prev,
       [questionId]: optionMap[selectedOption],
     }));
@@ -238,10 +238,9 @@ const ExamPage = () => {
         </div>
       )}
 
-    <StudentMonitor examId={id} /> {/* Pass the dynamic exam ID */}
+    {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} {/* Pass the dynamic exam ID */}
 
     </div>
   );
 };
-
 export default ExamPage;

@@ -1,4 +1,5 @@
 // Types
+import type { ExamLog } from "./types"
 
 
 export type Assignment = {
@@ -243,4 +244,42 @@ function calculateDurationInMinutes(start: string, end: string): number {
   const startDate = new Date(start);
   const endDate = new Date(end);
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+}
+
+export async function getExamLogs(examId: string, token: string): Promise<ExamLog[]> {
+  try {
+    console.log("Token:", token);  // تأكد من أن التوكن تم تمريره بشكل صحيح
+
+    const response = await fetch(`http://127.0.0.1:8000/exam/exams/logs/${examId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // إرسال التوكن في الهيدر
+      },
+      cache: "no-store",
+    });
+
+    // تحقق من حالة الاستجابة
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log("No logs found for this exam."); // يمكنك تخصيص الرسالة هنا
+        return []; // إذا كانت الحالة 404، قم بإرجاع مصفوفة فارغة بدلاً من رمي الخطأ
+      }
+      throw new Error(`Failed to fetch exam logs: ${response.status}`);
+    }
+
+    // تحويل البيانات إلى JSON إذا كانت الاستجابة صحيحة
+    const logs = await response.json();
+
+    // تحقق إذا كانت البيانات فارغة
+    if (!logs || logs.length === 0) {
+      console.log("No logs found for this exam.");
+      return [];
+    }
+
+    return logs;
+  } catch (error) {
+    console.error("Error fetching exam logs:", error);
+    return []; // إرجاع مصفوفة فارغة في حال حدوث أي خطأ
+  }
 }

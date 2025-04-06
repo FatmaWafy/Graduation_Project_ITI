@@ -63,6 +63,11 @@ export default function InstructorLayout({
               Send Note
             </p>
           </Link>
+          <Link href="/dashboard_instructor/exam_logs">
+            <p className="block px-4 py-3 my-4 bg-green-600 hover:bg-green-500 rounded-lg text-center cursor-pointer transition duration-300">
+              Exam Logs
+            </p>
+          </Link>
           <Link href="/dashboard_instructor/students" >
              <p className="block px-4 py-3 my-4 bg-green-600 hover:bg-green-500 rounded-lg text-center cursor-pointer transition duration-300">Student Management</p>
           </Link>
