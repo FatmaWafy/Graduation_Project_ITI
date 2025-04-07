@@ -112,6 +112,8 @@ class StudentExamAnswer(models.Model):
         return total_score
 
     def submit_exam(self, answers_dict):
+        print(f"Received answers_dict: {answers_dict}")  # Debugging line
+
         if now() > self.exam_instance.end_datetime:
             return {"error": "Time is up! You can't submit this exam."}
 

@@ -18,21 +18,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface Question {
+  id: string;
+  type: "multiple-choice" | "coding";
+  title: string;
+  [key: string]: any;
+}
+
 export default function ExamDashboard() {
   const router = useRouter();
   const { id } = useParams();
 
   const [exam, setExam] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(0); // in seconds
+  const [timeLeft, setTimeLeft] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showScoreAlert, setShowScoreAlert] = useState(false);
   const [score, setScore] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [timeExpired, setTimeExpired] = useState(false);
 
-  // Fetch exam data and questions from API
+  // Fetch exam data and questions
   useEffect(() => {
     if (!id) return;
 
@@ -42,84 +50,59 @@ export default function ExamDashboard() {
       try {
         setLoading(true);
 
-        // Fetch exam title
-        const tempExamRes = await fetch(
-          `http://127.0.0.1:8000/exam/temp-exams/${id}/`,
-          {
+        const [tempExamRes, questionsRes] = await Promise.all([
+          fetch(`http://127.0.0.1:8000/exam/temp-exams/${id}/`, {
             headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!tempExamRes.ok) throw new Error("Failed to fetch temp exam");
-        const tempExamData = await tempExamRes.json();
-
-        // Fetch exam duration
-        const examRes = await fetch(
-          `http://127.0.0.1:8000/exam/exams/${tempExamData.exam}`,
-          {
+          }),
+          fetch(`http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`, {
             headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+          }),
+        ]);
 
-        if (!examRes.ok) throw new Error("Failed to fetch exam details");
-        const examData = await examRes.json();
+        if (!tempExamRes.ok || !questionsRes.ok) {
+          throw new Error("Failed to fetch exam data");
+        }
+
+        const [tempExamData, questionsData] = await Promise.all([
+          tempExamRes.json(),
+          questionsRes.json(),
+        ]);
+
+        const formattedQuestions = [
+          ...(questionsData.mcq_questions?.map((q: any) => ({
+            id: q.id.toString(),
+            type: "multiple-choice",
+            title: q.title || `Question ${q.id}`,
+            question: q.question_text,
+            options: [
+              { id: "A", text: q.option_a },
+              { id: "B", text: q.option_b },
+              { id: "C", text: q.option_c },
+              { id: "D", text: q.option_d },
+            ],
+            correctAnswer: q.correct_answer,
+          })) || []),
+          ...(questionsData.coding_questions?.map((q: any) => ({
+            id: q.id.toString(),
+            type: "coding",
+            title: q.title || `Question ${q.id}`,
+            description: q.description,
+            starterCode: q.starter_code || "",
+            testCases: q.test_cases || [],
+            language: q.language || "python",
+          })) || []),
+        ];
 
         setExam({
           id: id,
           title: tempExamData.title,
-          duration: examData.duration,
+          duration: tempExamData.duration,
         });
-
-        setTimeLeft(examData.duration * 60 || 0);
-
-        // Fetch questions
-        const questionsRes = await fetch(
-          `http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!questionsRes.ok) throw new Error("Failed to fetch questions");
-        const questionsData = await questionsRes.json();
-
-        // Transform the questions to match our component structure
-        const formattedQuestions = questionsData.map((q: any) => {
-          if (q.type === "coding") {
-            return {
-              id: q.id,
-              type: "coding",
-              title: q.title || `Question ${q.id}`,
-              description: q.question_text || q.description,
-              starterCode: q.starter_code || "",
-              testCases: q.test_cases || [],
-              language: q.language || "python",
-            };
-          } else {
-            return {
-              id: q.id,
-              type: "multiple-choice",
-              title: q.title || `Question ${q.id}`,
-              question: q.question_text,
-              code: q.code,
-              options: [
-                { id: "a", text: q.option_a },
-                { id: "b", text: q.option_b },
-                { id: "c", text: q.option_c },
-                { id: "d", text: q.option_d },
-              ],
-              correctAnswer: q.correct_answer,
-            };
-          }
-        });
-
+        setTimeLeft(tempExamData.duration * 60 || 0);
         setQuestions(formattedQuestions);
-
-        // Check if exam was already submitted
-        const stored = localStorage.getItem(`submitted_exam_${id}`);
-        setIsSubmitted(stored === "true");
+        setIsSubmitted(localStorage.getItem(`submitted_exam_${id}`) === "true");
       } catch (error) {
-        console.error("Error fetching exam or questions:", error);
+        console.error("Error fetching exam data:", error);
       } finally {
         setLoading(false);
       }
@@ -130,99 +113,35 @@ export default function ExamDashboard() {
 
   // Timer effect
   useEffect(() => {
-    if (!id) return;
+    if (timeLeft <= 0 || isSubmitted) return;
 
-    const fetchExamData = async () => {
-      const token = Cookies.get("token");
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setTimeExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      try {
-        setLoading(true);
+    return () => clearInterval(timer);
+  }, [timeLeft, isSubmitted]);
 
-        // Fetch exam title
-        const tempExamRes = await fetch(
-          `http://127.0.0.1:8000/exam/temp-exams/${id}/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!tempExamRes.ok) throw new Error("Failed to fetch temp exam");
-        const tempExamData = await tempExamRes.json();
-
-        // Fetch exam duration
-        const examRes = await fetch(
-          `http://127.0.0.1:8000/exam/exams/${tempExamData.exam}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!examRes.ok) throw new Error("Failed to fetch exam details");
-        const examData = await examRes.json();
-
-        setExam({
-          id: id,
-          title: tempExamData.title,
-          duration: examData.duration,
-        });
-
-        setTimeLeft(examData.duration * 60 || 0);
-
-        // Fetch questions
-        const questionsRes = await fetch(
-          `http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (!questionsRes.ok) throw new Error("Failed to fetch questions");
-        const questionsData = await questionsRes.json();
-
-        // Combine MCQ and coding questions
-        const allQuestions = [
-          ...questionsData.mcq_questions.map((q: any) => ({
-            id: q.id,
-            type: "multiple-choice",
-            title: q.title || `Question ${q.id}`,
-            question: q.question_text,
-            code: q.code,
-            options: [
-              { id: "a", text: q.option_a },
-              { id: "b", text: q.option_b },
-              { id: "c", text: q.option_c },
-              { id: "d", text: q.option_d },
-            ],
-            correctAnswer: q.correct_answer,
-            language: q.language || "python",
-          })),
-          ...questionsData.coding_questions.map((q: any) => ({
-            id: q.id,
-            type: "coding",
-            title: q.title || `Question ${q.id}`,
-            description: q.description,
-            starterCode: q.starter_code || "",
-            testCases: q.test_cases || [],
-            language: q.language || "python",
-          })),
-        ];
-
-        setQuestions(allQuestions);
-
-        // Check if exam was already submitted
-        const stored = localStorage.getItem(`submitted_exam_${id}`);
-        setIsSubmitted(stored === "true");
-      } catch (error) {
-        console.error("Error fetching exam or questions:", error);
-      } finally {
-        setLoading(false);
+  // Handle time expiration
+  useEffect(() => {
+    if (timeExpired && !isSubmitted) {
+      const confirmSubmit = window.confirm(
+        "Time has expired. Would you like to submit your exam now?"
+      );
+      if (confirmSubmit) {
+        handleSubmit();
       }
-    };
+    }
+  }, [timeExpired, isSubmitted]);
 
-    fetchExamData();
-  }, [id]);
-
-  const handleAnswerChange = (questionId: string, answer: any) => {
+  const handleAnswerChange = (questionId: string, answer: string) => {
     setAnswers((prev) => ({
       ...prev,
       [questionId]: answer,
@@ -236,43 +155,39 @@ export default function ExamDashboard() {
     }
 
     const token = Cookies.get("token");
+    const submissionData = {
+      exam_instance: id,
+      mcq_answers: {} as Record<string, string>,
+      coding_answers: {} as Record<string, string>,
+    };
 
-    // Format answers for submission
-    const formattedAnswers: Record<string, any> = {};
+    questions.forEach((question) => {
+      const answer = answers[question.id];
+      if (!answer) return;
 
-    // Format MCQ answers
-    const mcqAnswers: Record<string, string> = {};
-
-    // Format coding answers
-    const codingAnswers: Record<string, string> = {};
-
-    Object.entries(answers).forEach(([questionId, answer]) => {
-      const question = questions.find((q) => q.id.toString() === questionId);
-      if (question) {
-        if (question.type === "multiple-choice") {
-          mcqAnswers[questionId] = answer;
-        } else if (question.type === "coding") {
-          codingAnswers[questionId] = answer;
+      if (question.type === "multiple-choice") {
+        const cleanAnswer = answer.charAt(0).toUpperCase();
+        if (["A", "B", "C", "D"].includes(cleanAnswer)) {
+          submissionData.mcq_answers[question.id] = cleanAnswer;
         }
+      } else if (question.type === "coding") {
+        submissionData.coding_answers[question.id] = answer.trim();
       }
     });
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/exam/exam-answers/submit-answers/`,
+        `http://127.0.0.1:8000/exam/exam-answers/submit-answer/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            exam_instance: id,
-            mcq_answers: mcqAnswers,
-            coding_answers: codingAnswers,
-          }),
+          body: JSON.stringify(submissionData),
         }
       );
+
       if (response.ok) {
         const result = await response.json();
         setScore(result.score || 0);
@@ -281,11 +196,11 @@ export default function ExamDashboard() {
         localStorage.setItem(`submitted_exam_${id}`, "true");
       } else {
         const errorText = await response.text();
-        console.error(`Error: ${errorText}`);
+        console.error("Submission error:", errorText);
         alert(`Error submitting exam: ${errorText}`);
       }
     } catch (error) {
-      console.error("Error submitting the exam:", error);
+      console.error("Network error:", error);
       alert("Error submitting the exam. Please try again.");
     }
   };
@@ -310,38 +225,43 @@ export default function ExamDashboard() {
       .padStart(2, "0")}`;
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-background text-foreground">
         Loading exam...
       </div>
     );
-  if (!exam)
+  }
+
+  if (!exam) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-background text-foreground">
         Exam not found
       </div>
     );
+  }
 
-  const currentQuestion = questions[currentQuestionIndex] || null;
+  const currentQuestion = questions[currentQuestionIndex];
 
-  if (!currentQuestion)
+  if (!currentQuestion) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-background text-foreground">
         No questions available
       </div>
     );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 bg-background">
       <ExamHeader
         title={exam.title}
         timeLeft={formatTime(timeLeft)}
         onSubmit={handleSubmit}
+        isSubmitted={isSubmitted}
       />
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-1 bg-white p-4 rounded-lg shadow">
+        <div className="md:col-span-1 bg-background p-4 rounded-lg shadow border border-border">
           <QuestionList
             questions={questions}
             currentIndex={currentQuestionIndex}
@@ -350,7 +270,7 @@ export default function ExamDashboard() {
           />
         </div>
 
-        <div className="md:col-span-3 bg-white rounded-lg shadow">
+        <div className="md:col-span-3 bg-background rounded-lg shadow border border-border">
           {currentQuestion.type === "coding" ? (
             <CodingQuestion
               question={currentQuestion}
@@ -371,11 +291,12 @@ export default function ExamDashboard() {
             />
           )}
 
-          <div className="p-4 border-t flex justify-between">
+          <div className="p-4 border-t border-border flex justify-between bg-background">
             <Button
               variant="outline"
               onClick={handlePrevQuestion}
               disabled={currentQuestionIndex === 0}
+              className="border-border"
             >
               Previous
             </Button>
@@ -383,6 +304,7 @@ export default function ExamDashboard() {
               variant="outline"
               onClick={handleNextQuestion}
               disabled={currentQuestionIndex === questions.length - 1}
+              className="border-border"
             >
               Next
             </Button>
