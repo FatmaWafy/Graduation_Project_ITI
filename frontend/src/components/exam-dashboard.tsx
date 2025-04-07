@@ -255,7 +255,7 @@ export default function ExamDashboard() {
     )
 
   return (
-    <div className="container mx-auto px-4 pt-6 pb-[64px] bg-background">
+    <div className="container mx-auto px-4 pt-6  bg-background">
       <ExamHeader
         title={exam.title}
         timeLeft={formatTime(timeLeft)}

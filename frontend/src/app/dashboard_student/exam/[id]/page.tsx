@@ -3,7 +3,7 @@ import ExamDashboard from "@/components/exam-dashboard"
 
 export default function ExamPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className=" bg-gray-50">
       <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
         <ExamDashboard />
       </Suspense>
