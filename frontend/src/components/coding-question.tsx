@@ -373,7 +373,7 @@ export default function CodingQuestion({ question, onAnswerChange, answer }: Cod
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-250px)] bg-background">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-250px)] bg-background ">
       {/* Question description panel */}
       <div className="w-full md:w-1/2 p-4 overflow-y-auto border-b md:border-b-0 md:border-r border-border bg-background">
         <h2 className="text-xl font-bold mb-4 text-foreground">{question.title}</h2>

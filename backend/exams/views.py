@@ -317,39 +317,64 @@ class CodingtestCaseViewSet(viewsets.ModelViewSet):
 
 # views.py
 class StudentExamAnswerViewSet(viewsets.ViewSet):
-    # ... keep other methods ...
-
-    @action(detail=False, methods=['post'], url_path='submit-answer') 
-    @permission_classes([IsAuthenticated]) 
+    @action(detail=False, methods=['post'], url_path='submit-answer')
+    @permission_classes([IsAuthenticated])
     def submit_exam_answer(self, request):
+        answers_dict = request.data
         student = request.user
-        print(type(request.data))  # This should be <class 'dict'>
-        print(request.data)        # This should be the dictionary you've shown
-        print(request.user)  # See what user object is being received   
-        print(type(request.user))  # Should print <class 'django.contrib.auth.models.User'>
-        print(request.user)  # Inspect the actual user object
-
-        exam_instance_id = request.data.get('exam_instance')
-        mcq_answers = request.data.get('mcq_answers', {})
-        coding_answers = request.data.get('coding_answers', {})
-
-
+        
+        # Validate data structure
+        if not isinstance(request.data, dict):
+            return Response({"error": "Invalid data format. Expected a JSON object."}, 
+                        status=status.HTTP_400_BAD_REQUEST)
+        
         try:
+            # Validate and extract exam_instance_id
+            exam_instance_id = request.data.get('exam_instance')
+            if not exam_instance_id:
+                return Response({"error": "Missing exam_instance parameter."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                exam_instance_id = int(exam_instance_id)
+            except (ValueError, TypeError):
+                return Response({"error": "exam_instance must be an integer ID."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate answer structures
+            mcq_answers = request.data.get('mcq_answers', {})
+            coding_answers = request.data.get('coding_answers', {})
+            
+            if not isinstance(mcq_answers, dict) or not isinstance(coding_answers, dict):
+                return Response({"error": "mcq_answers and coding_answers must be dictionaries."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+            # Fetch the exam instance
             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
             exam_answer, _ = StudentExamAnswer.objects.get_or_create(
                 student=student, 
                 exam_instance=exam_instance
             )
 
+            # Process coding answers
             code_results = []
             for question_id, code in coding_answers.items():
                 try:
                     question = CodingQuestion.objects.get(id=question_id)
                     test_cases = question.test_cases.all()
                     
-                    # Use the imported utility function
+                    # Ensure code is a string
+                    if not isinstance(code, str):
+                        return Response({"error": f"Code for question {question_id} must be a string."}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Run tests and validate result structure
                     result = run_code_and_test(code, question.language, test_cases)
-                    score_sum = sum([r.get("score", 0) for r in result])
+                    if not isinstance(result, list):  # Assuming result should be a list of test cases
+                        return Response({"error": f"Invalid test results format for question {question_id}."}, 
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+                    score_sum = sum([r.get("score", 0) if isinstance(r, dict) else 0 for r in result])
                     
                     code_results.append({
                         "question_id": question_id,
@@ -359,23 +384,28 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                     })
                 except CodingQuestion.DoesNotExist:
                     return Response({"error": f"Question {question_id} not found"}, 
-                                  status=status.HTTP_400_BAD_REQUEST)
+                                status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({"error": f"Error processing question {question_id}: {str(e)}"}, 
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+            # Prepare answers to save
             answers_to_save = {
                 "mcq_answers": mcq_answers,
                 "code_answers": coding_answers,
                 "code_results": code_results,
             }
 
+            # Submit exam
             submission_response = exam_answer.submit_exam(answers_to_save)
-            
-            if "error" in submission_response:
-                return Response({"error": submission_response["error"]}, 
-                              status=status.HTTP_400_BAD_REQUEST)
+            if isinstance(submission_response, str) or "error" in submission_response:
+                error_msg = submission_response if isinstance(submission_response, str) else submission_response["error"]
+                return Response({"error": error_msg}, 
+                            status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
-                "message": submission_response["message"],
-                "score": submission_response["score"],
+                "message": submission_response.get("message", "Answers submitted successfully"),
+                "score": submission_response.get("score", 0),
                 "code_results": code_results,
                 "mcq_answers": mcq_answers,
                 "coding_answers": coding_answers
@@ -383,15 +413,16 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
 
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "Exam instance not found."}, 
-                          status=status.HTTP_400_BAD_REQUEST)
+                        status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, 
-                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        
+            print(f"Error in submit_exam_answer: {str(e)}")
+            return Response({"error": "An unexpected error occurred."}, 
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
     @action(detail=True, methods=['get'], url_path='get-student-answer')
     def get_student_answer(self, request, pk=None):
         student = request.user
+        print(request.user)
         exam_instance_id = pk
 
         try:
