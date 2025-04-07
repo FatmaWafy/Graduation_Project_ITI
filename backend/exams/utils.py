@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 
 
-def run_code_by_language(code, language, input_data):
+def run_code_and_test(code, language, input_data):
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix={
             'python': '.py',

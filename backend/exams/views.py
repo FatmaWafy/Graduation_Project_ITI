@@ -3,14 +3,15 @@ from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from exams.utils import run_code_by_language
+from exams.utils import run_code_and_test
 from users.models import Student, User
-from .models import CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
-from .serializers import CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
+from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
+from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.utils.timezone import now
 import jwt
 from rest_framework.permissions import IsAuthenticated
 import sqlite3
+from rest_framework.decorators import api_view, permission_classes
 
 
 # ✅ عرض وإنشاء الامتحانات
@@ -161,11 +162,6 @@ class MCQQuestionViewSet(viewsets.ModelViewSet):
             headers=headers
         )
 
-# class CodingQuestionViewSet(viewsets.ModelViewSet):
-#     queryset = CodingQuestion.objects.all()
-#     serializer_class = CodingQuestionSerializer
-#     permission_classes = [permissions.IsAuthenticated] 
-
 
 # # Views #################### old code
 # class StudentExamAnswerViewSet(viewsets.ViewSet):
@@ -306,9 +302,11 @@ class CodingQuestionViewSet(viewsets.ModelViewSet):
 class CodingtestCaseViewSet(viewsets.ModelViewSet):
     queryset = CodingTestCase.objects.all()
     serializer_class = CodingTestCaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
 
     def get_queryset(self):
-        queryset = TestCase.objects.all()
+        queryset = CodingTestCase.objects.all()
         
         # Filter by question ID (if you want to filter by question)
         question_id = self.request.query_params.get('question_id')
@@ -317,93 +315,139 @@ class CodingtestCaseViewSet(viewsets.ModelViewSet):
         
         return queryset
 
+# views.py
 class StudentExamAnswerViewSet(viewsets.ViewSet):
+    # ... keep other methods ...
 
     @action(detail=False, methods=['post'])
     def submit_exam_answer(self, request):
         student = request.user
         exam_instance_id = request.data.get('exam_instance')
         mcq_answers = request.data.get('mcq_answers', {})
-        code_answers = request.data.get('code_answers', {})  # {question_id: code}
+        coding_answers = request.data.get('coding_answers', {})
 
         try:
             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
-            exam_answer = StudentExamAnswer.objects.get_or_create(
-                student=student, exam_instance=exam_instance
-            )[0]
-
-            mcq_response = exam_answer.submit_exam({"mcq_answers": mcq_answers})
+            exam_answer, _ = StudentExamAnswer.objects.get_or_create(
+                student=student, 
+                exam_instance=exam_instance
+            )
 
             code_results = []
-            for question_id, code in code_answers.items():
-                question = CodingQuestion.objects.get(id=question_id)
-                test_cases = question.test_cases.all()
+            for question_id, code in coding_answers.items():
+                try:
+                    question = CodingQuestion.objects.get(id=question_id)
+                    test_cases = question.test_cases.all()
+                    
+                    # Use the imported utility function
+                    result = run_code_and_test(code, question.language, test_cases)
+                    score_sum = sum([r.get("score", 0) for r in result])
+                    
+                    code_results.append({
+                        "question_id": question_id,
+                        "score": score_sum,
+                        "max_score": question.points,
+                        "test_results": result
+                    })
+                except CodingQuestion.DoesNotExist:
+                    return Response({"error": f"Question {question_id} not found"}, 
+                                  status=status.HTTP_400_BAD_REQUEST)
 
-                result = self.run_code_and_test(code, question.language, test_cases)
-                score_sum = sum([r.get("score", 0) for r in result])
-                code_results.append({
-                    "question_id": question_id,
-                    "score": score_sum,
-                    "test_results": result
-                })
+            answers_to_save = {
+                "mcq_answers": mcq_answers,
+                "code_answers": coding_answers,
+                "code_results": code_results,
+            }
 
-            if "error" in mcq_response:
-                return Response({"error": mcq_response["error"]}, status=status.HTTP_400_BAD_REQUEST)
-
-            total_score = mcq_response["score"] + sum([r["score"] for r in code_results])
+            submission_response = exam_answer.submit_exam(answers_to_save)
+            
+            if "error" in submission_response:
+                return Response({"error": submission_response["error"]}, 
+                              status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
-                "message": mcq_response["message"],
-                "score": total_score,
-                "code_results": code_results
+                "message": submission_response["message"],
+                "score": submission_response["score"],
+                "code_results": code_results,
+                "mcq_answers": mcq_answers,
+                "coding_answers": coding_answers
             }, status=status.HTTP_201_CREATED)
 
         except TemporaryExamInstance.DoesNotExist:
-            return Response({"error": "Exam instance not found."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Exam instance not found."}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, 
+                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def run_code_and_test(self, code, language, test_cases):
-        results = []
+        
+    @action(detail=True, methods=['get'], url_path='get-student-answer')
+    def get_student_answer(self, request, pk=None):
+        student = request.user
+        exam_instance_id = pk
 
-        for test_case in test_cases:
-            input_data = test_case.input_data
-            expected_output = test_case.expected_output
+        try:
+            exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
+            answer = StudentExamAnswer.objects.get(
+                student=student, 
+                exam_instance=exam_instance
+            )
+            
+            answers = answer.get_answers()
+            
+            if not answers:
+                return Response({
+                    "error": "No answers found for this exam instance",
+                    "score": answer.score,
+                    "submitted_at": answer.submitted_at
+                }, status=status.HTTP_404_NOT_FOUND)
 
-            if language == "sql":
-                try:
-                    conn = sqlite3.connect(":memory:")
-                    cursor = conn.cursor()
-                    cursor.executescript(input_data)  # Create tables + insert test data
-                    cursor.execute(code)
-                    result = cursor.fetchall()
+            return Response({
+                "mcq_answers": answers.get("mcq_answers", {}),
+                "code_answers": answers.get("code_answers", {}),
+                "code_results": answers.get("code_results", []),
+                "score": answer.score,
+                "submitted_at": answer.submitted_at
+            }, status=status.HTTP_200_OK)
 
-                    expected = eval(expected_output)  # [(1, 'Alice'), (2, 'Bob')]
-                    if result == expected:
-                        results.append({"test_case_id": test_case.id, "score": 1})
-                    else:
-                        results.append({
-                            "test_case_id": test_case.id,
-                            "score": 0,
-                            "output": result,
-                            "expected": expected
-                        })
-                except Exception as e:
-                    results.append({"test_case_id": test_case.id, "error": str(e)})
-                finally:
-                    conn.close()
+        except TemporaryExamInstance.DoesNotExist:
+            return Response({"error": "Exam instance not found."}, 
+                        status=status.HTTP_404_NOT_FOUND)
+        except StudentExamAnswer.DoesNotExist:
+            return Response({"error": "Student answer not found."}, 
+                        status=status.HTTP_404_NOT_FOUND)
 
-            else:
-                output = run_code_by_language(code, language, input_data)
-                if "error" in output:
-                    results.append({"test_case_id": test_case.id, "error": output["error"]})
-                else:
-                    if output["output"].strip() == expected_output.strip():
-                        results.append({"test_case_id": test_case.id, "score": 1})
-                    else:
-                        results.append({
-                            "test_case_id": test_case.id,
-                            "score": 0,
-                            "output": output["output"],
-                            "expected": expected_output.strip()
-                        })
 
-        return results
+class CheatingLogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Fetch all the cheating logs
+        logs = CheatingLog.objects.all()
+        serializer = CheatingLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        # Handle POST request to log cheating
+        serializer = CheatingLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({"status": "logged"})
+        return Response(serializer.errors, status=400)
+
+    @api_view(['GET'])
+    @permission_classes([IsAuthenticated])
+    def get_cheating_logs(request, exam_id):
+        """
+        Endpoint to get all cheating logs for a specific exam.
+        """
+        try:
+            logs = CheatingLog.objects.filter(exam_id=exam_id)
+            if not logs.exists():
+                return Response({"message": "No logs found for this exam."}, status=404)
+
+            serializer = CheatingLogSerializer(logs, many=True)
+            return Response(serializer.data, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
