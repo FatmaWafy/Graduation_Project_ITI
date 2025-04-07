@@ -11,9 +11,7 @@ router.register(r"mcq-questions", MCQQuestionViewSet, basename="mcq-question")
 router.register(r'temp-exams', TempExamViewSet),
 router.register(r'code-questions', CodingQuestionViewSet)
 router.register(r'test-cases', CodingtestCaseViewSet)
-router.register(r'answer', StudentExamAnswerViewSet, basename='student-exam-answer')
-
-# router.register(r'student-exam-answers', StudentExamAnswerViewSet, basename="student-exam-answer")
+router.register(r'exam-answers', StudentExamAnswerViewSet, basename='exam-answer')# router.register(r'student-exam-answers', StudentExamAnswerViewSet, basename="student-exam-answer")
 
 urlpatterns = [
     path('exams/', ExamListCreateView.as_view(), name='exam-list-create'),

@@ -319,12 +319,20 @@ class CodingtestCaseViewSet(viewsets.ModelViewSet):
 class StudentExamAnswerViewSet(viewsets.ViewSet):
     # ... keep other methods ...
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='submit-answer') 
+    @permission_classes([IsAuthenticated]) 
     def submit_exam_answer(self, request):
         student = request.user
+        print(type(request.data))  # This should be <class 'dict'>
+        print(request.data)        # This should be the dictionary you've shown
+        print(request.user)  # See what user object is being received   
+        print(type(request.user))  # Should print <class 'django.contrib.auth.models.User'>
+        print(request.user)  # Inspect the actual user object
+
         exam_instance_id = request.data.get('exam_instance')
         mcq_answers = request.data.get('mcq_answers', {})
         coding_answers = request.data.get('coding_answers', {})
+
 
         try:
             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
@@ -435,9 +443,9 @@ class CheatingLogView(APIView):
             return Response({"status": "logged"})
         return Response(serializer.errors, status=400)
 
-    @api_view(['GET'])
-    @permission_classes([IsAuthenticated])
-    def get_cheating_logs(request, exam_id):
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_cheating_logs(request, exam_id):
         """
         Endpoint to get all cheating logs for a specific exam.
         """

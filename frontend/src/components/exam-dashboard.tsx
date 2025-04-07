@@ -259,7 +259,7 @@ export default function ExamDashboard() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/exam/answer/submit_exam_answer/",
+        `http://127.0.0.1:8000/exam/exam-answers/submit-answers/`,
         {
           method: "POST",
           headers: {
@@ -273,7 +273,6 @@ export default function ExamDashboard() {
           }),
         }
       );
-
       if (response.ok) {
         const result = await response.json();
         setScore(result.score || 0);
