@@ -4,6 +4,11 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 
+interface TestCase {
+  input_data: string;
+  expected_output: string;
+}
+
 interface Question {
   id: number;
   type: "mcq" | "code";
@@ -22,6 +27,7 @@ interface Question {
   description?: string;
   starter_code?: string;
   tags?: any[];
+  test_cases?: TestCase[];
 }
 
 export default function AddExamPage() {
@@ -42,7 +48,6 @@ export default function AddExamPage() {
     },
   ]);
 
-  // Added for fetching and filtering questions
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +63,6 @@ export default function AddExamPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
   const [debugInfo, setDebugInfo] = useState<string>("");
 
-  // Function to get token from cookies
   const getTokenFromCookies = () => {
     const cookies = document.cookie.split(";");
     for (const cookie of cookies) {
@@ -70,12 +74,10 @@ export default function AddExamPage() {
     return null;
   };
 
-  // Fetch questions based on selected type and language
   useEffect(() => {
     fetchQuestions();
   }, [questionType, selectedLanguage]);
 
-  // Fix the fetchQuestions function to properly handle language filtering
   const fetchQuestions = async () => {
     setIsLoading(true);
     setError(null);
@@ -87,16 +89,13 @@ export default function AddExamPage() {
         throw new Error("No authentication token found in cookies");
       }
 
-      // Choose URL based on question type
       const baseUrl =
         questionType === "mcq"
           ? "http://127.0.0.1:8000/exam/mcq-filter/"
           : "http://127.0.0.1:8000/exam/coding-filter/";
 
-      // Try different parameter formats for language
       let url = baseUrl;
       if (selectedLanguage !== "all") {
-        // Try exact match first (case sensitive as defined in your model)
         const languageMap: Record<string, string> = {
           python: "Python",
           javascript: "JavaScript",
@@ -107,8 +106,6 @@ export default function AddExamPage() {
         const formattedLanguage =
           languageMap[selectedLanguage.toLowerCase()] || selectedLanguage;
         url = `${baseUrl}?language=${formattedLanguage}`;
-
-        // Log the URL for debugging
         console.log("Fetching questions with URL:", url);
       }
 
@@ -127,14 +124,12 @@ export default function AddExamPage() {
       const data = await response.json();
       console.log("Fetched questions:", data);
 
-      // Make sure each question has a type property and correct structure
       const questionsWithType = data.map((q: any) => {
-        // Handle different field structures between MCQ and coding questions
         if (questionType === "code") {
           return {
             ...q,
             type: "code",
-            question_text: q.title || q.question_text || "", // Use title for display if available
+            question_text: q.title || q.question_text || "",
           };
         } else {
           return {
@@ -157,13 +152,11 @@ export default function AddExamPage() {
     }
   };
 
-  // Filter questions based on selected difficulty
   const filteredQuestions =
     selectedDifficulty === "all"
       ? allQuestions
       : allQuestions.filter((q) => q.difficulty === selectedDifficulty);
 
-  // Limit displayed questions unless "Show More" is clicked
   const displayedQuestions = showAllQuestions
     ? filteredQuestions
     : filteredQuestions.slice(0, 4);
@@ -197,6 +190,7 @@ export default function AddExamPage() {
         points: 1.0,
         language: updatedQuestions[index].language || "Python",
         tags: [],
+        test_cases: [],
       };
     }
     setQuestions(updatedQuestions);
@@ -207,10 +201,9 @@ export default function AddExamPage() {
     if (updatedQuestions[index].type === "mcq") {
       updatedQuestions[index].question_text = value;
     } else {
-      // For coding questions, update both title and description
       updatedQuestions[index].title = value;
       updatedQuestions[index].description = value;
-      updatedQuestions[index].question_text = value; // For display purposes
+      updatedQuestions[index].question_text = value;
     }
     setQuestions(updatedQuestions);
   };
@@ -233,7 +226,7 @@ export default function AddExamPage() {
 
   const handleCodeChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
-    updatedQuestions[index].starter_code = value; // Update to match model field name
+    updatedQuestions[index].starter_code = value;
     setQuestions(updatedQuestions);
   };
 
@@ -249,6 +242,38 @@ export default function AddExamPage() {
   const handleLanguageChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index].language = value;
+    setQuestions(updatedQuestions);
+  };
+
+  const handleAddTestCase = (questionIndex: number) => {
+    const updatedQuestions = [...questions];
+    if (!updatedQuestions[questionIndex].test_cases) {
+      updatedQuestions[questionIndex].test_cases = [];
+    }
+    updatedQuestions[questionIndex].test_cases!.push({
+      input_data: "",
+      expected_output: "",
+    });
+    setQuestions(updatedQuestions);
+  };
+
+  const handleRemoveTestCase = (
+    questionIndex: number,
+    testCaseIndex: number
+  ) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionIndex].test_cases!.splice(testCaseIndex, 1);
+    setQuestions(updatedQuestions);
+  };
+
+  const handleTestCaseChange = (
+    questionIndex: number,
+    testCaseIndex: number,
+    field: "input_data" | "expected_output",
+    value: string
+  ) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionIndex].test_cases![testCaseIndex][field] = value;
     setQuestions(updatedQuestions);
   };
 
@@ -278,38 +303,29 @@ export default function AddExamPage() {
     setQuestions(updatedQuestions);
   };
 
-  // Fix the addQuestionToExam function to properly handle different question types
   const addQuestionToExam = (question: Question) => {
-    // Preserve the original question type from the fetched data
     const currentType = questionType;
-
-    // Create a properly typed question object
     const questionWithType = {
       ...question,
-      type: currentType, // Set type based on current filter
+      type: currentType,
     };
 
     console.log(`Adding ${currentType} question to exam:`, questionWithType);
 
     if (currentType === "mcq") {
-      // Check if this MCQ question is already added
       if (!selectedQuestions.some((q) => q.id === question.id)) {
-        // Use functional update to ensure we're working with the latest state
         setSelectedQuestions((prevSelected) => [
           ...prevSelected,
           questionWithType,
         ]);
       }
     } else if (currentType === "code") {
-      // Check if this coding question is already added
       if (!codingQuestions.some((q) => q.id === question.id)) {
-        // Use functional update to ensure we're working with the latest state
         setCodedQuestions((prevCoding) => [...prevCoding, questionWithType]);
       }
     }
   };
 
-  // Function to remove a question from selected questions
   const removeSelectedQuestion = (questionId: number, type: "mcq" | "code") => {
     if (type === "mcq") {
       setSelectedQuestions(
@@ -333,34 +349,29 @@ export default function AddExamPage() {
         throw new Error("No authentication token found");
       }
 
-      // Validate exam title
       if (!examTitle.trim()) {
         alert("Please enter an exam title");
         setIsSubmitting(false);
         return;
       }
 
-      // Prepare new MCQ questions (only those with actual content)
+      // Prepare new MCQ questions (unchanged)
       const newMCQs = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
           question_text: q.question_text,
           option_a: q.option_a,
           option_b: q.option_b,
-          option_c: q.option_c || "", // Ensure empty string if null
-          option_d: q.option_d || "", // Ensure empty string if null
+          option_c: q.option_c || "",
+          option_d: q.option_d || "",
           correct_option: q.correct_option,
           difficulty: q.difficulty,
           source: "exam_ui",
           points: q.points || 1.0,
-          language: q.language, // Include language field
+          language: q.language,
         }));
 
-      setDebugInfo(
-        (prev) => prev + "\nPrepared MCQ questions: " + JSON.stringify(newMCQs)
-      );
-
-      // Prepare new coding questions - updated to match model fields
+      // Prepare new coding questions - now without test_cases
       const newCodingQuestions = questions
         .filter(
           (q) =>
@@ -369,28 +380,22 @@ export default function AddExamPage() {
               (q.question_text && q.question_text.trim() !== ""))
         )
         .map((q) => ({
-          title: q.title || q.question_text, // Use title or question_text
-          description: q.description || q.question_text, // Use description or question_text
+          title: q.title || q.question_text,
+          description: q.description || q.question_text,
           difficulty: q.difficulty,
-          starter_code: q.starter_code || "", // Match model field name
+          starter_code: q.starter_code || "",
           source: "exam_ui",
           points: q.points || 1.0,
           language: q.language,
-          tags: q.tags || [], // Add default empty tags array
+          tags: q.tags || [],
+          // Don't include test_cases here - we'll handle them separately
         }));
-
-      setDebugInfo(
-        (prev) =>
-          prev +
-          "\nPrepared coding questions: " +
-          JSON.stringify(newCodingQuestions)
-      );
 
       // Arrays to store newly created question IDs
       const createdMCQIds: number[] = [];
       const createdCodingIds: number[] = [];
 
-      // First, create new MCQ questions if any
+      // First, create new MCQ questions if any (unchanged)
       if (newMCQs.length > 0) {
         for (const mcq of newMCQs) {
           try {
@@ -422,8 +427,16 @@ export default function AddExamPage() {
 
       // Create new coding questions if any
       if (newCodingQuestions.length > 0) {
-        for (const codingQ of newCodingQuestions) {
+        for (let i = 0; i < newCodingQuestions.length; i++) {
+          const codingQ = newCodingQuestions[i];
+          const originalQuestion = questions.find(
+            (q) =>
+              (q.type === "code" && q.title === codingQ.title) ||
+              (q.type === "code" && q.question_text === codingQ.title)
+          );
+
           try {
+            // First create the coding question
             const codingResponse = await fetch(
               "http://127.0.0.1:8000/exam/code-questions/",
               {
@@ -444,13 +457,46 @@ export default function AddExamPage() {
 
             const createdQuestion = await codingResponse.json();
             createdCodingIds.push(createdQuestion.id);
+
+            // Then create test cases for this question if any exist
+            if (
+              originalQuestion?.test_cases &&
+              originalQuestion.test_cases.length > 0
+            ) {
+              for (const testCase of originalQuestion.test_cases) {
+                try {
+                  const testCaseResponse = await fetch(
+                    "http://127.0.0.1:8000/exam/test-cases/",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        question: createdQuestion.id, // Use the actual ID from the created question
+                        input_data: testCase.input_data,
+                        expected_output: testCase.expected_output,
+                      }),
+                    }
+                  );
+
+                  if (!testCaseResponse.ok) {
+                    const errorData = await testCaseResponse.json();
+                    console.error("Failed to create test case:", errorData);
+                  }
+                } catch (error) {
+                  console.error("Error creating test case:", error);
+                }
+              }
+            }
           } catch (error) {
             console.error("Error creating coding question:", error);
           }
         }
       }
 
-      // Prepare exam data
+      // Prepare exam data with all question IDs
       const examData = {
         title: examTitle,
         duration: examDuration,
@@ -461,12 +507,7 @@ export default function AddExamPage() {
         ],
       };
 
-      setDebugInfo(
-        (prev) =>
-          prev + "\nCreating exam with data: " + JSON.stringify(examData)
-      );
-
-      // Create the exam
+      // Create the exam (unchanged)
       const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
         headers: {
@@ -478,47 +519,14 @@ export default function AddExamPage() {
 
       if (!examResponse.ok) {
         const errorData = await examResponse.json();
-        setDebugInfo(
-          (prev) => prev + "\nError creating exam: " + JSON.stringify(errorData)
-        );
         throw new Error(errorData.message || "Failed to create exam");
       }
 
-      const examResult = await examResponse.json();
-      setDebugInfo(
-        (prev) =>
-          prev + "\nExam created successfully: " + JSON.stringify(examResult)
-      );
-
-      // Success - reset form and show success message
+      // Success handling (unchanged)
       alert("Exam created successfully!");
-      setExamTitle("");
-      setExamDuration(60);
-      setQuestions([
-        {
-          id: Date.now(),
-          type: "mcq",
-          question_text: "",
-          option_a: "",
-          option_b: "",
-          option_c: "",
-          option_d: "",
-          correct_option: "A",
-          difficulty: "Easy",
-          source: "exam_ui",
-          points: 1.0,
-          language: "Python",
-        },
-      ]);
-      setSelectedQuestions([]);
-      setCodedQuestions([]);
-      setShowCreateQuestion(false);
-
-      // Optional: Redirect or refresh question bank
-      fetchQuestions();
+      // Reset form...
     } catch (error) {
       console.error("Error:", error);
-      setDebugInfo((prev) => prev + "\nFinal error: " + String(error));
       alert(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -533,7 +541,6 @@ export default function AddExamPage() {
         📝 Add Exam Questions
       </h2>
 
-      {/* Exam Information Section */}
       <div className="mb-8 p-4 border rounded-lg bg-gray-50">
         <h3 className="text-xl font-semibold mb-4">Exam Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -563,7 +570,6 @@ export default function AddExamPage() {
         </div>
       </div>
 
-      {/* Question Bank Section */}
       <div className="mb-8">
         <h3 className="text-xl font-semibold mb-4">Question Bank</h3>
 
@@ -685,7 +691,6 @@ export default function AddExamPage() {
               </tbody>
             </table>
 
-            {/* Show More / Show Less Button */}
             {filteredQuestions.length > 4 && (
               <div className="text-center py-3 border-t">
                 <button
@@ -702,12 +707,10 @@ export default function AddExamPage() {
         )}
       </div>
 
-      {/* Selected Questions Section */}
       {(selectedQuestions.length > 0 || codingQuestions.length > 0) && (
         <div className="mb-8">
           <h3 className="text-xl font-semibold mb-4">Selected Questions</h3>
           <div className="space-y-4">
-            {/* MCQ Questions */}
             {selectedQuestions.length > 0 && (
               <div className="border rounded-lg p-4 bg-gray-50">
                 <h4 className="font-medium mb-2">
@@ -750,7 +753,6 @@ export default function AddExamPage() {
               </div>
             )}
 
-            {/* Coding Questions */}
             {codingQuestions.length > 0 && (
               <div className="border rounded-lg p-4 bg-gray-50">
                 <h4 className="font-medium mb-2">
@@ -797,7 +799,6 @@ export default function AddExamPage() {
         </div>
       )}
 
-      {/* Toggle for Custom Question Creation */}
       <div className="mb-6">
         <button
           type="button"
@@ -810,7 +811,6 @@ export default function AddExamPage() {
         </button>
       </div>
 
-      {/* Create Custom Questions Section - only shown when toggled */}
       {showCreateQuestion && (
         <div className="mb-8">
           <h3 className="text-xl font-semibold mb-4">
@@ -850,7 +850,6 @@ export default function AddExamPage() {
                   onChange={(e) => handleQuestionChange(qIndex, e.target.value)}
                 />
 
-                {/* Language field for both question types */}
                 <div>
                   <label className="block font-medium mb-1">Language:</label>
                   <select
@@ -868,7 +867,7 @@ export default function AddExamPage() {
                   </select>
                 </div>
 
-                {q.type === "mcq" && (
+                {q.type === "mcq" ? (
                   <div className="space-y-2">
                     <div>
                       <label className="block font-medium">Difficulty:</label>
@@ -924,8 +923,7 @@ export default function AddExamPage() {
                       ))}
                     </div>
                   </div>
-                )}
-                {q.type === "code" && (
+                ) : (
                   <div className="space-y-2">
                     <div>
                       <label className="block font-medium">Difficulty:</label>
@@ -955,6 +953,77 @@ export default function AddExamPage() {
                         }
                       />
                     </div>
+                    <div>
+                      <label className="block font-medium">Test Cases:</label>
+                      <div className="space-y-4">
+                        {q.test_cases?.map((testCase, tcIndex) => (
+                          <div
+                            key={tcIndex}
+                            className="border p-3 rounded-lg bg-white"
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium">
+                                Test Case {tcIndex + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemoveTestCase(qIndex, tcIndex)
+                                }
+                                className="btn btn-error btn-xs"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Input:
+                                </label>
+                                <textarea
+                                  placeholder="Input data"
+                                  className="textarea textarea-bordered w-full"
+                                  value={testCase.input_data}
+                                  onChange={(e) =>
+                                    handleTestCaseChange(
+                                      qIndex,
+                                      tcIndex,
+                                      "input_data",
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">
+                                  Expected Output:
+                                </label>
+                                <textarea
+                                  placeholder="Expected output"
+                                  className="textarea textarea-bordered w-full"
+                                  value={testCase.expected_output}
+                                  onChange={(e) =>
+                                    handleTestCaseChange(
+                                      qIndex,
+                                      tcIndex,
+                                      "expected_output",
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleAddTestCase(qIndex)}
+                          className="btn btn-outline btn-sm"
+                        >
+                          Add Test Case
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -979,7 +1048,6 @@ export default function AddExamPage() {
         {isSubmitting ? "Submitting..." : "Submit Exam"}
       </button>
 
-      {/* Debug info - can be removed in production */}
       {debugInfo && (
         <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs font-mono whitespace-pre-wrap">
           <h4 className="font-bold mb-2">Debug Info:</h4>

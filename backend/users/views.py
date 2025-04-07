@@ -13,7 +13,13 @@ from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import viewsets
-
+from rest_framework.decorators import action
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 token_generator = PasswordResetTokenGenerator()
@@ -204,78 +210,139 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+def get_brave_driver():
+    chrome_options = Options()
+    
+    # تحديد المسار الصحيح للـ Brave
+    chrome_options.binary_location = "/usr/bin/google-chrome"
+
+    # إضافة الخيارات المطلوبة لتمكين remote debugging
+    chrome_options.add_argument("--remote-debugging-port=9222")
+
+    # في حالة كنت عايز المتصفح يشتغل بدون واجهة
+    chrome_options.add_argument("--headless")
+
+    # إذا كان لديك مشاكل مع شهادة SSL، ممكن تستخدم هذا الخيار
+    chrome_options.add_argument("--ignore-certificate-errors")
+
+    # إنشاء driver باستخدام chrome options
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    return driver
+
+
+def get_leetcode_solved_problems(leetcode_username):
+    driver = get_brave_driver()
+
+    # فتح صفحة LeetCode
+    leetcode_url = f"https://leetcode.com/{leetcode_username}/"
+    driver.get(leetcode_url)
+
+    # الانتظار لحد ما الصفحة تخلص تحميل
+    driver.implicitly_wait(10)
+
+    # جلب الصفحة كاملة
+    page_source = driver.page_source
+
+    # استخدام BeautifulSoup لتحليل الـ HTML
+    soup = BeautifulSoup(page_source, "html.parser")
+    solved_span = soup.find("span", string="Solved Problems")
+    
+    leetcode_solved = None
+    if solved_span:
+        parent_div = solved_span.find_parent("div")
+        if parent_div:
+            number_span = parent_div.find("span", class_="text-[24px]")
+            if number_span:
+                leetcode_solved = int(number_span.text.strip())
+
+    driver.quit()
+    
+    return leetcode_solved
+
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
     """
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        """
-        Create a new student
-        """
-        # نسخ البيانات القادمة من الـ request
         data = request.data.copy()
-
-        # تعيين الدور "student" في البيانات
         data["role"] = "student"
-        
-        # تحقق من وجود track_name
+
         track_name = data.get("track_name")
         if not track_name:
             return Response({"error": "Track name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # تحقق من وجود التراك
         track = Track.objects.filter(name=track_name).first()
         if not track:
             return Response({"error": "No track found with this name."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # إنشاء الـ serializer
         serializer = self.get_serializer(data={"user": data, **data})
 
-        # التحقق من صحة البيانات
         if serializer.is_valid():
-            # حفظ الطالب
             student = serializer.save()
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
-        
-        # إذا كانت البيانات غير صحيحة، أرجع الأخطاء
-        print(serializer.errors)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
     def update(self, request, *args, **kwargs):
-        """
-        Update an existing student
-        """
         instance = self.get_object()
         data = request.data.copy()
 
-        # التحقق من وجود track وتحديثه إذا لزم الأمر
-        if 'track' in data:  # هنا نستخدم track كـ ID
+        if 'track' in data:
             track_id = data.get('track')
             try:
-                track = Track.objects.get(id=track_id)  # نبحث عن track باستخدام ID
-                instance.track = track  # نعيّن الكائن نفسه
+                track = Track.objects.get(id=track_id)
+                instance.track = track
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # تحديث بيانات المستخدم
         if 'user' in data:
             user_data = data.pop('user')
             instance.user.username = user_data.get('username', instance.user.username)
             instance.user.email = user_data.get('email', instance.user.email)
             instance.user.save()
 
-        # تحديث باقي الحقول
         for attr, value in data.items():
             setattr(instance, attr, value)
 
         instance.save()
         return Response({"message": "Student updated successfully!", "student": self.get_serializer(instance).data}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'], url_path='external-stats')
+    def external_stats(self, request, pk=None):
+        student = self.get_object()
+
+        github_repos = None
+        leetcode_solved = None
+
+        # جلب بيانات GitHub
+        if student.github_profile:
+            github_username = student.github_profile.strip("/").split("/")[-1]
+            github_url = f"https://api.github.com/users/{github_username}"
+            github_response = requests.get(github_url)
+            if github_response.status_code == 200:
+                github_data = github_response.json()
+                github_repos = github_data.get("public_repos")
+
+        # جلب بيانات LeetCode
+        if student.leetcode_profile:
+            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+            
+            # لو الرابط يحتوي على "/u/" نتأكد من اسم المستخدم
+            if "/u/" in student.leetcode_profile:
+                leetcode_username = student.leetcode_profile.strip("/").split("/")[-2]
+            
+            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+
+        return Response({
+            "github_repos": github_repos,
+            "leetcode_solved": leetcode_solved
+        })
 class TrackListAPIView(APIView):
     """
     API endpoint to get all available tracks.
