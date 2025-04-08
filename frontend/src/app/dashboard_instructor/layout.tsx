@@ -30,49 +30,42 @@ export default function InstructorLayout({
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-
       {/* Sidebar */}
-      <aside className="w-64 bg-[#800000] text-white p-6 shadow-lg flex flex-col min-h-screen">
-
-
-        <h2 className="text-2xl font-bold text-center mb-4">
-          Instructor Panel
-        </h2>
+      <aside className="w-64 bg-[#007acc] text-white p-6 shadow-lg flex flex-col min-h-screen">
+        <h2 className="text-2xl font-bold text-center mb-4">Instructor Panel</h2>
         <nav className="space-y-3">
           <Link href="/dashboard_instructor">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Dashboard
             </p>
           </Link>
           <Link href="/dashboard_instructor/add-student">
-            <p className="block px-4 py-3 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Add Student
             </p>
           </Link>
-
           <Link href="/dashboard_instructor/add-exam">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Add Exam
             </p>
           </Link>
           <Link href="/dashboard_instructor/set-exam">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Set Exam
             </p>
           </Link>
-
           <Link href="/dashboard_instructor/add-note">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Send Note
             </p>
           </Link>
           <Link href="/dashboard_instructor/exam_logs">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Exam Logs
             </p>
           </Link>
           <Link href="/dashboard_instructor/students">
-            <p className="block px-4 py-3 my-4 bg-[#800000] hover:bg-[#a52a2a] rounded-lg text-center cursor-pointer transition duration-300">
+            <p className="block px-4 py-3 my-4 bg-[#007acc] hover:bg-blue-700 rounded-lg text-center cursor-pointer transition duration-300">
               Student Management
             </p>
           </Link>

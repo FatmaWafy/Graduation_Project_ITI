@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function ExamLogsIndexPage() {
   // حالة لتخزين الامتحانات المسترجعة من الـ API
   const [exams, setExams] = useState<any[]>([])
-  
+
   // حالة لمعرفة إذا كان هناك خطأ أو تحميل البيانات
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +22,7 @@ export default function ExamLogsIndexPage() {
       ?.split('=')[1]
     return token || ''
   }
-  
+
 
   // استخدام useEffect لجلب البيانات عند تحميل الصفحة
   useEffect(() => {
@@ -81,21 +81,24 @@ export default function ExamLogsIndexPage() {
       </div>
 
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {exams.map((exam: any) => (
-          <Card key={exam.id}>
-            <CardHeader>
-              <CardTitle>{exam.title}</CardTitle>
-              <CardDescription>Exam ID: {exam.id}</CardDescription>
+          <Card key={exam.id} className="hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="bg-gray-100 rounded-t-lg">
+              <CardTitle className="text-lg font-semibold text-[#000000]">{exam.title}</CardTitle>
+              <CardDescription className="text-sm text-gray-600">Exam ID: {exam.id}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center py-4">
               <Link href={`/dashboard_instructor/exam_logs/${exam.id}`} passHref>
-                <Button>View Logs</Button>
+                <Button className="bg-[#004E8C] hover:bg-[#0059A8] text-white px-6 py-2 rounded-md">
+                  View Logs
+                </Button>
               </Link>
             </CardContent>
           </Card>
         ))}
       </div>
+
     </div>
   )
 }

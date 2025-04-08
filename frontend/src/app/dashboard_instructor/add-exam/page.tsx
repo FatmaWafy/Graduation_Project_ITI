@@ -639,7 +639,7 @@ export default function AddExamPage() {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-[#800000] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#a52a2a] transition-all duration-300 shadow-md"
+        className="w-full bg-[#007ACC] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#1E90FF] transition-all duration-300 shadow-md"
       >
         Submit Exam
       </button>

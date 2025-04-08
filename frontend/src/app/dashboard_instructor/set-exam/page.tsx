@@ -262,22 +262,23 @@ export default function SetExamPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Set Exam</h1>
-
+      <h1 className="text-2xl font-bold mb-6 text-[#007ACC]">Set Exam</h1>
+  
       {/* Exam Selection Section */}
       <div className="mb-8 bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Select Exam</h2>
+        <h2 className="text-xl font-semibold mb-4 text-[#004E8C]">Select Exam</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedExam?.id === exam.id
-                  ? "border-[#800000] bg-[#f2d0d0]"
-                  : "hover:bg-[#f5e6e6]"
-                }`}
+              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                selectedExam?.id === exam.id
+                  ? "border-[#007ACC] bg-[#D0E8FF]"
+                  : "hover:bg-[#E6F2FB]"
+              }`}
               onClick={() => handleExamSelect(exam)}
             >
-              <h3 className="font-medium">{exam.title}</h3>
+              <h3 className="font-medium text-[#003B73]">{exam.title}</h3>
               <p className="text-sm text-gray-600">
                 Duration: {exam.duration} minutes
               </p>
@@ -288,30 +289,31 @@ export default function SetExamPage() {
           ))}
         </div>
       </div>
-
+  
       {selectedExam && (
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow p-6"
         >
-          <h2 className="text-xl font-semibold mb-4">Exam Configuration</h2>
-
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-[#004E8C]">
+            Exam Configuration
+          </h2>
+  
           {/* Exam Information */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Selected Exam
               </label>
-              <div className="p-3 bg-gray-50 rounded border border-[#800000]">
-                <p className="font-medium">{selectedExam.title}</p>
+              <div className="p-3 bg-[#E6F2FB] rounded border border-[#007ACC]">
+                <p className="font-medium text-[#003B73]">{selectedExam.title}</p>
                 <p className="text-sm text-gray-600">
                   {selectedExam.duration} minutes •{" "}
                   {selectedExam.MCQQuestions?.length || 0} questions
                 </p>
               </div>
-
             </div>
-
+  
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Track (Optional)
@@ -331,7 +333,7 @@ export default function SetExamPage() {
               </select>
             </div>
           </div>
-
+  
           {/* Date and Time Selection */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -346,7 +348,7 @@ export default function SetExamPage() {
                 required
               />
             </div>
-
+  
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 End Date & Time
@@ -360,7 +362,7 @@ export default function SetExamPage() {
               />
             </div>
           </div>
-
+  
           {/* Student Selection */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
@@ -380,10 +382,11 @@ export default function SetExamPage() {
                     <button
                       type="button"
                       onClick={handleSelectAllFiltered}
-                      className={`px-3 py-2 text-sm rounded ${allFilteredSelected()
+                      className={`px-3 py-2 text-sm rounded ${
+                        allFilteredSelected()
                           ? "bg-gray-200 text-gray-700"
-                          : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        }`}
+                          : "bg-[#D0E8FF] text-[#004E8C] hover:bg-[#B3D7F2]"
+                      }`}
                       disabled={allFilteredSelected()}
                     >
                       {allFilteredSelected() ? "All Selected" : "Select All"}
@@ -399,7 +402,7 @@ export default function SetExamPage() {
                 )}
               </div>
             </div>
-
+  
             <div className="max-h-60 overflow-y-auto border rounded">
               {filteredStudents.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
@@ -409,10 +412,11 @@ export default function SetExamPage() {
                 filteredStudents.map((student) => (
                   <div
                     key={student.id}
-                    className={`p-3 border-b flex items-center ${formData.students.includes(student.id)
-                        ? "bg-[#f2d0d0]"
-                        : "hover:bg-[#f5e6e6]"
-                      }`}
+                    className={`p-3 border-b flex items-center ${
+                      formData.students.includes(student.id)
+                        ? "bg-[#D0E8FF]"
+                        : "hover:bg-[#E6F2FB]"
+                    }`}
                   >
                     <input
                       type="checkbox"
@@ -439,11 +443,12 @@ export default function SetExamPage() {
               )}
             </div>
           </div>
-
+  
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading.submitting}
-            className="px-4 py-2 bg-[#800000] text-white rounded hover:bg-[#a52a2a] disabled:bg-green-300"
+            className="w-full py-3 rounded bg-[#007ACC] text-white text-lg font-semibold hover:bg-[#1E90FF] active:bg-[#005A9E] disabled:bg-blue-200 transition-all duration-300 shadow-md"
           >
             {loading.submitting ? "Scheduling..." : "Schedule Exam"}
           </button>
@@ -451,4 +456,4 @@ export default function SetExamPage() {
       )}
     </div>
   );
-}
+}  

@@ -388,7 +388,7 @@ export function SendNotificationForm() {
     }
   }
 
-   
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
@@ -422,142 +422,148 @@ export function SendNotificationForm() {
       setIsSubmitting(false);
     }
   }
-   
+
   return (
     <>
-          {/* <ToastContainer /> */}
+      {/* <ToastContainer /> */}
 
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="recipientType"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Recipient Type</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={(value: RecipientType) => handleRecipientTypeChange(value)}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1 sm:flex-row sm:space-x-6 sm:space-y-0"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="student" id="student" />
-                    <Label htmlFor="student">Specific Student</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="track" id="track" />
-                    <Label htmlFor="track">Entire Track</Label>
-                  </div>
-                </RadioGroup>
-              </FormControl>
-              <FormDescription>
-                Choose whether to send to an individual student or all students in a track.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {watchRecipientType === "student" ? (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="student_id"
+            name="recipientType"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Student</FormLabel>
-                <Select value={field.value} onValueChange={(value: string) => {
-                  console.log("Selected student ID:", value);
-                  field.onChange(value);
-                }}>                <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a student" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {students.length > 0 ? (
-                      students.map((student) => (
-                        <SelectItem key={student.id} value={String(student.id)}>
-                          {student.user.username}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem disabled>No students available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Select the student you want to send a notification to.</FormDescription>
+              <FormItem className="space-y-3">
+                <FormLabel>Recipient Type</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={(value: RecipientType) => handleRecipientTypeChange(value)}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-3 sm:flex-row sm:space-x-8 sm:space-y-0"
+                  >
+                    <div className="flex items-center space-x-3 px-4 py-2 border rounded-md transition-all duration-300 cursor-pointer hover:bg-gray-50 data-[state=checked]:bg-[#e6f0ff] data-[state=checked]:border-[#004E8C]">
+                      <RadioGroupItem value="student" id="student" className="accent-[#004E8C]" />
+                      <Label htmlFor="student" className="text-gray-700 font-medium">Specific Student</Label>
+                    </div>
+                    <div className="flex items-center space-x-3 px-4 py-2 border rounded-md transition-all duration-300 cursor-pointer hover:bg-gray-50 data-[state=checked]:bg-[#e6f0ff] data-[state=checked]:border-[#004E8C]">
+                      <RadioGroupItem value="track" id="track" className="accent-[#004E8C]" />
+                      <Label htmlFor="track" className="text-gray-700 font-medium">Entire Track</Label>
+                    </div>
+                  </RadioGroup>
+
+                </FormControl>
+                <FormDescription>
+                  Choose whether to send to an individual student or all students in a track.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-        ) : (
-          <FormField
-            control={form.control}
-            name="track_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Track</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a track" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {tracks.length > 0 ? (
-                      tracks.map((track, index) => (
-                        <SelectItem key={index} value={track}>
-                          {track}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem disabled>No tracks available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Select the track to send a notification to all students.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
-        <FormField
-          control={form.control}
-          name="message"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Message</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter your notification message here..."
-                  className="min-h-32 resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Write a clear and concise message for the {watchRecipientType === "student" ? "student" : "track"}.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending...
-            </>
+          {watchRecipientType === "student" ? (
+            <FormField
+              control={form.control}
+              name="student_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Student</FormLabel>
+                  <Select value={field.value} onValueChange={(value: string) => {
+                    console.log("Selected student ID:", value);
+                    field.onChange(value);
+                  }}>                <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a student" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {students.length > 0 ? (
+                        students.map((student) => (
+                          <SelectItem key={student.id} value={String(student.id)}>
+                            {student.user.username}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem disabled>No students available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Select the student you want to send a notification to.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           ) : (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Send Notification
-            </>
+            <FormField
+              control={form.control}
+              name="track_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Track</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a track" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {tracks.length > 0 ? (
+                        tracks.map((track, index) => (
+                          <SelectItem key={index} value={track}>
+                            {track}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem disabled>No tracks available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Select the track to send a notification to all students.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        </Button>
-      </form>
-    </Form>
-</>
+
+          <FormField
+            control={form.control}
+            name="message"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Message</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter your notification message here..."
+                    className="min-h-32 resize-none"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Write a clear and concise message for the {watchRecipientType === "student" ? "student" : "track"}.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type="submit"
+            className="w-full bg-[#004E8C] hover:bg-[#0059A8] text-white font-semibold py-2 rounded-md transition-all duration-300 disabled:bg-gray-300"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Send Notification
+              </>
+            )}
+          </Button>
+
+        </form>
+      </Form>
+    </>
   )
 }

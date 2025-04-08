@@ -37,8 +37,8 @@ export default function StudentsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
           <p className="text-muted-foreground">Manage student information, enrollments, and academic records</p>
         </div>
-        <Button onClick={handleAddStudent}>
-          <PlusCircle className="mr-2 h-4 w-4" />
+        <Button onClick={handleAddStudent} className="bg-[#004E8C] hover:bg-[#0059A8] text-white">
+          <PlusCircle className="mr-2 h-4 w-4 " />
           Add Student
         </Button>
       </div>

@@ -96,7 +96,7 @@ export default function AddStudentPage() {
   return (
     <div className="w-full h-screen flex items-center justify-center bg-gray-100">
       <Card className="w-full max-w-4xl p-8 shadow-lg">
-        <h2 className="text-3xl font-bold text-green-700 text-center mb-6">📚 Register a New Student</h2>
+        <h2 className="text-3xl font-bold text-black-700 text-center mb-6"> Register a New Student</h2>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
@@ -126,7 +126,7 @@ export default function AddStudentPage() {
           </Select>
 
 
-          <Button type="submit" className="w-full bg-green-600 hover:bg-green-500" disabled={isSubmitting}>
+          <Button type="submit" className="w-full bg-[#004E8C] hover:bg-[#0059A8]" disabled={isSubmitting}>
             {isSubmitting ? "Processing..." : "Register Student"}
           </Button>
         </form>
