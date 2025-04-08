@@ -8,7 +8,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Note
-        fields = ['id', 'message', 'created_at', 'read', 'instructor_name', 'student_id']
+        fields = '__all__'
 
 
 class PredefinedNotificationSerializer(serializers.ModelSerializer):
