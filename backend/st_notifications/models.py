@@ -4,7 +4,7 @@ from django.db import models
 from users.models import Student, Instructor   
 
 class Note(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='notes', null=True, blank=True)  
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='notes', null=True, blank=True) 
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE, related_name='sent_notes', null=True, blank=True)  
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

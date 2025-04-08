@@ -1,126 +1,102 @@
-import os
 import subprocess
 import tempfile
-import json
-from django.conf import settings
+import time
+import os
 
-def run_code_and_test(code, language, test_cases):
-    """
-    Executes student code against multiple test cases and returns detailed results.
-    
-    Args:
-        code (str): The student's submitted code
-        language (str): Programming language ('python', 'javascript', 'java')
-        test_cases (QuerySet): Django queryset of TestCase objects
-    
-    Returns:
-        list: List of dictionaries containing test results
-    """
+def run_code_with_test_cases(code, language, test_cases):
+    # Temporary file to write the submitted code
+    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix=f'.{language}') as temp_file:
+        temp_file.write(code)
+        temp_file_path = temp_file.name
+
+    # Store results for each test case
     results = []
-    
-    # Validate language support
-    supported_languages = ['python', 'javascript', 'java']
-    if language not in supported_languages:
-        return [{
-            "error": f"Unsupported language: {language}",
-            "score": 0,
-            "passed": False
-        } for _ in test_cases]
 
-    try:
-        # Create temporary file
-        file_extension = {
-            'python': '.py',
-            'javascript': '.js',
-            'java': '.java',
-        }[language]
+    for test_case in test_cases:
+        input_data = test_case.get('input', '')
+        expected_output = test_case.get('expected_output', '')
+        timeout = test_case.get('timeout', 5)
 
-        with tempfile.NamedTemporaryFile(
-            mode='w+',
-            suffix=file_extension,
-            delete=False,
-            dir=settings.CODE_EXECUTION_TEMP_DIR  # Configure this in settings.py
-        ) as temp_file:
-            temp_file.write(code)
-            temp_file.flush()
-            filename = temp_file.name
-            basename = os.path.basename(filename).split('.')[0]
-
-        # Compile Java code if needed
-        if language == 'java':
-            compile_process = subprocess.run(
-                ['javac', filename],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            if compile_process.returncode != 0:
-                return [{
-                    "error": compile_process.stderr,
-                    "score": 0,
-                    "passed": False
-                } for _ in test_cases]
-
-        # Process each test case
-        for test_case in test_cases:
-            result = {
-                "test_case_id": test_case.id,
-                "input": test_case.input,
-                "expected_output": test_case.expected_output,
-                "score": 0,
-                "passed": False,
-                "actual_output": None,
-                "error": None
-            }
-
-            try:
-                # Prepare command based on language
-                if language == 'python':
-                    command = ['python', filename]
-                elif language == 'javascript':
-                    command = ['node', filename]
-                elif language == 'java':
-                    command = ['java', '-cp', os.path.dirname(filename), basename]
-
-                # Execute the code with timeout
-                process = subprocess.run(
-                    command,
-                    input=test_case.input,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=test_case.timeout or 5  # Use test case timeout or default 5s
-                )
-
-                if process.stderr:
-                    result["error"] = process.stderr
-                else:
-                    actual_output = process.stdout.strip()
-                    result["actual_output"] = actual_output
-                    result["passed"] = (actual_output == test_case.expected_output)
-                    result["score"] = test_case.points if result["passed"] else 0
-
-            except subprocess.TimeoutExpired:
-                result["error"] = "Execution timed out"
-            except Exception as e:
-                result["error"] = str(e)
-            
-            results.append(result)
-
-        return results
-
-    except Exception as e:
-        return [{
-            "error": f"System error: {str(e)}",
-            "score": 0,
-            "passed": False
-        } for _ in test_cases]
-    finally:
-        # Cleanup temporary files
         try:
-            if os.path.exists(filename):
-                os.remove(filename)
-            if language == 'java' and os.path.exists(f"{basename}.class"):
-                os.remove(f"{basename}.class")
-        except Exception as cleanup_error:
-            print(f"Cleanup error: {cleanup_error}")
+            start_time = time.time()  # Capture start time
+
+            # Execute code depending on the language
+            if language == 'python':
+                result = subprocess.run(
+                    ['python3', temp_file_path],
+                    input=input_data,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+            elif language == 'javascript':
+                # Ensure Node.js is installed on the server
+                result = subprocess.run(
+                    ['node', temp_file_path],
+                    input=input_data,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+            elif language == 'java':
+                # Compile and run Java code (you must have `javac` installed)
+                result = subprocess.run(
+                    ['javac', temp_file_path],  # Compile Java code
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout
+                )
+                if result.returncode == 0:  # Only run if compilation was successful
+                    result = subprocess.run(
+                        ['java', temp_file_path.replace('.java', '')],  # Run the compiled code
+                        input=input_data,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout
+                    )
+            else:
+                raise ValueError(f"Unsupported language: {language}")
+
+            end_time = time.time()  # Capture end time
+            execution_time = end_time - start_time  # Calculate execution time
+
+            # Handle output and compare with expected output
+            passed = result.stdout.strip() == expected_output.strip()
+            results.append({
+                'id': test_case['id'],
+                'input': input_data,
+                'expected_output': expected_output,
+                'actual_output': result.stdout.strip(),
+                'pass': passed,
+                'execution_time': execution_time,  # Capture execution time
+                'score': test_case.get('points', 1) if passed else 0  # Assign points for passed tests
+            })
+
+        except subprocess.TimeoutExpired:
+            results.append({
+                'id': test_case['id'],
+                'input': input_data,
+                'expected_output': expected_output,
+                'actual_output': 'Timeout',
+                'pass': False,
+                'execution_time': None,
+                'score': 0
+            })
+        except Exception as e:
+            results.append({
+                'id': test_case['id'],
+                'input': input_data,
+                'expected_output': expected_output,
+                'actual_output': str(e),
+                'pass': False,
+                'execution_time': None,
+                'score': 0
+            })
+
+    # Cleanup temporary file
+    try:
+        os.remove(temp_file_path)
+    except Exception as e:
+        print(f"Error cleaning up temporary file: {e}")
+
+    return results

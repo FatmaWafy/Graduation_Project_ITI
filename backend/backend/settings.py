@@ -20,7 +20,7 @@ from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+CODE_EXECUTION_TEMP_DIR = '../backend/exams/temp'  # Temporary directory for code execution
 
 
 # Quick-start development settings - unsuitable for production

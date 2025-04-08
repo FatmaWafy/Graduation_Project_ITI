@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from exams.utils import run_code_and_test
+from exams.utils import run_code_with_test_cases
 from users.models import Student, User
 from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
 from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
@@ -315,12 +315,11 @@ class CodingtestCaseViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-# views.py
+
 class StudentExamAnswerViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='submit-answer')
     @permission_classes([IsAuthenticated])
     def submit_exam_answer(self, request):
-        answers_dict = request.data
         student = request.user
         
         # Validate data structure
@@ -344,6 +343,7 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
             # Validate answer structures
             mcq_answers = request.data.get('mcq_answers', {})
             coding_answers = request.data.get('coding_answers', {})
+            code_results = request.data.get('code_results', [])  # Frontend will send test results
             
             if not isinstance(mcq_answers, dict) or not isinstance(coding_answers, dict):
                 return Response({"error": "mcq_answers and coding_answers must be dictionaries."}, 
@@ -356,38 +356,11 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 exam_instance=exam_instance
             )
 
-            # Process coding answers
-            code_results = []
-            for question_id, code in coding_answers.items():
-                try:
-                    question = CodingQuestion.objects.get(id=question_id)
-                    test_cases = question.test_cases.all()
-                    
-                    # Ensure code is a string
-                    if not isinstance(code, str):
-                        return Response({"error": f"Code for question {question_id} must be a string."}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-                    
-                    # Run tests and validate result structure
-                    result = run_code_and_test(code, question.language, test_cases)
-                    if not isinstance(result, list):  # Assuming result should be a list of test cases
-                        return Response({"error": f"Invalid test results format for question {question_id}."}, 
-                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    
-                    score_sum = sum([r.get("score", 0) if isinstance(r, dict) else 0 for r in result])
-                    
-                    code_results.append({
-                        "question_id": question_id,
-                        "score": score_sum,
-                        "max_score": question.points,
-                        "test_results": result
-                    })
-                except CodingQuestion.DoesNotExist:
-                    return Response({"error": f"Question {question_id} not found"}, 
+            # Validate code_results structure
+            for result in code_results:
+                if not isinstance(result, dict) or 'question_id' not in result or 'test_results' not in result:
+                    return Response({"error": "Invalid code_results format."}, 
                                 status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    return Response({"error": f"Error processing question {question_id}: {str(e)}"}, 
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Prepare answers to save
             answers_to_save = {
@@ -418,43 +391,8 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
             print(f"Error in submit_exam_answer: {str(e)}")
             return Response({"error": "An unexpected error occurred."}, 
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-    @action(detail=True, methods=['get'], url_path='get-student-answer')
-    def get_student_answer(self, request, pk=None):
-        student = request.user
-        print(request.user)
-        exam_instance_id = pk
 
-        try:
-            exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
-            answer = StudentExamAnswer.objects.get(
-                student=student, 
-                exam_instance=exam_instance
-            )
-            
-            answers = answer.get_answers()
-            
-            if not answers:
-                return Response({
-                    "error": "No answers found for this exam instance",
-                    "score": answer.score,
-                    "submitted_at": answer.submitted_at
-                }, status=status.HTTP_404_NOT_FOUND)
 
-            return Response({
-                "mcq_answers": answers.get("mcq_answers", {}),
-                "code_answers": answers.get("code_answers", {}),
-                "code_results": answers.get("code_results", []),
-                "score": answer.score,
-                "submitted_at": answer.submitted_at
-            }, status=status.HTTP_200_OK)
-
-        except TemporaryExamInstance.DoesNotExist:
-            return Response({"error": "Exam instance not found."}, 
-                        status=status.HTTP_404_NOT_FOUND)
-        except StudentExamAnswer.DoesNotExist:
-            return Response({"error": "Student answer not found."}, 
-                        status=status.HTTP_404_NOT_FOUND)
 
 
 class CheatingLogView(APIView):
@@ -490,3 +428,111 @@ def get_cheating_logs(request, exam_id):
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+
+class CodeExecutionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Execute code against test cases.
+        
+        Expected request body:
+        {
+            "code": "string (required)",
+            "language": "string (required, one of 'python', 'javascript', 'java')",
+            "test_cases": [
+                {
+                    "id": "string (required)",
+                    "input": "string (optional)",
+                    "expected_output": "string (required)",
+                    "points": number (optional, default=1),
+                    "timeout": number (optional, default=5)"
+                }
+            ]
+        }
+        """
+        # Validate required fields
+        required_fields = ['code', 'language', 'test_cases']
+        if not all(field in request.data for field in required_fields):
+            return Response(
+                {"error": "Missing required fields (code, language, test_cases)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Extract and validate data
+        code = request.data.get('code')
+        language = request.data.get('language').lower()
+        test_cases = request.data.get('test_cases')
+        
+        # Validate language
+        supported_languages = ['python', 'javascript', 'java']
+        if language not in supported_languages:
+            return Response(
+                {"error": f"Unsupported language. Must be one of: {', '.join(supported_languages)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate test cases structure
+        if not isinstance(test_cases, list):
+            return Response(
+                {"error": "test_cases must be an array"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(test_cases) == 0:
+            return Response(
+                {"error": "At least one test case is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Process test cases
+        processed_test_cases = []
+        for i, case in enumerate(test_cases, 1):
+            if not isinstance(case, dict):
+                return Response(
+                    {"error": f"Test case {i} must be an object"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if 'id' not in case or 'expected_output' not in case:
+                return Response(
+                    {"error": f"Test case {i} must have 'id' and 'expected_output'"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            processed_test_cases.append({
+                'id': str(case['id']),  # Ensure ID is string
+                'input': str(case.get('input', '')),
+                'expected_output': str(case['expected_output']),
+                'points': float(case.get('points', 1)),  # Convert to float
+                'timeout': int(case.get('timeout', 5)),  # Default 5 seconds
+            })
+        
+        # Execute the code
+        try:
+            results = run_code_with_test_cases(code, language, processed_test_cases)
+        except Exception as e:
+            return Response(
+                {"error": f"Execution setup failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Calculate summary statistics
+        total_score = sum(result.get('score', 0) for result in results)
+        passed_count = sum(1 for result in results if result.get('passed', False))
+        execution_times = [r.get('execution_time', 0) for r in results if 'execution_time' in r]
+        
+        # Prepare response
+        response_data = {
+            'results': results,
+            'summary': {
+                'total_score': total_score,
+                'passed_count': passed_count,
+                'total_tests': len(results),
+                'average_execution_time': sum(execution_times)/len(execution_times) if execution_times else 0,
+                'language': language
+            }
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)

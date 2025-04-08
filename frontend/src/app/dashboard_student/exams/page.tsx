@@ -108,8 +108,8 @@ export default function ExamsPage() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {new Date(exam.date).toLocaleDateString()} • {exam.duration}{" "}
-                      minutes
+                      {new Date(exam.date).toLocaleDateString()} •{" "}
+                      {exam.duration} minutes
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -131,8 +131,8 @@ export default function ExamsPage() {
                     {exam.preparationProgress < 30
                       ? "Need to start preparing"
                       : exam.preparationProgress < 70
-                        ? "In progress"
-                        : "Well prepared"}
+                      ? "In progress"
+                      : "Well prepared"}
                   </div>
 
                   {submitted ? (
@@ -150,7 +150,6 @@ export default function ExamsPage() {
                       </Button>
                     </Link>
                   )}
-
                 </CardFooter>
               </Card>
             );
