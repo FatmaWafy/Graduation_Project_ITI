@@ -71,7 +71,7 @@ interface QuestionListProps {
 
 export default function QuestionList({ questions, currentIndex, onSelectQuestion, answers }: QuestionListProps) {
   return (
-    <div className="bg-background text-foreground">
+    <div className="p-6 bg-background text-foreground">
       <h2 className="text-lg font-semibold mb-4">Questions</h2>
       <ul className="space-y-2">
         {questions.map((question, index) => {
