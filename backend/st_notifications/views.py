@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from users.models import Instructor, Student  # Import Instructor and Student from users app
+from users.models import Instructor, Student , Track # Import Instructor and Student from users app
 from st_notifications.models import Note , PredefinedNotification
 from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer, StudentSerializer
 from rest_framework import generics, serializers  # DRF classes
@@ -15,37 +15,60 @@ class SendNotificationView(APIView):
     http_method_names = ['get', 'post', 'head', 'options']
 
     def post(self, request):
-        """Allows instructors to send notes to students without authentication."""
+        """Allows instructors to send notes to students or tracks without authentication."""
 
         # Retrieve data from request
         instructor_id = request.data.get("instructor_id")
         student_id = request.data.get("student_id")
+        track_id = request.data.get("track_id")
         message = request.data.get("message")
 
         # Ensure required fields are provided
-        if not all([instructor_id, student_id, message]):
+        if not any([student_id, track_id]) or not all([instructor_id, message]):
             return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch instructor by ID
         instructor = get_object_or_404(Instructor, id=instructor_id)
-        student = get_object_or_404(Student, id=student_id)
 
-        # Create Note
-        note = Note.objects.create(
-            instructor=instructor,
-            student=student,
-            message=message
-        )
+        # Case: Send to all students in a track
+        if track_id:
+            track = get_object_or_404(Track, id=track_id)
+            students_in_track = Student.objects.filter(track=track)
 
-        # Serialize the note and add instructor info to the response
-        response_data = NotificationSerializer(note).data
-        response_data["instructor_name"] = instructor.user.username
-        response_data["instructor_id"] = instructor.id
+            notes = []
+            for student in students_in_track:
+                note = Note.objects.create(
+                    instructor=instructor,
+                    student=student,
+                    track=track,
+                    message=message
+                )
+                serialized_note = NotificationSerializer(note).data
+                serialized_note["instructor_name"] = instructor.user.username
+                serialized_note["instructor_id"] = instructor.id
+                notes.append(serialized_note)
 
-        return Response(
-            {"message": "Note sent successfully!", "note": response_data},
-            status=status.HTTP_201_CREATED
-        )
+            return Response(
+                {"message": f"Notes sent to all students in {track.name}!", "notes": notes},
+                status=status.HTTP_201_CREATED
+            )
+
+        # Case: Send to individual student
+        else:
+            student = get_object_or_404(Student, id=student_id)
+            note = Note.objects.create(
+                instructor=instructor,
+                student=student,
+                message=message
+            )
+            response_data = NotificationSerializer(note).data
+            response_data["instructor_name"] = instructor.user.username
+            response_data["instructor_id"] = instructor.id
+
+            return Response(
+                {"message": "Note sent successfully!", "note": response_data},
+                status=status.HTTP_201_CREATED
+            )
 
 class MarkNotificationAsReadView(APIView):
     permission_classes = [IsAuthenticated]

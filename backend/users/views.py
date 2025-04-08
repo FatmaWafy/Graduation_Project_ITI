@@ -207,22 +207,45 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
     """
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific student based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
+
+        try:
+            # البحث عن المستخدم باستخدام الـ user ID
+            user = User.objects.get(id=user_id)
+            # البحث عن الطالب المرتبط بالـ user
+            student = Student.objects.get(user=user)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        # دمج البيانات من جدول الـ User و Student
+        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        student_data = StudentSerializer(student).data
+
+        # دمج البيانات
+        combined_data = {**user_data, **student_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         """
         Create a new student
         """
-        # نسخ البيانات القادمة من الـ request
         data = request.data.copy()
-
-        # تعيين الدور "student" في البيانات
         data["role"] = "student"
         
         # تحقق من وجود track_name
@@ -245,9 +268,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
         
         # إذا كانت البيانات غير صحيحة، أرجع الأخطاء
-        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
     def update(self, request, *args, **kwargs):
         """
@@ -257,11 +278,11 @@ class StudentViewSet(viewsets.ModelViewSet):
         data = request.data.copy()
 
         # التحقق من وجود track وتحديثه إذا لزم الأمر
-        if 'track' in data:  # هنا نستخدم track كـ ID
+        if 'track' in data:
             track_id = data.get('track')
             try:
-                track = Track.objects.get(id=track_id)  # نبحث عن track باستخدام ID
-                instance.track = track  # نعيّن الكائن نفسه
+                track = Track.objects.get(id=track_id)
+                instance.track = track
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -278,6 +299,37 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         instance.save()
         return Response({"message": "Student updated successfully!", "student": self.get_serializer(instance).data}, status=status.HTTP_200_OK)
+    
+class InstructorViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Instructors
+    """
+    queryset = Instructor.objects.all()
+    serializer_class = InstructorSerializer
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific instructor based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
+
+        try:
+            user = User.objects.get(id=user_id)
+            instructor = Instructor.objects.get(user=user)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        instructor_data = InstructorSerializer(instructor).data
+
+        combined_data = {**user_data, **instructor_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
+    
 
 class TrackListAPIView(APIView):
     """

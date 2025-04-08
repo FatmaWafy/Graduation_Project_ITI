@@ -29,7 +29,8 @@ interface Notification {
   is_track_notification?: boolean
 }
 
- 
+
+
  
 export async function sendNotification(params: SendNotificationParams): Promise<NotificationResponse> {
   try {
@@ -39,31 +40,39 @@ export async function sendNotification(params: SendNotificationParams): Promise<
         "Content-Type": "application/json",
       },
       body: JSON.stringify(params),
-    })
+    });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
+      const errorData = await response.json().catch(() => null);
       throw new Error(
         `Failed to send notification: ${response.status} ${response.statusText}${
           errorData ? ` - ${JSON.stringify(errorData)}` : ""
-        }`,
-      )
+        }`
+      );
     }
 
-    const data = await response.json()
+    // التحقق من حالة الاستجابة فقط
+    const data = await response.json();
 
     // طباعة الاستجابة في الـ console
-    console.log("Notification sent:", data)
+    console.log("Notification sent:", data);
+
+    // إذا كانت الحالة 200، نعرض رسالة النجاح
+    if (response.status === 200) {
+      alert("Notification sent successfully!");
+    }
 
     // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
-    revalidatePath("/dashboard_student/notifications")
+    revalidatePath("/dashboard_student/notifications");
 
-    return data
+    return data;
   } catch (error) {
-    console.error("Error sending notification:", error)
-    throw error
+    console.error("Error sending notification:", error);
+    throw error;
   }
 }
+
+
  
 export async function getStudentNotifications(): Promise<Notification[]> {
   try {
