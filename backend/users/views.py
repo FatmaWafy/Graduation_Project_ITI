@@ -13,8 +13,11 @@ from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import viewsets
-
-
+import pandas as pd
+from openpyxl import load_workbook
+import csv
+from random import choice
+import string
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -285,3 +288,102 @@ class TrackListAPIView(APIView):
     def get(self, request):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
+
+
+class RegisterStudentsFromExcelAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # تأكد أن المستخدم هو المدرب
+        if request.user.role != "instructor":
+            return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+        # التحقق من وجود ملف
+        if 'file' not in request.FILES:
+            return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+        file = request.FILES['file']
+
+        # محاولة فتح وقراءة ملف CSV
+        try:
+            # استخدام مكتبة csv لقراءة البيانات من الملف
+            file_data = file.read().decode("utf-8").splitlines()
+            csv_reader = csv.reader(file_data)
+            next(csv_reader)  # تخطي العنوان
+        except Exception as e:
+            return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        instructor = Instructor.objects.get(user=request.user)
+
+        # التحقق من وجود Tracks للمدرب
+        if instructor.tracks.count() == 0:
+            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # إذا كان المدرب لديه أكثر من تراك، نتأكد من التحديد الصحيح للتراك
+        if instructor.tracks.count() > 1:
+            track_names = [track.name for track in instructor.tracks.all()]
+        else:
+            track_names = [instructor.tracks.first().name]
+
+        students_added = 0
+        for row in csv_reader:  # قراءة البيانات من كل صف
+            # تحقق من أن الصف يحتوي على 3 عناصر على الأقل (username, email, track_name)
+            if len(row) < 3:
+                continue  # تخطي الصف إذا كان لا يحتوي على البيانات الكافية
+
+            username, email, track_name = row[0], row[1], row[2]
+
+            # التحقق من أن التراك الموجود في الملف هو تراك موجود بالفعل
+            if track_name not in track_names:
+                continue  # تجاهل الصف إذا كان التراك غير موجود
+
+            # توليد كلمة مرور عشوائية
+            password = ''.join(choice(string.ascii_letters + string.digits) for i in range(12))
+
+            # إنشاء حساب المستخدم الجديد
+            user_instance = User.objects.create_user(
+                email=email, 
+                username=username,  # يمكن استخدام اسم المستخدم كما هو
+                password=password,
+                role='student'  # تعيين دور المستخدم كـ "student"
+            )
+
+            # إنشاء كائن التراك
+            track = Track.objects.get(name=track_name)
+
+            # إنشاء كائن الطالب وربطه بحساب المستخدم والتراك
+            student = Student.objects.create(
+                user=user_instance,  # ربط الطالب بحساب المستخدم الذي تم إنشاؤه
+                track=track
+            )
+
+            # إرسال بريد إلكتروني للطالب يحتوي على بيانات الدخول
+            email_subject = "Your Student Account Credentials"
+            email_message = f"""
+            Hi {student.user.username},
+
+            Your student account has been created successfully.
+
+            Track: {student.track.name}
+            Email: {student.user.email}
+            Password: {password}
+
+            Please change your password after logging in.
+
+            Best regards,
+            Your Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.user.email],
+                fail_silently=False,
+            )
+
+            students_added += 1
+
+        return Response({
+            "message": f"{students_added} students added successfully.",
+        }, status=status.HTTP_201_CREATED)

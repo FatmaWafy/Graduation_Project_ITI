@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import RegisterInstructorAPIView, LoginAPIView, RegisterStudentAPIView , ResetPasswordRequestAPIView, ResetPasswordAPIView,StudentViewSet,TrackListAPIView
+from .views import RegisterInstructorAPIView, LoginAPIView, RegisterStudentAPIView , ResetPasswordRequestAPIView, ResetPasswordAPIView,StudentViewSet,TrackListAPIView, RegisterStudentsFromExcelAPIView
 from rest_framework.routers import DefaultRouter
 
 
@@ -13,8 +13,6 @@ urlpatterns = [
     path("reset-password/", ResetPasswordAPIView.as_view(), name="reset-password"),
     path("register-student/", RegisterStudentAPIView.as_view(), name="register-student"),
     path("get-tracks/", TrackListAPIView.as_view(), name="get-tracks"),
-
+    path("register-students-excel/", RegisterStudentsFromExcelAPIView.as_view(), name="register-students-excel"),  # المسار الجديد
     path('', include(router.urls)),
-
-
 ]
