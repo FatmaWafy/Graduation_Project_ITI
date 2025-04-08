@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 
 interface TestCase {
@@ -130,6 +129,7 @@ export default function AddExamPage() {
             ...q,
             type: "code",
             question_text: q.title || q.question_text || "",
+            description: q.description || "",
           };
         } else {
           return {
@@ -202,9 +202,14 @@ export default function AddExamPage() {
       updatedQuestions[index].question_text = value;
     } else {
       updatedQuestions[index].title = value;
-      updatedQuestions[index].description = value;
       updatedQuestions[index].question_text = value;
     }
+    setQuestions(updatedQuestions);
+  };
+
+  const handleDescriptionChange = (index: number, value: string) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[index].description = value;
     setQuestions(updatedQuestions);
   };
 
@@ -355,7 +360,6 @@ export default function AddExamPage() {
         return;
       }
 
-      // Prepare new MCQ questions (unchanged)
       const newMCQs = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
@@ -371,7 +375,6 @@ export default function AddExamPage() {
           language: q.language,
         }));
 
-      // Prepare new coding questions - now without test_cases
       const newCodingQuestions = questions
         .filter(
           (q) =>
@@ -381,21 +384,18 @@ export default function AddExamPage() {
         )
         .map((q) => ({
           title: q.title || q.question_text,
-          description: q.description || q.question_text,
+          description: q.description || "",
           difficulty: q.difficulty,
           starter_code: q.starter_code || "",
           source: "exam_ui",
           points: q.points || 1.0,
           language: q.language,
           tags: q.tags || [],
-          // Don't include test_cases here - we'll handle them separately
         }));
 
-      // Arrays to store newly created question IDs
       const createdMCQIds: number[] = [];
       const createdCodingIds: number[] = [];
 
-      // First, create new MCQ questions if any (unchanged)
       if (newMCQs.length > 0) {
         for (const mcq of newMCQs) {
           try {
@@ -425,7 +425,6 @@ export default function AddExamPage() {
         }
       }
 
-      // Create new coding questions if any
       if (newCodingQuestions.length > 0) {
         for (let i = 0; i < newCodingQuestions.length; i++) {
           const codingQ = newCodingQuestions[i];
@@ -436,7 +435,6 @@ export default function AddExamPage() {
           );
 
           try {
-            // First create the coding question
             const codingResponse = await fetch(
               "http://127.0.0.1:8000/exam/code-questions/",
               {
@@ -458,7 +456,6 @@ export default function AddExamPage() {
             const createdQuestion = await codingResponse.json();
             createdCodingIds.push(createdQuestion.id);
 
-            // Then create test cases for this question if any exist
             if (
               originalQuestion?.test_cases &&
               originalQuestion.test_cases.length > 0
@@ -474,7 +471,7 @@ export default function AddExamPage() {
                         Authorization: `Bearer ${token}`,
                       },
                       body: JSON.stringify({
-                        question: createdQuestion.id, // Use the actual ID from the created question
+                        question: createdQuestion.id,
                         input_data: testCase.input_data,
                         expected_output: testCase.expected_output,
                       }),
@@ -496,7 +493,6 @@ export default function AddExamPage() {
         }
       }
 
-      // Prepare exam data with all question IDs
       const examData = {
         title: examTitle,
         duration: examDuration,
@@ -507,7 +503,6 @@ export default function AddExamPage() {
         ],
       };
 
-      // Create the exam (unchanged)
       const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
         headers: {
@@ -522,9 +517,30 @@ export default function AddExamPage() {
         throw new Error(errorData.message || "Failed to create exam");
       }
 
-      // Success handling (unchanged)
       alert("Exam created successfully!");
-      // Reset form...
+      setExamTitle("");
+      setExamDuration(60);
+      setQuestions([
+        {
+          id: Date.now(),
+          type: "mcq",
+          question_text: "",
+          option_a: "",
+          option_b: "",
+          option_c: "",
+          option_d: "",
+          correct_option: "A",
+          difficulty: "Easy",
+          source: "exam_ui",
+          points: 1.0,
+          language: "Python",
+        },
+      ]);
+      setSelectedQuestions([]);
+      setCodedQuestions([]);
+      setShowCreateQuestion(false);
+
+      fetchQuestions();
     } catch (error) {
       console.error("Error:", error);
       alert(
@@ -767,7 +783,12 @@ export default function AddExamPage() {
                       <div className="font-medium">
                         {question.question_text || question.title}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      {question.description && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          {question.description}
+                        </div>
+                      )}
+                      <div className="text-sm text-gray-600 mt-1">
                         Type: Code | Difficulty:{" "}
                         <span
                           className={`${
@@ -849,6 +870,17 @@ export default function AddExamPage() {
                   value={q.type === "mcq" ? q.question_text : q.title || ""}
                   onChange={(e) => handleQuestionChange(qIndex, e.target.value)}
                 />
+
+                {q.type === "code" && (
+                  <textarea
+                    placeholder="Enter the question description"
+                    className="textarea textarea-bordered w-full"
+                    value={q.description || ""}
+                    onChange={(e) =>
+                      handleDescriptionChange(qIndex, e.target.value)
+                    }
+                  />
+                )}
 
                 <div>
                   <label className="block font-medium mb-1">Language:</label>
