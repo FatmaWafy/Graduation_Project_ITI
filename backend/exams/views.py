@@ -1,9 +1,10 @@
 from datetime import timedelta
+import json
+import subprocess
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from exams.utils import run_code_with_test_cases
 from users.models import Student, User
 from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
 from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
@@ -12,6 +13,8 @@ import jwt
 from rest_framework.permissions import IsAuthenticated
 import sqlite3
 from rest_framework.decorators import api_view, permission_classes
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
 
 
 # ✅ عرض وإنشاء الامتحانات
@@ -59,7 +62,7 @@ class TempExamViewSet(viewsets.ModelViewSet):
                 send_mail(
                     subject=f"Your Exam: {exam.title}",
                     message=f"Hello {student.name},\nYou have been assigned the exam '{exam.title}'.\nStart Time: {temp_exam.start_time}\nEnd Time: {temp_exam.end_time}",
-                    from_email="admin@example.com",
+                    from_email="saraahamrr98@gmail.com",
                     recipient_list=[student.email],
                     fail_silently=True
                 )
@@ -97,9 +100,6 @@ class TempExamViewSet(viewsets.ModelViewSet):
             return Response({"error": "TempExam not found"}, status=404)
 
 
-# # ✅ تقديم إجابات الطالب للامتحان
-# class StudentExamSubmitView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
 
 #filtered MCQ Questions
 class FilteredMCQQuestionListView(generics.ListAPIView):
@@ -316,81 +316,81 @@ class CodingtestCaseViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class StudentExamAnswerViewSet(viewsets.ViewSet):
-    @action(detail=False, methods=['post'], url_path='submit-answer')
-    @permission_classes([IsAuthenticated])
-    def submit_exam_answer(self, request):
-        student = request.user
+# class StudentExamAnswerViewSet(viewsets.ViewSet):
+#     @action(detail=False, methods=['post'], url_path='submit-answer')
+#     @permission_classes([IsAuthenticated])
+#     def submit_exam_answer(self, request):
+#         student = request.user
         
-        # Validate data structure
-        if not isinstance(request.data, dict):
-            return Response({"error": "Invalid data format. Expected a JSON object."}, 
-                        status=status.HTTP_400_BAD_REQUEST)
+#         # Validate data structure
+#         if not isinstance(request.data, dict):
+#             return Response({"error": "Invalid data format. Expected a JSON object."}, 
+#                         status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            # Validate and extract exam_instance_id
-            exam_instance_id = request.data.get('exam_instance')
-            if not exam_instance_id:
-                return Response({"error": "Missing exam_instance parameter."}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             # Validate and extract exam_instance_id
+#             exam_instance_id = request.data.get('exam_instance')
+#             if not exam_instance_id:
+#                 return Response({"error": "Missing exam_instance parameter."}, 
+#                             status=status.HTTP_400_BAD_REQUEST)
             
-            try:
-                exam_instance_id = int(exam_instance_id)
-            except (ValueError, TypeError):
-                return Response({"error": "exam_instance must be an integer ID."}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+#             try:
+#                 exam_instance_id = int(exam_instance_id)
+#             except (ValueError, TypeError):
+#                 return Response({"error": "exam_instance must be an integer ID."}, 
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-            # Validate answer structures
-            mcq_answers = request.data.get('mcq_answers', {})
-            coding_answers = request.data.get('coding_answers', {})
-            code_results = request.data.get('code_results', [])  # Frontend will send test results
+#             # Validate answer structures
+#             mcq_answers = request.data.get('mcq_answers', {})
+#             coding_answers = request.data.get('coding_answers', {})
+#             code_results = request.data.get('code_results', [])  # Frontend will send test results
             
-            if not isinstance(mcq_answers, dict) or not isinstance(coding_answers, dict):
-                return Response({"error": "mcq_answers and coding_answers must be dictionaries."}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+#             if not isinstance(mcq_answers, dict) or not isinstance(coding_answers, dict):
+#                 return Response({"error": "mcq_answers and coding_answers must be dictionaries."}, 
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-            # Fetch the exam instance
-            exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
-            exam_answer, _ = StudentExamAnswer.objects.get_or_create(
-                student=student, 
-                exam_instance=exam_instance
-            )
+#             # Fetch the exam instance
+#             exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
+#             exam_answer, _ = StudentExamAnswer.objects.get_or_create(
+#                 student=student, 
+#                 exam_instance=exam_instance
+#             )
 
-            # Validate code_results structure
-            for result in code_results:
-                if not isinstance(result, dict) or 'question_id' not in result or 'test_results' not in result:
-                    return Response({"error": "Invalid code_results format."}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+#             # Validate code_results structure
+#             for result in code_results:
+#                 if not isinstance(result, dict) or 'question_id' not in result or 'test_results' not in result:
+#                     return Response({"error": "Invalid code_results format."}, 
+#                                 status=status.HTTP_400_BAD_REQUEST)
 
-            # Prepare answers to save
-            answers_to_save = {
-                "mcq_answers": mcq_answers,
-                "code_answers": coding_answers,
-                "code_results": code_results,
-            }
+#             # Prepare answers to save
+#             answers_to_save = {
+#                 "mcq_answers": mcq_answers,
+#                 "code_answers": coding_answers,
+#                 "code_results": code_results,
+#             }
 
-            # Submit exam
-            submission_response = exam_answer.submit_exam(answers_to_save)
-            if isinstance(submission_response, str) or "error" in submission_response:
-                error_msg = submission_response if isinstance(submission_response, str) else submission_response["error"]
-                return Response({"error": error_msg}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+#             # Submit exam
+#             submission_response = exam_answer.submit_exam(answers_to_save)
+#             if isinstance(submission_response, str) or "error" in submission_response:
+#                 error_msg = submission_response if isinstance(submission_response, str) else submission_response["error"]
+#                 return Response({"error": error_msg}, 
+#                             status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                "message": submission_response.get("message", "Answers submitted successfully"),
-                "score": submission_response.get("score", 0),
-                "code_results": code_results,
-                "mcq_answers": mcq_answers,
-                "coding_answers": coding_answers
-            }, status=status.HTTP_201_CREATED)
+#             return Response({
+#                 "message": submission_response.get("message", "Answers submitted successfully"),
+#                 "score": submission_response.get("score", 0),
+#                 "code_results": code_results,
+#                 "mcq_answers": mcq_answers,
+#                 "coding_answers": coding_answers
+#             }, status=status.HTTP_201_CREATED)
 
-        except TemporaryExamInstance.DoesNotExist:
-            return Response({"error": "Exam instance not found."}, 
-                        status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            print(f"Error in submit_exam_answer: {str(e)}")
-            return Response({"error": "An unexpected error occurred."}, 
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         except TemporaryExamInstance.DoesNotExist:
+#             return Response({"error": "Exam instance not found."}, 
+#                         status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             print(f"Error in submit_exam_answer: {str(e)}")
+#             return Response({"error": "An unexpected error occurred."}, 
+#                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -428,111 +428,3 @@ def get_cheating_logs(request, exam_id):
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-
-
-class CodeExecutionAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request, *args, **kwargs):
-        """
-        Execute code against test cases.
-        
-        Expected request body:
-        {
-            "code": "string (required)",
-            "language": "string (required, one of 'python', 'javascript', 'java')",
-            "test_cases": [
-                {
-                    "id": "string (required)",
-                    "input": "string (optional)",
-                    "expected_output": "string (required)",
-                    "points": number (optional, default=1),
-                    "timeout": number (optional, default=5)"
-                }
-            ]
-        }
-        """
-        # Validate required fields
-        required_fields = ['code', 'language', 'test_cases']
-        if not all(field in request.data for field in required_fields):
-            return Response(
-                {"error": "Missing required fields (code, language, test_cases)"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Extract and validate data
-        code = request.data.get('code')
-        language = request.data.get('language').lower()
-        test_cases = request.data.get('test_cases')
-        
-        # Validate language
-        supported_languages = ['python', 'javascript', 'java']
-        if language not in supported_languages:
-            return Response(
-                {"error": f"Unsupported language. Must be one of: {', '.join(supported_languages)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Validate test cases structure
-        if not isinstance(test_cases, list):
-            return Response(
-                {"error": "test_cases must be an array"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        if len(test_cases) == 0:
-            return Response(
-                {"error": "At least one test case is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Process test cases
-        processed_test_cases = []
-        for i, case in enumerate(test_cases, 1):
-            if not isinstance(case, dict):
-                return Response(
-                    {"error": f"Test case {i} must be an object"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            if 'id' not in case or 'expected_output' not in case:
-                return Response(
-                    {"error": f"Test case {i} must have 'id' and 'expected_output'"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            processed_test_cases.append({
-                'id': str(case['id']),  # Ensure ID is string
-                'input': str(case.get('input', '')),
-                'expected_output': str(case['expected_output']),
-                'points': float(case.get('points', 1)),  # Convert to float
-                'timeout': int(case.get('timeout', 5)),  # Default 5 seconds
-            })
-        
-        # Execute the code
-        try:
-            results = run_code_with_test_cases(code, language, processed_test_cases)
-        except Exception as e:
-            return Response(
-                {"error": f"Execution setup failed: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        
-        # Calculate summary statistics
-        total_score = sum(result.get('score', 0) for result in results)
-        passed_count = sum(1 for result in results if result.get('passed', False))
-        execution_times = [r.get('execution_time', 0) for r in results if 'execution_time' in r]
-        
-        # Prepare response
-        response_data = {
-            'results': results,
-            'summary': {
-                'total_score': total_score,
-                'passed_count': passed_count,
-                'total_tests': len(results),
-                'average_execution_time': sum(execution_times)/len(execution_times) if execution_times else 0,
-                'language': language
-            }
-        }
-        
-        return Response(response_data, status=status.HTTP_200_OK)

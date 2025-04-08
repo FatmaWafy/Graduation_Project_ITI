@@ -193,6 +193,10 @@ export async function getPerformanceData(): Promise<PerformanceData[]> {
 
 
 export type Exam = {
+  CodingQuestions: any
+  MCQQuestions: any
+  codingCount: any
+  mcqCount: any
   id: string;
   title: string;
   courseName: string;
@@ -217,26 +221,40 @@ export async function getExams(token: string, userId: string): Promise<Exam[]> {
     }
 
     const data = await response.json();
-    
-    // Transform the API response to match your Exam type
-    return data.temp_exams.map((exam: any) => ({
-      id: exam.id.toString(),
-      title: exam.exam?.title || `Exam ${exam.exam || exam.id}`,
-      courseName: exam.track ? `Track ${exam.track}` : 'General Exam',
-      date: exam.start_datetime,
-      duration: calculateDurationInMinutes(exam.start_datetime, exam.end_datetime),
-      questionsCount: exam.questions_count || 0,
-      preparationProgress: Math.min(Math.max(exam.preparation_progress || 0, 0), 100),
-      examId: exam.exam || exam.id, // Use exam.exam if it exists, otherwise fall back to exam.id
-      startDatetime: exam.start_datetime,
-      endDatetime: exam.end_datetime,
-      track: exam.track,
-    }));
+    console.log("Fetched exams:", data.temp_exams);
+
+    const now = new Date();
+
+    return data.temp_exams
+      // Remove this filter if you want ALL exams shown regardless of time or status
+      // .filter((exam: any) => exam.status !== 'submitted') // Optional: hide submitted
+      .map((exam: any) => {
+        const start = new Date(exam.start_datetime);
+        const end = new Date(exam.end_datetime);
+        const isSubmitted = exam.status === "submitted"; // you can customize this condition
+        const isOpen = !isSubmitted;
+
+        return {
+          id: exam.id.toString(),
+          title: exam.exam?.title || `Exam ${exam.exam || exam.id}`,
+          courseName: exam.track ? `Track ${exam.track}` : 'General Exam',
+          date: exam.start_datetime,
+          duration: calculateDurationInMinutes(exam.start_datetime, exam.end_datetime),
+          questionsCount: exam.mcqquestions + exam.codingquestions || 0,
+          preparationProgress: Math.min(Math.max(exam.preparation_progress || 0, 0), 100),
+          examId: exam.exam || exam.id,
+          startDatetime: exam.start_datetime,
+          endDatetime: exam.end_datetime,
+          track: exam.track,
+          isOpen,
+        };
+      });
   } catch (error) {
     console.error('Error fetching exams:', error);
     throw error;
   }
 }
+
 
 // Helper function to calculate duration in minutes
 function calculateDurationInMinutes(start: string, end: string): number {
@@ -244,3 +262,18 @@ function calculateDurationInMinutes(start: string, end: string): number {
   const endDate = new Date(end);
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }
+
+
+export const getExamDetails = async (token: string, examId: number): Promise<{MCQQuestions: any ,title: string
+}> => {
+  const response = await fetch(`http://127.0.0.1:8000/exam/exams/${examId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  // const data = await response.json();
+  // const codingCount = data.codingquestions.length
+  // console.log(codingCount)
+  if (!response.ok) throw new Error('Failed to fetch exam details');
+  return response.json();
+};

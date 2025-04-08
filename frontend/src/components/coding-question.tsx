@@ -101,7 +101,7 @@ export default function CodingQuestion({
   }) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/exams/run-test-case/",
+        "http://127.0.0.1:8000/exams/submit-code-results",
         {
           questionId: testCaseData.questionId,
           testCaseId: testCaseData.testCaseId,

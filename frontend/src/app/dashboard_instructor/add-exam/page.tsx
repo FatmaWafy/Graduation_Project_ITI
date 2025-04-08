@@ -2,6 +2,8 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface TestCase {
   input_data: string;
@@ -147,6 +149,11 @@ export default function AddExamPage() {
         }`
       );
       console.error("Failed to fetch questions:", err);
+      toast.error(
+        `Failed to fetch questions: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -306,6 +313,7 @@ export default function AddExamPage() {
     const updatedQuestions = [...questions];
     updatedQuestions.splice(index, 1);
     setQuestions(updatedQuestions);
+    toast.info("Question removed");
   };
 
   const addQuestionToExam = (question: Question) => {
@@ -323,10 +331,12 @@ export default function AddExamPage() {
           ...prevSelected,
           questionWithType,
         ]);
+        toast.success("MCQ question added to exam");
       }
     } else if (currentType === "code") {
       if (!codingQuestions.some((q) => q.id === question.id)) {
         setCodedQuestions((prevCoding) => [...prevCoding, questionWithType]);
+        toast.success("Coding question added to exam");
       }
     }
   };
@@ -339,6 +349,7 @@ export default function AddExamPage() {
     } else {
       setCodedQuestions(codingQuestions.filter((q) => q.id !== questionId));
     }
+    toast.info("Question removed from exam");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -355,7 +366,7 @@ export default function AddExamPage() {
       }
 
       if (!examTitle.trim()) {
-        alert("Please enter an exam title");
+        toast.error("Please enter an exam title");
         setIsSubmitting(false);
         return;
       }
@@ -414,13 +425,22 @@ export default function AddExamPage() {
             if (!mcqResponse.ok) {
               const errorData = await mcqResponse.json();
               console.error("Failed to create MCQ:", errorData);
+              toast.error(
+                `Failed to create MCQ: ${errorData.message || "Unknown error"}`
+              );
               continue;
             }
 
             const createdQuestion = await mcqResponse.json();
             createdMCQIds.push(createdQuestion.id);
+            toast.success("MCQ question created successfully");
           } catch (error) {
             console.error("Error creating MCQ:", error);
+            toast.error(
+              `Error creating MCQ: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
           }
         }
       }
@@ -450,11 +470,17 @@ export default function AddExamPage() {
             if (!codingResponse.ok) {
               const errorData = await codingResponse.json();
               console.error("Failed to create coding question:", errorData);
+              toast.error(
+                `Failed to create coding question: ${
+                  errorData.message || "Unknown error"
+                }`
+              );
               continue;
             }
 
             const createdQuestion = await codingResponse.json();
             createdCodingIds.push(createdQuestion.id);
+            toast.success("Coding question created successfully");
 
             if (
               originalQuestion?.test_cases &&
@@ -481,14 +507,31 @@ export default function AddExamPage() {
                   if (!testCaseResponse.ok) {
                     const errorData = await testCaseResponse.json();
                     console.error("Failed to create test case:", errorData);
+                    toast.error(
+                      `Failed to create test case: ${
+                        errorData.message || "Unknown error"
+                      }`
+                    );
+                  } else {
+                    toast.success("Test case added successfully");
                   }
                 } catch (error) {
                   console.error("Error creating test case:", error);
+                  toast.error(
+                    `Error creating test case: ${
+                      error instanceof Error ? error.message : "Unknown error"
+                    }`
+                  );
                 }
               }
             }
           } catch (error) {
             console.error("Error creating coding question:", error);
+            toast.error(
+              `Error creating coding question: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
           }
         }
       }
@@ -517,7 +560,7 @@ export default function AddExamPage() {
         throw new Error(errorData.message || "Failed to create exam");
       }
 
-      alert("Exam created successfully!");
+      toast.success("Exam created successfully!");
       setExamTitle("");
       setExamDuration(60);
       setQuestions([
@@ -543,7 +586,7 @@ export default function AddExamPage() {
       fetchQuestions();
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      toast.error(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     } finally {
@@ -553,6 +596,18 @@ export default function AddExamPage() {
 
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
       <h2 className="text-3xl font-bold text-blue-700 text-center mb-6">
         📝 Add Exam Questions
       </h2>
