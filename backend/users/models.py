@@ -82,7 +82,8 @@ class Student(models.Model):
     university = models.CharField(max_length=100, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(max_length=100, blank=True, null=True)
-    leetcode_profile = models.URLField(blank=True, null=True)
+    leetcode_profile = models.CharField(max_length=255, blank=True, null=True)
+
     github_profile = models.URLField(blank=True, null=True)
 
     class Meta:

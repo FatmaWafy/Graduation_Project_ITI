@@ -271,11 +271,10 @@ export default function SetExamPage() {
           {exams.map((exam) => (
             <div
               key={exam.id}
-              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                selectedExam?.id === exam.id
-                  ? "border-green-500 bg-green-50"
-                  : "hover:bg-gray-50"
-              }`}
+              className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedExam?.id === exam.id
+                  ? "border-[#800000] bg-[#f2d0d0]"
+                  : "hover:bg-[#f5e6e6]"
+                }`}
               onClick={() => handleExamSelect(exam)}
             >
               <h3 className="font-medium">{exam.title}</h3>
@@ -303,13 +302,14 @@ export default function SetExamPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Selected Exam
               </label>
-              <div className="p-3 bg-gray-50 rounded border">
+              <div className="p-3 bg-gray-50 rounded border border-[#800000]">
                 <p className="font-medium">{selectedExam.title}</p>
                 <p className="text-sm text-gray-600">
                   {selectedExam.duration} minutes •{" "}
                   {selectedExam.MCQQuestions?.length || 0} questions
                 </p>
               </div>
+
             </div>
 
             <div>
@@ -380,11 +380,10 @@ export default function SetExamPage() {
                     <button
                       type="button"
                       onClick={handleSelectAllFiltered}
-                      className={`px-3 py-2 text-sm rounded ${
-                        allFilteredSelected()
+                      className={`px-3 py-2 text-sm rounded ${allFilteredSelected()
                           ? "bg-gray-200 text-gray-700"
                           : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                      }`}
+                        }`}
                       disabled={allFilteredSelected()}
                     >
                       {allFilteredSelected() ? "All Selected" : "Select All"}
@@ -410,11 +409,10 @@ export default function SetExamPage() {
                 filteredStudents.map((student) => (
                   <div
                     key={student.id}
-                    className={`p-3 border-b flex items-center ${
-                      formData.students.includes(student.id)
-                        ? "bg-green-50"
-                        : "hover:bg-gray-50"
-                    }`}
+                    className={`p-3 border-b flex items-center ${formData.students.includes(student.id)
+                        ? "bg-[#f2d0d0]"
+                        : "hover:bg-[#f5e6e6]"
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -445,7 +443,7 @@ export default function SetExamPage() {
           <button
             type="submit"
             disabled={loading.submitting}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-300"
+            className="px-4 py-2 bg-[#800000] text-white rounded hover:bg-[#a52a2a] disabled:bg-green-300"
           >
             {loading.submitting ? "Scheduling..." : "Schedule Exam"}
           </button>

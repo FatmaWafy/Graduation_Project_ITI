@@ -204,77 +204,122 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework.decorators import action
+import requests
+
+
+def get_leetcode_solved_problems(leetcode_username):
+
+    if '/u/' in leetcode_username:
+        leetcode_username = leetcode_username.split('/u/')[-1]
+    
+    elif leetcode_username.startswith('https://leetcode.com/u/'):
+        leetcode_username = leetcode_username.split('/u/')[-1]
+
+    # التحقق إذا كانت قيمة الـ username صحيحة
+    if not leetcode_username or len(leetcode_username) < 3:
+        print("Invalid username, please check the username format.")
+        return None
+
+    print(f"Fetching data for LeetCode username: {leetcode_username}")
+    
+    url = f"https://leetcode-stats-api.herokuapp.com/{leetcode_username}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        leetcode_data = response.json()
+        print(f"LeetCode API Response: {leetcode_data}")
+        leetcode_solved = leetcode_data.get("totalSolved")
+
+        return leetcode_solved
+    else:
+        print(f"Error fetching LeetCode stats: {response.status_code}")
+        return None
+
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
     """
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        """
-        Create a new student
-        """
-        # نسخ البيانات القادمة من الـ request
         data = request.data.copy()
-
-        # تعيين الدور "student" في البيانات
         data["role"] = "student"
-        
-        # تحقق من وجود track_name
+
         track_name = data.get("track_name")
         if not track_name:
             return Response({"error": "Track name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # تحقق من وجود التراك
         track = Track.objects.filter(name=track_name).first()
         if not track:
             return Response({"error": "No track found with this name."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # إنشاء الـ serializer
         serializer = self.get_serializer(data={"user": data, **data})
 
-        # التحقق من صحة البيانات
         if serializer.is_valid():
-            # حفظ الطالب
             student = serializer.save()
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
-        
-        # إذا كانت البيانات غير صحيحة، أرجع الأخطاء
-        print(serializer.errors)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
     def update(self, request, *args, **kwargs):
-        """
-        Update an existing student
-        """
         instance = self.get_object()
         data = request.data.copy()
 
-        # التحقق من وجود track وتحديثه إذا لزم الأمر
-        if 'track' in data:  # هنا نستخدم track كـ ID
+        if 'track' in data:
             track_id = data.get('track')
             try:
-                track = Track.objects.get(id=track_id)  # نبحث عن track باستخدام ID
-                instance.track = track  # نعيّن الكائن نفسه
+                track = Track.objects.get(id=track_id)
+                instance.track = track
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # تحديث بيانات المستخدم
         if 'user' in data:
             user_data = data.pop('user')
             instance.user.username = user_data.get('username', instance.user.username)
             instance.user.email = user_data.get('email', instance.user.email)
             instance.user.save()
 
-        # تحديث باقي الحقول
         for attr, value in data.items():
             setattr(instance, attr, value)
 
         instance.save()
         return Response({"message": "Student updated successfully!", "student": self.get_serializer(instance).data}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='external-stats')
+    def external_stats(self, request, pk=None):
+        # استرجاع الـ Student باستخدام الـ pk (اللي هو الـ id)
+        student = self.get_object()
+
+        github_repos = None
+        leetcode_solved = None
+
+        # -------- GitHub --------
+        if student.github_profile:
+            github_username = student.github_profile.strip("/").split("/")[-1]
+            github_url = f"https://api.github.com/users/{github_username}"
+            github_response = requests.get(github_url)
+            if github_response.status_code == 200:
+                github_data = github_response.json()
+                github_repos = github_data.get("public_repos")
+
+        # -------- LeetCode --------
+        if student.leetcode_profile:
+            # لو الرابط يحتوي على "/u/" نستخدم الجزء الصحيح من الـ username
+            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+
+            # استخدام API الخارجي للحصول على عدد المشاكل المحلولة
+            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+
+        return Response({
+            "github_repos": github_repos,
+            "leetcode_solved": leetcode_solved
+        })
+
 
 class TrackListAPIView(APIView):
     """

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { BookOpen, Calendar, CheckCircle, Clock, GraduationCap } from "lucide-react"
-
+import { BookOpen, Calendar, CheckCircle, Clock, Github, GraduationCap } from "lucide-react"
+import { Code } from "lucide-react"
+import CountUp from "react-countup"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
+import { getClientSideToken } from "@/lib/cookies";
 import {
   type Assignment,
   type Course,
@@ -23,7 +25,24 @@ export default function DashboardPage() {
   const [grades, setGrades] = useState<Grade[]>([])
   const [gradeDistribution, setGradeDistribution] = useState<{ grade: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
+  const [externalStats, setExternalStats] = useState<{ github_repos: number | null, leetcode_solved: number | null } | null>(null)
+  useEffect(() => {
+    const fetchExternalStats = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/users/students/18/external-stats/")
+        if (!res.ok) throw new Error("Failed to fetch external stats")
+        const data = await res.json()
+        setExternalStats(data)
+      } catch (error) {
+        console.error("Error fetching external stats:", error)
+        setExternalStats(null)
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchExternalStats()
+  }, [])
 
   // useEffect(() => {
   //   const fetchData = async () => {
@@ -165,40 +184,79 @@ export default function DashboardPage() {
         </Card>
         <Card className="lg:col-span-3 bg-card">
           <CardHeader>
-            <CardTitle>Grade Distribution</CardTitle>
-            <CardDescription>Your grade distribution across all courses</CardDescription>
+            <CardTitle>Student Progress</CardTitle>
+            <CardDescription>Your coding platform activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={gradeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
-                    nameKey="grade"
-                  >
-                    {gradeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      color: "var(--card-foreground)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
+              {/* GitHub */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative w-24 h-24">
+                  <svg className="transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-muted stroke-current"
+                      d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
+                    />
+                    <path
+                      className="text-primary stroke-current"
+                      strokeDasharray={`${Math.min((externalStats?.github_repos || 0) * 10, 100)}, 100`}
+                      d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
+                    />
+                    <text x="18" y="20.35" className="text-sm fill-primary" textAnchor="middle">
+                      {externalStats?.github_repos || 0}
+                    </text>
+                  </svg>
+                </div>
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <Github className="h-4 w-4 text-muted-foreground" />
+                  GitHub Repos
+                </div>
+              </div>
+
+              {/* LeetCode */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative w-24 h-24">
+                  <svg className="transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-muted stroke-current"
+                      d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
+                    />
+                    <path
+                      className="text-green-500 stroke-current"
+                      strokeDasharray={`${Math.min((externalStats?.leetcode_solved || 0) / 2, 100)}, 100`}
+                      d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
+                    />
+                    <text x="18" y="20.35" className="text-sm fill-green-500" textAnchor="middle">
+                      {externalStats?.leetcode_solved || 0}
+                    </text>
+                  </svg>
+                </div>
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <Code className="h-4 w-4 text-muted-foreground" />
+                  LeetCode Solved
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -264,6 +322,11 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+
+
+        </div>
       </div>
     </div>
   )
@@ -271,8 +334,8 @@ export default function DashboardPage() {
 
 
 
- 
- 
- 
- 
+
+
+
+
 

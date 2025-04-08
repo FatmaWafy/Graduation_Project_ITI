@@ -324,8 +324,8 @@ export default function AddExamPage() {
   };
   return (
     <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-      <h2 className="text-3xl font-bold text-blue-700 text-center mb-6">
-        📝 Add Exam Questions
+      <h2 className="text-3xl font-bold text-black-700 text-center mb-6">
+        Add Exam Questions
       </h2>
 
       {/* Exam Information Section */}
@@ -639,7 +639,7 @@ export default function AddExamPage() {
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-green-500 transition-all duration-300 shadow-md"
+        className="w-full bg-[#800000] text-white py-3 rounded-lg font-semibold text-lg hover:bg-[#a52a2a] transition-all duration-300 shadow-md"
       >
         Submit Exam
       </button>

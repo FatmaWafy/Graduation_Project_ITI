@@ -25,9 +25,18 @@ const ExamPage = () => {
     option_d: "D",
   };
 
+
+  useEffect(() => {
+    const isSubmitted = localStorage.getItem(`submitted_exam_${id}`);
+    if (isSubmitted === "true") {
+     
+      router.replace("/dashboard_student/exams");
+    }
+  }, [id, router]);
+
   useEffect(() => {
     if (!id) return;
-
+    
     const fetchExamData = async () => {
       const token = Cookies.get("token");
 

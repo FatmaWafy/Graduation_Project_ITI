@@ -5,8 +5,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
-import { UserCircle, Bell } from "lucide-react";
-
+import { UserCircle, Bell, Link } from "lucide-react";
+import { useRouter } from "next/navigation";
 const data = [
   { name: "OOP", score: 65 },
   { name: "SFSD", score: 80 },
@@ -15,12 +15,13 @@ const data = [
 ];
 
 export default function InstructorDashboard() {
+  const router = useRouter();
   return (
     <div className="flex h-screen bg-gray-100">
-      
+
 
       {/* Main Content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 min-h-screen">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">👋 Welcome back, Teacher!</h1>
@@ -60,7 +61,8 @@ export default function InstructorDashboard() {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="score" fill="#22c55e" />
+                  <Bar dataKey="score" fill="#a52a2a" />
+
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -87,11 +89,22 @@ export default function InstructorDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-6 flex gap-4">
-          <Button className="bg-green-500 text-white">Generate Exam With AI</Button>
-          <Button>Create Exam</Button>
-          <Button>Schedule Exam</Button>
+
+        <div className="flex gap-4 my-4">
+          <button
+            onClick={() => router.push("/dashboard_instructor/add-exam")}
+            className="px-6 py-3 bg-[#800000] hover:bg-[#a52a2a] text-white rounded-lg transition duration-300"
+          >
+            Create Exam
+          </button>
+          <button
+            onClick={() => router.push("/dashboard_instructor/set-exam")}
+            className="px-6 py-3 bg-[#800000] hover:bg-[#a52a2a] text-white rounded-lg transition duration-300"
+          >
+            Schedule Exam
+          </button>
         </div>
+
       </main>
     </div>
   );
