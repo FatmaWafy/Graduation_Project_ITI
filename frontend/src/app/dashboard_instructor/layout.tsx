@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { LogOut, Menu, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 export default function InstructorLayout({
   children,
 }: {
@@ -15,7 +16,11 @@ export default function InstructorLayout({
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
+  const [user, setUser] = useState({
+    name: "Instructor",
+    email: "",
+    avatar: "",
+  });
   useEffect(() => {
     const storedRole = Cookies.get("role");
     setRole(storedRole || "");
@@ -29,6 +34,12 @@ export default function InstructorLayout({
       </div>
     );
   }
+  const handleLogout = () => {
+    Cookies.remove("role");
+    Cookies.remove("token");
+    Cookies.remove("user");
+    window.location.href = "/";
+  };
 
   if (role !== "instructor") {
     return <p className="text-red-500 text-center mt-10">Access Denied</p>;
@@ -70,6 +81,32 @@ export default function InstructorLayout({
               </p>
             </Link>
           ))}
+          <Link href="/dashboard_instructor/uploadLabs" >
+             <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">Upload Labs</p>
+          </Link>
+          {/* Avatar and Logout Section */}
+        <div className="mt-auto pt-4 border-t border-green-600">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{user.name}</p>
+              {user.email && (
+                <p className="text-xs text-green-200">{user.email}</p>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-white hover:bg-green-600"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
         </nav>
       </aside>
 

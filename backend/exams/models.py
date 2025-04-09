@@ -5,11 +5,14 @@ from django.utils.translation import gettext_lazy as _
 import json
 import zlib
 from django.contrib.auth import get_user_model
+User = get_user_model()
+from django.utils.timezone import now
 
 # Exam Model
 class Exam(models.Model):
     title = models.CharField(max_length=255)
     MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
+    CodingQuestions = models.ManyToManyField("CodingQuestion", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
 
@@ -41,6 +44,14 @@ class MCQOptions(models.TextChoices):
     C = "C", _("Option C")
     D = "D", _("Option D")
 
+class language(models.TextChoices):
+    PYTHON = "Python", _("Python")
+    JAVASCRIPT = "JavaScript", _("JavaScript")
+    JAVA = "Java", _("Java")
+    SQL = "SQL", _("SQL")
+    
+
+
 # MCQ Model
 class MCQQuestion(models.Model):
     question_text = models.TextField()
@@ -58,58 +69,36 @@ class MCQQuestion(models.Model):
         max_length=20, 
         choices=DifficultyLevel.choices
     )
-
+    language = models.CharField(
+        max_length=20, 
+        choices=language.choices
+    )
     source = models.CharField(max_length=100)
     points = models.FloatField(default=1.0)
 
 
-# # Coding Questions Model
-# class CodingQuestion(models.Model):
-#     title = models.CharField(max_length=255)
-#     description = models.TextField()
-    
-#     difficulty = models.CharField(
-#         max_length=20, 
-#         choices=DifficultyLevel.choices
-#     )
-
-#     starter_code = models.TextField(default="None")
-#     test_cases = models.JSONField()
-#     source = models.CharField(max_length=100)
-#     points = models.FloatField(default=1.0)
 
 
-User = get_user_model()
-from django.utils.timezone import now
 
 class StudentExamAnswer(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
     exam_instance = models.ForeignKey(TemporaryExamInstance, on_delete=models.CASCADE, related_name="student_answers")
-    
-    compressed_answers = models.BinaryField()  # Compressed MCQ answers
+
+    compressed_answers = models.BinaryField()
     score = models.FloatField(default=0.0)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def set_answers(self, answers_dict):
-        """
-        Convert JSON to bytes and compress before storing
-        """
         json_data = json.dumps(answers_dict).encode('utf-8')
         self.compressed_answers = zlib.compress(json_data)
 
     def get_answers(self):
-        """
-        Extract stored answers and return as JSON
-        """
         if self.compressed_answers:
             json_data = zlib.decompress(self.compressed_answers).decode('utf-8')
             return json.loads(json_data)
         return {}
 
     def calculate_score(self):
-        """
-        Grade only MCQ questions and calculate the score
-        """
         answers = self.get_answers()
         total_score = 0
 
@@ -120,22 +109,50 @@ class StudentExamAnswer(models.Model):
             if mcq_answers.get(str(mcq.id)) == mcq.correct_option:
                 total_score += mcq.points
 
-        self.score = total_score
-        self.save()
+        return total_score
 
     def submit_exam(self, answers_dict):
-        """
-        Handle exam submission with time validation.
-        """
-        # التحقق إذا كان الامتحان قد انتهى
+        print(f"Received answers_dict: {answers_dict}")  # Debugging line
+
         if now() > self.exam_instance.end_datetime:
             return {"error": "Time is up! You can't submit this exam."}
 
-        # حفظ الإجابات إذا لم ينتهِ الوقت
         self.set_answers(answers_dict)
-        self.calculate_score()
+
+        mcq_score = self.calculate_score()
+        code_results = answers_dict.get("code_results", [])
+        code_score = sum([entry.get("score", 0) for entry in code_results])
+
+        self.score = mcq_score + code_score
+        self.save()
+
         return {"message": "Exam submitted successfully.", "score": self.score}
 
+
+class CodingQuestion(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    difficulty = models.CharField(max_length=10, choices=DifficultyLevel.choices)
+    starter_code = models.TextField(default="None")
+    source = models.CharField(max_length=100)
+    points = models.FloatField(default=1.0)
+    tags = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    language = models.CharField(
+        max_length=20, 
+        choices=language.choices
+    )    
+    def __str__(self):
+        return f"{self.title} ({self.difficulty})({self.language})"
+
+class CodingTestCase(models.Model):
+    question = models.ForeignKey(CodingQuestion, related_name='test_cases', on_delete=models.CASCADE)
+    input_data = models.TextField()
+    expected_output = models.TextField()
+
+    def __str__(self):
+        return f"Test case for {self.question.title}"
 
 class CheatingLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

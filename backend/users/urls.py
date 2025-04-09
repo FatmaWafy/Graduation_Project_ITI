@@ -8,6 +8,7 @@ from .views import (
     StudentViewSet,
     TrackListAPIView,
     RegisterStudentsFromExcelAPIView,
+    ChangePasswordAPIView
 )
 from rest_framework.routers import DefaultRouter
 
@@ -20,6 +21,8 @@ urlpatterns = [
     path("reset-password-request/", ResetPasswordRequestAPIView.as_view(), name="reset-password-request"),
     path("reset-password/", ResetPasswordAPIView.as_view(), name="reset-password"),
     path("register-student/", RegisterStudentAPIView.as_view(), name="register-student"),
+    path("change-password/", ChangePasswordAPIView.as_view(), name="change-password"),
+
     path("get-tracks/", TrackListAPIView.as_view(), name="get-tracks"),
     path("register-students-excel/", RegisterStudentsFromExcelAPIView.as_view(), name="register-students-excel"),
     

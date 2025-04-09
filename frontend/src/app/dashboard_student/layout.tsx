@@ -15,7 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!loading && !user) {
       const token = Cookies.get("token") // ✅ قراءة التوكن من الكوكيز
       if (!token) {
-        router.push("/login")
+        router.push("/")
       }
     }
   }, [user, loading, router])

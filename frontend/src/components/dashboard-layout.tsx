@@ -17,7 +17,7 @@ import {
   LogOut,
   Menu,
   PieChart,
-  Settings,
+  // Settings,
   User,
 } from "lucide-react"
 
@@ -37,10 +37,10 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard_student", icon: Home },
   { title: "Exams", href: "/dashboard_student/exams", icon: BookOpen },
+  { title: "Labs", href: "/dashboard_student/labs", icon: Menu },
   { title: "Grades", href: "/dashboard_student/grades", icon: PieChart },
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },
   { title: "Profile", href: "/dashboard_student/profile", icon: User },
-  { title: "Settings", href: "/dashboard_student/settings", icon: Settings },
 
 ]
 
@@ -213,4 +213,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
-

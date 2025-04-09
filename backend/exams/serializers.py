@@ -1,14 +1,18 @@
 from rest_framework import serializers
-from .models import Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer
+from .models import CheatingLog, CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer, CodingTestCase
 
 class ExamSerializer(serializers.ModelSerializer):
-    questions = serializers.PrimaryKeyRelatedField(
-        queryset=MCQQuestion.objects.all(), 
-        many=True, 
-        required=False,
-        source='MCQQuestions'  # This maps 'questions' in JSON to 'MCQQuestions' in model
+    mcq_questions = serializers.PrimaryKeyRelatedField(
+        queryset=MCQQuestion.objects.all(),
+        many=True,
+        required=False
     )
-        
+    coding_questions = serializers.PrimaryKeyRelatedField(
+        queryset=CodingQuestion.objects.all(),
+        many=True,
+        required=False
+    )
+
     class Meta:
         model = Exam
         fields = '__all__'
@@ -39,7 +43,26 @@ class MCQQuestionSerializer(serializers.ModelSerializer):
 class StudentExamAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentExamAnswer
-        fields = ['student', 'exam_instance', 'score', 'submitted_at']
+        fields = "__all__"
+        
+class CodingTestCaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodingTestCase
+        fields = "__all__"
+        
+class CodingQuestionSerializer(serializers.ModelSerializer):
+    test_cases = CodingTestCaseSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = CodingQuestion
+        fields = "__all__"  
+
+class CheatingLogSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
+
+    class Meta:
+        model = CheatingLog
+        fields = ['exam_id', 'reason', 'timestamp', 'user']
 
 
 from .models import CheatingLog

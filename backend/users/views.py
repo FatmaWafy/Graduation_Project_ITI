@@ -108,7 +108,6 @@ class ResetPasswordRequestAPIView(APIView):
 
         return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
 
-
 class ResetPasswordAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -136,6 +135,8 @@ class ResetPasswordAPIView(APIView):
         user.save()
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
+
+
 
 class RegisterStudentAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -427,6 +428,7 @@ class TrackListAPIView(APIView):
         return Response((tracks), status=status.HTTP_200_OK)
 
 
+
 class RegisterStudentsFromExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -524,3 +526,33 @@ class RegisterStudentsFromExcelAPIView(APIView):
         return Response({
             "message": f"{students_added} students added successfully.",
         }, status=status.HTTP_201_CREATED)
+    
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
+
+    def post(self, request):
+        student_id = request.data.get("student_id")
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+
+        try:
+            student = Student.objects.get(id=student_id)
+            user = student.user
+
+            if not user.check_password(current_password):
+                return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if len(new_password) < 8:
+                return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
