@@ -28,35 +28,38 @@ export default function ExamsPage() {
   const [activeFilter, setActiveFilter] = useState<ExamFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Correct time formatting without timezone offset
   const formatExamTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      timeZone: "UTC", // Force UTC to prevent auto timezone conversion
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+    // Adjust for the +2 hours offset by subtracting 2 hours
+    date.setHours(date.getHours() - 2);
 
+    return `${date.getUTCFullYear()} ${date.toLocaleString("default", {
+      month: "short",
+    })} ${date.getUTCDate()}, ${String(date.getUTCHours()).padStart(
+      2,
+      "0"
+    )}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+  };
   const isExamInProgress = (exam: Exam) => {
-    const examStartTime = new Date(exam.date).getTime();
-    const examEndTime = examStartTime + exam.duration * 60000;
     const now = Date.now();
+    const examDate = new Date(exam.date);
+    examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+    const examStartTime = examDate.getTime();
+    const examEndTime = examStartTime + exam.duration * 60000;
     return now >= examStartTime && now <= examEndTime;
   };
 
   const isExamFinished = (exam: Exam) => {
-    const examEndTime = new Date(exam.date).getTime() + exam.duration * 60000;
+    const examDate = new Date(exam.date);
+    examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+    const examEndTime = examDate.getTime() + exam.duration * 60000;
     return Date.now() > examEndTime;
   };
 
   const isExamUpcoming = (exam: Exam) => {
-    const examStartTime = new Date(exam.date).getTime();
-    return Date.now() < examStartTime;
+    const examDate = new Date(exam.date);
+    examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+    return Date.now() < examDate.getTime();
   };
 
   const isExamSubmitted = (examId: number) => {
@@ -96,30 +99,24 @@ export default function ExamsPage() {
         if (!decoded.user_id) throw new Error("User ID not found in token");
 
         const examsData = await getExams(token, decoded.user_id);
+        if (!examsData) throw new Error("No exams data received");
+
         setExams(examsData);
         setFilteredExams(examsData);
 
-        // Fetch titles for exams (3 at a time)
-        const MAX_CONCURRENT_REQUESTS = 3;
+        // Fetch titles for exams
         const titles: Record<number, string> = {};
-
-        for (let i = 0; i < examsData.length; i += MAX_CONCURRENT_REQUESTS) {
-          const batch = examsData.slice(i, i + MAX_CONCURRENT_REQUESTS);
-          await Promise.all(
-            batch.map(async (exam) => {
-              try {
-                const details = await getExamDetails(token, exam.id);
-                titles[exam.id] = details.title;
-              } catch (err) {
-                console.error(
-                  `Failed to fetch title for exam ${exam.id}:`,
-                  err
-                );
-                titles[exam.id] = `Exam ${exam.id}`;
-              }
-            })
-          );
-          setExamTitles((prev) => ({ ...prev, ...titles }));
+        for (const exam of examsData) {
+          if (!examTitles[exam.id]) {
+            try {
+              const details = await getExamDetails(token, exam.id);
+              titles[exam.id] = details.title;
+            } catch (err) {
+              console.error(`Failed to fetch title for exam ${exam.id}:`, err);
+              titles[exam.id] = `Exam ${exam.id}`;
+            }
+            setExamTitles((prev) => ({ ...prev, ...titles }));
+          }
         }
 
         // Show only 3 most imminent upcoming exams
@@ -129,19 +126,19 @@ export default function ExamsPage() {
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
           )
           .slice(0, 3);
-
         upcomingExams.forEach((exam) => {
           toast.info(
-            `Upcoming: ${titles[exam.id] || exam.id} starts at ${formatExamTime(
-              exam.date
-            )}`,
+            `Upcoming: ${titles[exam.id] || exam.id} — Start at ${new Date(
+              new Date(exam.date).getTime() - 2 * 60 * 60 * 1000
+            ).toLocaleString()}`,
             { autoClose: 8000 }
           );
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load exams");
-        console.error("Error fetching exams:", err);
-        toast.error("Failed to load exams");
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load exams";
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -149,11 +146,6 @@ export default function ExamsPage() {
 
     fetchExams();
   }, []);
-
-  const handleStartExamClick = (exam: Exam) => {
-    // Always allow opening the exam, regardless of time
-    return true;
-  };
 
   if (loading) {
     return (
@@ -219,18 +211,45 @@ export default function ExamsPage() {
                   <FileText className="h-16 w-16 text-gray-400" />
                 </div>
                 <CardHeader>
-                  <CardTitle>
-                    {examTitles[exam.id] || (
-                      <span className="inline-block h-6 w-32 animate-pulse bg-gray-200 rounded"></span>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{exam.courseName}</CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>
+                        {examTitles[exam.id] || (
+                          <span className="inline-block h-6 w-full animate-pulse bg-gray-200 rounded"></span>
+                        )}
+                      </CardTitle>
+                      <CardDescription>{exam.courseName}</CardDescription>
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        submitted
+                          ? "bg-green-100 text-green-800"
+                          : finished
+                          ? "bg-gray-100 text-gray-800"
+                          : inProgress
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {submitted
+                        ? "Submitted"
+                        : finished
+                        ? "Finished"
+                        : inProgress
+                        ? "In Progress"
+                        : "Upcoming"}
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-grow">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {formatExamTime(exam.date)} • {exam.duration} minutes
+                      {" "}
+                      {new Date(
+                        new Date(exam.date).getTime() - 2 * 60 * 60 * 1000
+                      ).toLocaleString()}{" "}
+                      • {exam.duration} minutes
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -250,18 +269,24 @@ export default function ExamsPage() {
                     <Button variant="secondary" disabled className="w-full">
                       Submitted ✅
                     </Button>
+                  ) : finished ? (
+                    <Button variant="secondary" disabled className="w-full">
+                      Exam Closed
+                    </Button>
+                  ) : upcoming ? (
+                    <Button variant="outline" disabled className="w-full">
+                      Starts{" "}
+                      {new Date(
+                        new Date(exam.date).getTime() - 2 * 60 * 60 * 1000
+                      ).toLocaleString()}
+                    </Button>
                   ) : (
                     <Link
                       href={`/dashboard_student/exam/${exam.id}`}
-                      onClick={(e) => {
-                        if (!handleStartExamClick(exam)) {
-                          e.preventDefault();
-                        }
-                      }}
                       className="w-full"
                     >
                       <Button variant="default" className="w-full">
-                        Start Exam
+                        {inProgress ? "Continue Exam" : "Start Exam"}
                       </Button>
                     </Link>
                   )}
@@ -270,9 +295,15 @@ export default function ExamsPage() {
             );
           })
         ) : (
-          <p className="text-muted-foreground col-span-full text-center py-8">
-            No exams found matching your filter.
-          </p>
+          <div className="col-span-full flex flex-col items-center justify-center py-12 space-y-4">
+            <FileText className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground text-lg">No exams found</p>
+            <p className="text-muted-foreground text-sm">
+              {activeFilter === "all"
+                ? "You don't have any exams yet."
+                : `No ${activeFilter.replace("-", " ")} exams found.`}
+            </p>
+          </div>
         )}
       </div>
     </div>

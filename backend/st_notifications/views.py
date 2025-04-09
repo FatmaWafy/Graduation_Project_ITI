@@ -70,7 +70,7 @@ class StudentNotificationListView(ListAPIView):
 
     def get_queryset(self):
         student = Student.objects.get(user=self.request.user)  
-        print(student)
+        # print(student)
         return Note.objects.filter(student_id=student.id).order_by("-created_at")
     
 class PredefinedNotificationListCreateView(generics.ListCreateAPIView):

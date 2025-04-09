@@ -91,6 +91,15 @@ export default function SetExamPage() {
     submitting: false,
   });
 
+  // Get current datetime in correct format for input
+  const getCurrentDatetimeLocal = () => {
+    const now = new Date();
+    // Adjust for timezone offset to get local time
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(now.getTime() - timezoneOffset).toISOString();
+    return localISOTime.slice(0, 16); // Remove seconds and milliseconds
+  };
+
   // Filter exams based on search term
   const filteredExams = useMemo(() => {
     return exams.filter((exam) =>
@@ -236,6 +245,7 @@ export default function SetExamPage() {
       });
     }
   };
+
   const handleEmailFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmailFilter(e.target.value);
   };
@@ -285,6 +295,14 @@ export default function SetExamPage() {
     // Validation
     if (!formData.start_datetime) {
       toast.error("Please select start time");
+      return;
+    }
+
+    // Check if selected datetime is in the past
+    const selectedDateTime = new Date(formData.start_datetime);
+    const now = new Date();
+    if (selectedDateTime < now) {
+      toast.error("Cannot schedule exam in the past");
       return;
     }
 
@@ -493,6 +511,7 @@ export default function SetExamPage() {
                     className="w-full p-2 border rounded"
                     onChange={handleInputChange}
                     value={formData.start_datetime}
+                    min={getCurrentDatetimeLocal()}
                     required
                   />
                 </div>
