@@ -17,7 +17,6 @@ class Note(models.Model):
         elif self.track and self.instructor:
             return f"Note from {self.instructor.user.username} to Track {self.track.name}"
         return "Note"
-
 class PredefinedNotification(models.Model):
     message = models.TextField(unique=True)   
     created_at = models.DateTimeField(auto_now_add=True)   

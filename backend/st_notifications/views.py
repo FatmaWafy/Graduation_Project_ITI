@@ -3,9 +3,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-# Import Instructor and Student from users app
-from users.models import Instructor, Student, Track
-from st_notifications.models import Note, PredefinedNotification
+from users.models import Instructor, Student , Track # Import Instructor and Student from users app
+from st_notifications.models import Note , PredefinedNotification
 from st_notifications.serializers import NotificationSerializer, PredefinedNotificationSerializer, StudentSerializer
 from rest_framework import generics, serializers  # DRF classes
 from rest_framework.permissions import IsAuthenticated

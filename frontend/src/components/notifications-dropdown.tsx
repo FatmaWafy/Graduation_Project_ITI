@@ -13,7 +13,7 @@
 // import { ScrollArea } from "../components/ui/scroll-area"
 // import { Badge } from "../components/ui/badge"
 // import { useToast } from "../components/ui/use-toast"
-// import axios from 'axios'  // استيراد axios
+// import axios from 'axios'
 // import Cookies from 'js-cookie';
 
 // interface Notification {
@@ -48,20 +48,17 @@
 //       });
   
 //       if (response.data && Array.isArray(response.data)) {
-//         console.log(response.data);
-  
 //         const formattedNotifications = response.data.map((notification: any) => ({
-//           id: `${notification.id}`,  
+//           id: `${notification.id}`,
 //           message: notification.message,
 //           created_at: notification.created_at,
-//           instructor: notification.instructor ?? 0, // التأكد من وجود قيمة
-//           read: false, // تعيين افتراضي، تحقق إن كنت بحاجة لقيمة أخرى
+//           instructor: notification.instructor_name,
+//           read: notification.read,  // تعيين الحالة من الـ API مباشرة
 //           is_track_notification: notification.is_track_notification || false,
 //         }));
   
 //         setNotifications(formattedNotifications);
         
-//         // حساب عدد الإشعارات غير المقروءة
 //         const unread = formattedNotifications.filter(n => !n.read).length;
 //         setUnreadCount(unread);
 //       } else {
@@ -86,10 +83,9 @@
 //     }
 //   }, [open])
 
-//   // Poll for new notifications every 30 seconds
 //   useEffect(() => {
 //     const intervalId = setInterval(() => {
-//       if (!open) { // Only poll for new notifications when dropdown is closed
+//       if (!open) {
 //         fetchNotifications()
 //       }
 //     }, 30000)
@@ -97,29 +93,78 @@
 //     return () => clearInterval(intervalId)
 //   }, [open])
 
-//   // Initial fetch
 //   useEffect(() => {
 //     fetchNotifications()
 //   }, [])
 
-//   const markAsRead = (id: string) => {
-//     setNotifications(prev => {
-//       const updatedNotifications = prev.filter(notification => notification.id !== id);
-//       setUnreadCount(updatedNotifications.filter(n => !n.read).length);
-//       return updatedNotifications;
-//     });
+//   const markAsRead = async (id: string) => {
+//     try {
+//       const token = Cookies.get('token');
+//       if (!token) {
+//         console.error('Token not found in cookies');
+//         return;
+//       }
+
+//       await axios.patch(`http://127.0.0.1:8000/notifications/notes/${id}/`, { read: true }, {
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//         },
+//       });
+
+//       // عند نجاح التحديث، نقوم بتصفية الإشعار المميز على أنه "مقروء"
+//       setNotifications(prev => prev.filter(notification => notification.id !== id));
+//       setUnreadCount(prevCount => prevCount - 1);
+
+//       toast({
+//         title: "Notification",
+//         description: "Notification marked as read and deleted.",
+//         variant: "default",
+//       });
+//     } catch (error) {
+//       console.error("Failed to mark notification as read:", error);
+//       toast({
+//         title: "Error",
+//         description: "Failed to mark notification as read.",
+//         variant: "destructive",
+//       });
+//     }
 //   };
-  
-//   const markAllAsRead = () => {
-//     setNotifications([]);
-//     setUnreadCount(0);
+
+//   const markAllAsRead = async () => {
+//     try {
+//       const token = Cookies.get('token');
+//       if (!token) {
+//         console.error('Token not found in cookies');
+//         return;
+//       }
+
+//       await axios.patch('http://127.0.0.1:8000/notifications/mark-all-read/', { read: true }, {
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//         },
+//       });
+
+//       setNotifications([]);
+//       setUnreadCount(0);
+//       toast({
+//         title: "Notifications",
+//         description: "All notifications marked as read.",
+//         variant: "default",
+//       });
+//     } catch (error) {
+//       console.error("Failed to mark all notifications as read:", error);
+//       toast({
+//         title: "Error",
+//         description: "Failed to mark all notifications as read.",
+//         variant: "destructive",
+//       });
+//     }
 //   };
 
 //   const handleNotificationClick = (notification: Notification) => {
 //     if (!notification.read) {
 //       markAsRead(notification.id)
 //     }
-//     // في تطبيق حقيقي، يمكنك التنقل إلى صفحة معينة بناءً على الإشعار
 //   }
 
 //   const getNotificationIcon = (notification: Notification) => {
@@ -205,21 +250,22 @@
 // }
 
 
-import { useState, useEffect } from "react"
-import { Bell, Check, CheckCheck, RefreshCcw, UserCircle, Users } from 'lucide-react'
-import { formatDistanceToNow } from "date-fns"
-import { Button } from "../components/ui/button"
+
+import { useState, useEffect } from "react";
+import { Bell, Check, CheckCheck, RefreshCcw, UserCircle, Users } from 'lucide-react';
+import { formatDistanceToNow } from "date-fns";
+import { Button } from "../components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
-import { ScrollArea } from "../components/ui/scroll-area"
-import { Badge } from "../components/ui/badge"
-import { useToast } from "../components/ui/use-toast"
-import axios from 'axios'
+} from "../components/ui/dropdown-menu";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { Badge } from "../components/ui/badge";
+import { useToast } from "../components/ui/use-toast";
+import axios from 'axios';
 import Cookies from 'js-cookie';
 
 interface Notification {
@@ -232,39 +278,39 @@ interface Notification {
 }
 
 export function NotificationsDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const fetchNotifications = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const token = Cookies.get('token');  
+      const token = Cookies.get('token');
       if (!token) {
         console.error('Token not found in cookies');
         return;
       }
-  
+
       const response = await axios.get('http://127.0.0.1:8000/notifications/notes/', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-  
+
       if (response.data && Array.isArray(response.data)) {
         const formattedNotifications = response.data.map((notification: any) => ({
           id: `${notification.id}`,
           message: notification.message,
           created_at: notification.created_at,
           instructor: notification.instructor_name,
-          read: notification.read,  // تعيين الحالة من الـ API مباشرة
+          read: notification.read,
           is_track_notification: notification.is_track_notification || false,
         }));
-  
+
         setNotifications(formattedNotifications);
-        
+
         const unread = formattedNotifications.filter(n => !n.read).length;
         setUnreadCount(unread);
       } else {
@@ -281,27 +327,28 @@ export function NotificationsDropdown() {
       setIsLoading(false);
     }
   };
-  
 
   useEffect(() => {
-    if (open) {
-      fetchNotifications()
+    if (open && !isLoading) {
+      fetchNotifications();
     }
-  }, [open])
-
+  }, [open, isLoading]);
+  
+  // إزالة التكرار في `setInterval` الذي ينفذ كل 30 ثانية
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!open) {
-        fetchNotifications()
-      }
-    }, 30000)
-
-    return () => clearInterval(intervalId)
-  }, [open])
-
+    if (!open) {
+      const intervalId = setInterval(() => {
+        fetchNotifications(); // سيتم استدعاء الـ fetch فقط إذا كانت الـ dropdown مغلقة
+      }, 30000);
+  
+      return () => clearInterval(intervalId);  // تنظيف الـ interval عند غلق الـ dropdown
+    }
+  }, [open]);
+  
+  // الاستدعاء الأولي للبيانات
   useEffect(() => {
-    fetchNotifications()
-  }, [])
+    fetchNotifications();
+  }, []); // استدعاء واحد عند تحميل الصفحة لأول مرة
 
   const markAsRead = async (id: string) => {
     try {
@@ -317,14 +364,13 @@ export function NotificationsDropdown() {
         },
       });
 
-      // عند نجاح التحديث، نقوم بتصفية الإشعار المميز على أنه "مقروء"
       setNotifications(prev => prev.filter(notification => notification.id !== id));
       setUnreadCount(prevCount => prevCount - 1);
 
       toast({
         title: "Notification",
         description: "Notification marked as read and deleted.",
-        variant: "success",
+        variant: "default",
       });
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
@@ -355,7 +401,7 @@ export function NotificationsDropdown() {
       toast({
         title: "Notifications",
         description: "All notifications marked as read.",
-        variant: "success",
+        variant: "default",
       });
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
@@ -369,17 +415,17 @@ export function NotificationsDropdown() {
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
-      markAsRead(notification.id)
+      markAsRead(notification.id);
     }
-  }
+  };
 
   const getNotificationIcon = (notification: Notification) => {
     if (notification.is_track_notification) {
-      return <div className="h-2 w-2 rounded-full bg-yellow-500" />
+      return <div className="h-2 w-2 rounded-full bg-yellow-500" />;
     } else {
-      return <div className="h-2 w-2 rounded-full bg-blue-500" />
+      return <div className="h-2 w-2 rounded-full bg-blue-500" />;
     }
-  }
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -452,5 +498,6 @@ export function NotificationsDropdown() {
         </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
+

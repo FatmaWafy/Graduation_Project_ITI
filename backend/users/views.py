@@ -312,6 +312,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         data = request.data.copy()
 
+        # التحقق من وجود track وتحديثه إذا لزم الأمر
         if 'track' in data:
             track_id = data.get('track')
             try:
@@ -556,3 +557,33 @@ class ChangePasswordAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class InstructorViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Instructors
+    """
+    queryset = Instructor.objects.all()
+    serializer_class = InstructorSerializer
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific instructor based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
+
+        try:
+            user = User.objects.get(id=user_id)
+            instructor = Instructor.objects.get(user=user)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        instructor_data = InstructorSerializer(instructor).data
+
+        combined_data = {**user_data, **instructor_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
+     
