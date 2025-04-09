@@ -5,6 +5,9 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { getClientSideToken } from "@/lib/cookies";
+import { jwtDecode } from "jwt-decode";
+
 import {
   BookOpen,
   Calendar,
@@ -14,7 +17,7 @@ import {
   LogOut,
   Menu,
   PieChart,
-  Settings,
+  // Settings,
   User,
 } from "lucide-react"
 
@@ -34,10 +37,11 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard_student", icon: Home },
   { title: "Exams", href: "/dashboard_student/exams", icon: BookOpen },
+  { title: "Labs", href: "/dashboard_student/labs", icon: Menu },
   { title: "Grades", href: "/dashboard_student/grades", icon: PieChart },
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },
   { title: "Profile", href: "/dashboard_student/profile", icon: User },
-  { title: "Settings", href: "/dashboard_student/settings", icon: Settings },
+
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +61,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return () => window.removeEventListener("resize", checkScreenSize)
   }, [])
+  const [studentData, setStudentData] = useState<any>(null) // هذا ال state لحفظ بيانات الطالب
 
+  useEffect(() => {
+      console.log("User data from context:", user)
+  
+      const fetchStudentData = async () => {
+        try {
+          const token = getClientSideToken()
+          if (!token) throw new Error("Token not found")
+  
+          const decoded: any = jwtDecode(token)
+          const userId = decoded.user_id
+  
+          console.log("User ID from token in Dashboard:", userId)
+  
+          const res = await fetch(`http://127.0.0.1:8000/users/students/${userId}/`)
+          if (!res.ok) throw new Error("Failed to fetch student data")
+  
+          const data = await res.json()
+          setStudentData(data)
+          console.log("Student data fetched:", data)
+        } catch (error) {
+          console.error("Error fetching student data:", error)
+          setStudentData(null)
+        }
+      }
+  
+      fetchStudentData()
+    }, [])
   if (!user) {
     return null
   }
@@ -109,8 +141,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Avatar>
             {isSidebarOpen && (
               <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="text-sm font-medium leading-none text-sidebar-foreground">{user.name}</span>
-                <span className="text-xs text-muted-foreground">{user.email}</span>
+                <span className="text-sm font-medium leading-none text-sidebar-foreground">{studentData?.username}</span>
+                <span className="text-xs text-muted-foreground">{studentData?.email}</span>
               </div>
             )}
             <Button variant="ghost" size="icon" onClick={logout} className="text-sidebar-foreground">
@@ -156,8 +188,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-1 flex-col overflow-hidden">
-                  <span className="text-sm font-medium leading-none text-sidebar-foreground">{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                  <span className="text-sm font-medium leading-none text-sidebar-foreground">studentData?.username</span>
+                  <span className="text-xs text-muted-foreground">{studentData?.email || studentData?.username}</span>
                 </div>
                 <Button variant="ghost" size="icon" onClick={logout} className="text-sidebar-foreground">
                   <LogOut className="h-5 w-5" />
@@ -176,9 +208,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <ThemeToggle />
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-4 md:p-7">{children}</div>
+        <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
       </main>
     </div>
   )
 }
-
