@@ -93,7 +93,7 @@ export default function ExamsPage() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {exams.length > 0 ? (
           exams.map((exam) => {
-            const submitted = isExamSubmitted(exam.id);
+            const submitted = isExamSubmitted(Number(exam.id));
 
             return (
               <Card key={exam.id} className="overflow-hidden flex flex-col">
@@ -144,7 +144,7 @@ export default function ExamsPage() {
                       Finished ⏳
                     </Button>
                   ) : (
-                    <Link href={`/dashboard_student/exam/${exam.id}`}>
+                    <Link href={`/dashboard_student/rules/${exam.id}`}>
                       <Button variant="default" className="ml-4">
                         Start Exam
                       </Button>
