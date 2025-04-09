@@ -61,8 +61,13 @@ export default function ExamLogsIndexPage() {
   }, [])
 
   if (loading) {
-    return <div className="text-center">Loading exams...</div>
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
+  
 
   if (error) {
     return <div className="text-center text-red-500">{error}</div>

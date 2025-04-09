@@ -156,7 +156,7 @@ function ExamLogsContent({ examId }: { examId: string }) {
   const [logs, setLogs] = useState<ExamLog[]>([])
 
   useEffect(() => {
-    // استخراج التوكن عند تحميل الصفحة في العميل
+ 
     const token = getAuthToken()
     setToken(token)
 

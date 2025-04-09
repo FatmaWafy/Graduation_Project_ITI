@@ -13,8 +13,11 @@ from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import viewsets
-
-
+import pandas as pd
+from openpyxl import load_workbook
+import csv
+from random import choice
+import string
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -229,14 +232,13 @@ def get_leetcode_solved_problems(leetcode_username):
 
     if response.status_code == 200:
         leetcode_data = response.json()
-        print(f"LeetCode API Response: {leetcode_data}")
+        # print(f"LeetCode API Response: {leetcode_data}")
         leetcode_solved = leetcode_data.get("totalSolved")
 
         return leetcode_solved
     else:
         print(f"Error fetching LeetCode stats: {response.status_code}")
         return None
-
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -246,10 +248,38 @@ class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
     permission_classes = [AllowAny]
 
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific student based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
+
+        try:
+            # البحث عن المستخدم باستخدام الـ user ID
+            user = User.objects.get(id=user_id)
+            # البحث عن الطالب المرتبط بالـ user
+            student = Student.objects.get(user=user)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        # دمج البيانات من جدول الـ User و Student
+        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        student_data = StudentSerializer(student).data
+
+        # دمج البيانات
+        combined_data = {**user_data, **student_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
+        """
+        Create a new student
+        """
         data = request.data.copy()
         data["role"] = "student"
-
+        
         track_name = data.get("track_name")
         if not track_name:
             return Response({"error": "Track name is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -267,33 +297,61 @@ class StudentViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        instance = self.get_object()
+        """
+        Update an existing student
+        """
+        # Retrieve user_id from the URL
+        user_id = kwargs.get('user_id')
+        
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get the User and the related Student
+            user = User.objects.get(id=user_id)
+            student = Student.objects.get(user=user)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Now that you have the student, update as needed
         data = request.data.copy()
 
         if 'track' in data:
             track_id = data.get('track')
             try:
                 track = Track.objects.get(id=track_id)
-                instance.track = track
+                student.track = track
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
         if 'user' in data:
             user_data = data.pop('user')
-            instance.user.username = user_data.get('username', instance.user.username)
-            instance.user.email = user_data.get('email', instance.user.email)
-            instance.user.save()
+            student.user.username = user_data.get('username', student.user.username)
+            student.user.email = user_data.get('email', student.user.email)
+            student.user.save()
 
+        # Update remaining fields in the student
         for attr, value in data.items():
-            setattr(instance, attr, value)
+            setattr(student, attr, value)
 
-        instance.save()
-        return Response({"message": "Student updated successfully!", "student": self.get_serializer(instance).data}, status=status.HTTP_200_OK)
+        student.save()
+        return Response({"message": "Student updated successfully!", "student": self.get_serializer(student).data}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'], url_path='external-stats')
-    def external_stats(self, request, pk=None):
-        # استرجاع الـ Student باستخدام الـ pk (اللي هو الـ id)
-        student = self.get_object()
+    @action(detail=False, methods=['get'], url_path='external-stats')
+    def external_stats(self, request, user_id=None):
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # البحث عن الطالب باستخدام الـ user_id
+            user = User.objects.get(id=user_id)
+            student = Student.objects.get(user=user)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
         github_repos = None
         leetcode_solved = None
@@ -309,16 +367,29 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         # -------- LeetCode --------
         if student.leetcode_profile:
-            # لو الرابط يحتوي على "/u/" نستخدم الجزء الصحيح من الـ username
             leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
-
-            # استخدام API الخارجي للحصول على عدد المشاكل المحلولة
             leetcode_solved = get_leetcode_solved_problems(leetcode_username)
 
         return Response({
             "github_repos": github_repos,
             "leetcode_solved": leetcode_solved
         })
+    @action(detail=False, methods=['get'], url_path='by-id/(?P<student_id>[^/.]+)')
+    def get_by_student_id(self, request, student_id=None):
+        """
+        Retrieve a student using the student ID (not the user ID)
+        """
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(student.user).data
+        student_data = StudentSerializer(student).data
+
+        combined_data = {**user_data, **student_data}
+        return Response(combined_data, status=status.HTTP_200_OK)
+
 
 
 class TrackListAPIView(APIView):
@@ -330,3 +401,102 @@ class TrackListAPIView(APIView):
     def get(self, request):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
+
+
+class RegisterStudentsFromExcelAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # تأكد أن المستخدم هو المدرب
+        if request.user.role != "instructor":
+            return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+        # التحقق من وجود ملف
+        if 'file' not in request.FILES:
+            return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+        file = request.FILES['file']
+
+        # محاولة فتح وقراءة ملف CSV
+        try:
+            # استخدام مكتبة csv لقراءة البيانات من الملف
+            file_data = file.read().decode("utf-8").splitlines()
+            csv_reader = csv.reader(file_data)
+            next(csv_reader)  # تخطي العنوان
+        except Exception as e:
+            return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        instructor = Instructor.objects.get(user=request.user)
+
+        # التحقق من وجود Tracks للمدرب
+        if instructor.tracks.count() == 0:
+            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # إذا كان المدرب لديه أكثر من تراك، نتأكد من التحديد الصحيح للتراك
+        if instructor.tracks.count() > 1:
+            track_names = [track.name for track in instructor.tracks.all()]
+        else:
+            track_names = [instructor.tracks.first().name]
+
+        students_added = 0
+        for row in csv_reader:  # قراءة البيانات من كل صف
+            # تحقق من أن الصف يحتوي على 3 عناصر على الأقل (username, email, track_name)
+            if len(row) < 3:
+                continue  # تخطي الصف إذا كان لا يحتوي على البيانات الكافية
+
+            username, email, track_name = row[0], row[1], row[2]
+
+            # التحقق من أن التراك الموجود في الملف هو تراك موجود بالفعل
+            if track_name not in track_names:
+                continue  # تجاهل الصف إذا كان التراك غير موجود
+
+            # توليد كلمة مرور عشوائية
+            password = ''.join(choice(string.ascii_letters + string.digits) for i in range(12))
+
+            # إنشاء حساب المستخدم الجديد
+            user_instance = User.objects.create_user(
+                email=email, 
+                username=username,  # يمكن استخدام اسم المستخدم كما هو
+                password=password,
+                role='student'  # تعيين دور المستخدم كـ "student"
+            )
+
+            # إنشاء كائن التراك
+            track = Track.objects.get(name=track_name)
+
+            # إنشاء كائن الطالب وربطه بحساب المستخدم والتراك
+            student = Student.objects.create(
+                user=user_instance,  # ربط الطالب بحساب المستخدم الذي تم إنشاؤه
+                track=track
+            )
+
+            # إرسال بريد إلكتروني للطالب يحتوي على بيانات الدخول
+            email_subject = "Your Student Account Credentials"
+            email_message = f"""
+            Hi {student.user.username},
+
+            Your student account has been created successfully.
+
+            Track: {student.track.name}
+            Email: {student.user.email}
+            Password: {password}
+
+            Please change your password after logging in.
+
+            Best regards,
+            Your Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.user.email],
+                fail_silently=False,
+            )
+
+            students_added += 1
+
+        return Response({
+            "message": f"{students_added} students added successfully.",
+        }, status=status.HTTP_201_CREATED)

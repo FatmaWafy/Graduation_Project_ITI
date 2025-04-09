@@ -8,6 +8,8 @@ import CountUp from "react-countup"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { getClientSideToken } from "@/lib/cookies";
+import { jwtDecode } from "jwt-decode";
+
 import {
   type Assignment,
   type Course,
@@ -26,23 +28,34 @@ export default function DashboardPage() {
   const [gradeDistribution, setGradeDistribution] = useState<{ grade: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [externalStats, setExternalStats] = useState<{ github_repos: number | null, leetcode_solved: number | null } | null>(null)
-  useEffect(() => {
-    const fetchExternalStats = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:8000/users/students/18/external-stats/")
-        if (!res.ok) throw new Error("Failed to fetch external stats")
-        const data = await res.json()
-        setExternalStats(data)
-      } catch (error) {
-        console.error("Error fetching external stats:", error)
-        setExternalStats(null)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const [studentData, setStudentData] = useState<any>(null)
+  const fetchExternalStats = async () => {
+    try {
+      const token = getClientSideToken()
+      if (!token) throw new Error("Token not found")
 
+      const decoded: any = jwtDecode(token)
+      const userId = decoded.user_id
+
+      const res = await fetch(`http://127.0.0.1:8000/users/students/${userId}/external-stats/`)
+      if (!res.ok) throw new Error("Failed to fetch external stats")
+
+      const data = await res.json()
+      setExternalStats(data)
+      console.log("External stats fetched:", data)
+    } catch (error) {
+      console.error("Error fetching external stats:", error)
+      setExternalStats(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchExternalStats()
   }, [])
+  
+  
 
   // useEffect(() => {
   //   const fetchData = async () => {
@@ -65,7 +78,33 @@ export default function DashboardPage() {
 
   //   fetchData()
   // }, [])
+  useEffect(() => {
+    console.log("User data from context:", user)
 
+    const fetchStudentData = async () => {
+      try {
+        const token = getClientSideToken()
+        if (!token) throw new Error("Token not found")
+
+        const decoded: any = jwtDecode(token)
+        const userId = decoded.user_id
+
+        console.log("User ID from token in Dashboard:", userId)
+
+        const res = await fetch(`http://127.0.0.1:8000/users/students/${userId}/`)
+        if (!res.ok) throw new Error("Failed to fetch student data")
+
+        const data = await res.json()
+        setStudentData(data)
+        console.log("Student data fetched:", data)
+      } catch (error) {
+        console.error("Error fetching student data:", error)
+        setStudentData(null)
+      }
+    }
+
+    fetchStudentData()
+  }, [])
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -112,7 +151,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back,{studentData?.username || user?.name}</h1>
           <p className="text-muted-foreground">Here's an overview of your academic progress</p>
         </div>
       </div>

@@ -280,6 +280,6 @@ export async function getExamLogs(examId: string, token: string): Promise<ExamLo
     return logs;
   } catch (error) {
     console.error("Error fetching exam logs:", error);
-    return []; // إرجاع مصفوفة فارغة في حال حدوث أي خطأ
+    return []; 
   }
 }
