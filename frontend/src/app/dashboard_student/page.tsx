@@ -231,7 +231,7 @@ export default function DashboardPage() {
               {/* GitHub */}
               <div className="flex flex-col items-center gap-2">
                 <div className="relative w-24 h-24">
-                  <svg className="transform -rotate-90" viewBox="0 0 36 36">
+                  <svg  viewBox="0 0 36 36">
                     <path
                       className="text-muted stroke-current"
                       d="M18 2.0845
@@ -263,7 +263,7 @@ export default function DashboardPage() {
               {/* LeetCode */}
               <div className="flex flex-col items-center gap-2">
                 <div className="relative w-24 h-24">
-                  <svg className="transform -rotate-90" viewBox="0 0 36 36">
+                  <svg  viewBox="0 0 36 36">
                     <path
                       className="text-muted stroke-current"
                       d="M18 2.0845

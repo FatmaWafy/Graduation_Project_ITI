@@ -240,6 +240,7 @@ def get_leetcode_solved_problems(leetcode_username):
         print(f"Error fetching LeetCode stats: {response.status_code}")
         return None
 
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
@@ -255,20 +256,15 @@ class StudentViewSet(viewsets.ModelViewSet):
         user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
 
         try:
-            # البحث عن المستخدم باستخدام الـ user ID
             user = User.objects.get(id=user_id)
-            # البحث عن الطالب المرتبط بالـ user
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Student.DoesNotExist:
             return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
-        # دمج البيانات من جدول الـ User و Student
-        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        user_data = RegisterSerializer(user).data
         student_data = StudentSerializer(student).data
-
-        # دمج البيانات
         combined_data = {**user_data, **student_data}
 
         return Response(combined_data, status=status.HTTP_200_OK)
@@ -300,14 +296,12 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         Update an existing student
         """
-        # Retrieve user_id from the URL
         user_id = kwargs.get('user_id')
-        
+
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get the User and the related Student
             user = User.objects.get(id=user_id)
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
@@ -315,7 +309,6 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Student.DoesNotExist:
             return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Now that you have the student, update as needed
         data = request.data.copy()
 
         if 'track' in data:
@@ -332,7 +325,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             student.user.email = user_data.get('email', student.user.email)
             student.user.save()
 
-        # Update remaining fields in the student
         for attr, value in data.items():
             setattr(student, attr, value)
 
@@ -345,7 +337,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # البحث عن الطالب باستخدام الـ user_id
             user = User.objects.get(id=user_id)
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
@@ -374,6 +365,39 @@ class StudentViewSet(viewsets.ModelViewSet):
             "github_repos": github_repos,
             "leetcode_solved": leetcode_solved
         })
+
+    @action(detail=False, methods=['get'], url_path='external-stats/by-student-id/(?P<student_id>[^/.]+)')
+    def external_stats_by_student_id(self, request, student_id=None):
+        if not student_id:
+            return Response({"error": "Student ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        github_repos = None
+        leetcode_solved = None
+
+        # -------- GitHub --------
+        if student.github_profile:
+            github_username = student.github_profile.strip("/").split("/")[-1]
+            github_url = f"https://api.github.com/users/{github_username}"
+            github_response = requests.get(github_url)
+            if github_response.status_code == 200:
+                github_data = github_response.json()
+                github_repos = github_data.get("public_repos")
+
+        # -------- LeetCode --------
+        if student.leetcode_profile:
+            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+
+        return Response({
+            "github_repos": github_repos,
+            "leetcode_solved": leetcode_solved
+        })
+
     @action(detail=False, methods=['get'], url_path='by-id/(?P<student_id>[^/.]+)')
     def get_by_student_id(self, request, student_id=None):
         """

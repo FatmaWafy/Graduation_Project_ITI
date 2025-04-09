@@ -15,7 +15,8 @@ import {
   BookOpen,
 } from "lucide-react"
 import { useParams } from "next/navigation"
-
+import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -64,6 +65,7 @@ export default function StudentDetailPage() {
     )
   }
 
+
   const getStatusColor = (status: string | undefined) => {
     if (!status) return "bg-gray-100 text-gray-800"
 
@@ -92,10 +94,7 @@ export default function StudentDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Students
         </Button>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Student
-        </Button>
+        
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -155,7 +154,7 @@ export default function StudentDetailPage() {
                   </div>
                 </div>
               )}
-              {(student.user.enrollment_date || student.enrollment_date) && (
+              {/* {(student.user.enrollment_date || student.enrollment_date) && (
                 <div className="flex items-start">
                   <Calendar className="mr-2 h-5 w-5 text-muted-foreground" />
                   <div>
@@ -165,7 +164,7 @@ export default function StudentDetailPage() {
                     </p>
                   </div>
                 </div>
-              )}
+              )} */}
               {(student.user.notes || student.notes) && (
                 <div className="flex items-start">
                   <FileText className="mr-2 w-5 h-5 text-muted-foreground" />
