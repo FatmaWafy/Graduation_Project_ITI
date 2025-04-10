@@ -1,7 +1,7 @@
 from django.urls import path, include
 
 from .views import (
-    CheatingLogView, CodingQuestionViewSet, ExamListCreateView, ExamDetailView, StudentExamAnswerViewSet, TempExamViewSet, MCQQuestionViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent, CodingtestCaseViewSet,FilteredCodingQuestionListView, get_cheating_logs)
+    CheatingLogView, CodingQuestionViewSet, ExamListCreateView, ExamDetailView, StudentExamAnswerViewSet, TempExamViewSet, MCQQuestionViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent, CodingtestCaseViewSet,FilteredCodingQuestionListView, get_cheating_logs, run_code, submit_code_results)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets
@@ -27,5 +27,8 @@ urlpatterns = [
     path("exams/logs/", CheatingLogView.as_view()),
     path('exams/logs/<int:exam_id>/', get_cheating_logs, name='get_cheating_logs'),
     path("", include(router.urls)),  # Auto-generates CRUD URLs
+    # path('run-code/', StudentExamAnswerViewSet.as_view(), name='run_code'),
+    path('submit-code-results/', submit_code_results, name='submit_code_results'),
+    path('run-code/', run_code, name='run_code'),
 
 ]

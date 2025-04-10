@@ -23,9 +23,26 @@ export default function InstructorLayout({
   });
   useEffect(() => {
     const storedRole = Cookies.get("role");
+    const storedUser = Cookies.get("user"); // Assuming you store user info in cookies
     setRole(storedRole || "");
+
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser({
+          name: parsedUser.name || "Instructor",
+          email: parsedUser.email || "",
+          avatar: parsedUser.avatar || "",
+        });
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
+    }
+
     setLoading(false);
   }, []);
+
+
 
   if (loading) {
     return (
@@ -85,6 +102,10 @@ export default function InstructorLayout({
              <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">Upload Labs</p>
           </Link>
           {/* Avatar and Logout Section */}
+    
+        </nav>
+
+        {/* Avatar and Logout Section */}
         <div className="mt-auto pt-4 border-t border-green-600">
           <div className="flex items-center gap-3">
             <Avatar>
@@ -107,7 +128,6 @@ export default function InstructorLayout({
             </Button>
           </div>
         </div>
-        </nav>
       </aside>
 
       {/* Main Content */}

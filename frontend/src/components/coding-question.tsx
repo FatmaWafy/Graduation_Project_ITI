@@ -91,38 +91,32 @@ export default function CodingQuestion({
     }
   };
 
-  const submitTestResults = async (testCaseData: {
+  const submitToRunCodeAPI = async (data: {
     questionId: string;
-    testCaseId: number;
-    input: string;
-    expectedOutput: string;
-    actualOutput: string;
-    isSuccess: boolean;
+    code: string;
+    language: string;
+    output?: string;
+    error?: string;
+    testCaseId?: number;
+    input?: string;
+    expectedOutput?: string;
+    isSuccess?: boolean;
   }) => {
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/exams/submit-code-results",
-        {
-          questionId: testCaseData.questionId,
-          testCaseId: testCaseData.testCaseId,
-          input: testCaseData.input,
-          expectedOutput: testCaseData.expectedOutput,
-          actualOutput: testCaseData.actualOutput,
-          isSuccess: testCaseData.isSuccess,
-          code: answer,
-        }
-      );
-
-      if (response.data.score !== undefined) {
-        setTestScores((prev) => ({
-          ...prev,
-          [`case${testCaseData.testCaseId}`]: response.data.score,
-        }));
-      }
-
+      const response = await axios.post("/api/run-code", {
+        questionId: data.questionId,
+        code: data.code,
+        language: data.language,
+        output: data.output,
+        error: data.error,
+        testCaseId: data.testCaseId,
+        input: data.input,
+        expectedOutput: data.expectedOutput,
+        isSuccess: data.isSuccess,
+      });
       return response.data;
     } catch (error) {
-      console.error("Error submitting test results:", error);
+      console.error("Error submitting to run-code API:", error);
       throw error;
     }
   };
@@ -132,12 +126,32 @@ export default function CodingQuestion({
     try {
       setIsLoading(true);
       const result = await executeCode(question.language.toLowerCase(), answer);
-      setOutput(result.run.output.split("\n"));
-      setIsError(result.run.stderr ? true : false);
+      const output = result.run.output;
+      const error = result.run.stderr;
+
+      setOutput(output.split("\n"));
+      setIsError(error ? true : false);
+
+      // Submit to our API
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        output: output,
+        error: error,
+      });
     } catch (error) {
       setIsError(true);
       setOutput(["An error occurred while executing the code"]);
       console.error("Error executing code:", error);
+
+      // Submit error to our API
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        error: "An error occurred while executing the code",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -161,8 +175,24 @@ export default function CodingQuestion({
         codeWithInput
       );
 
-      const output = result.run.output.trim();
+      // Clean the output by:
+      // 1. Trimming whitespace
+      // 2. Removing any input echo if present
+      // 3. Normalizing the format
+      const rawOutput = result.run.output;
+      let output = rawOutput.trim();
+
+      // If output contains both input and result (common in some executions)
+      // Split by newlines and take the last line
+      const outputLines = output.split("\n");
+      if (outputLines.length > 1) {
+        output = outputLines[outputLines.length - 1].trim();
+      }
+
+      // Clean expected output
       const expectedOutput = testCase.expected_output.trim();
+
+      // Compare the cleaned outputs
       const isSuccess = output === expectedOutput;
 
       const newTestResult = {
@@ -171,7 +201,7 @@ export default function CodingQuestion({
           output: output,
           error: isSuccess
             ? undefined
-            : `Expected: ${expectedOutput}\nGot: ${output}`,
+            : `Expected: ${expectedOutput}\nGot: ${output}\nInput: ${testCase.input_data}`,
         },
       };
 
@@ -180,13 +210,18 @@ export default function CodingQuestion({
         ...newTestResult,
       }));
 
-      // Send test results to backend
-      await submitTestResults({
+      // Submit test case results to our API
+      await submitToRunCodeAPI({
         questionId: question.id,
+        code: answer,
+        language: question.language,
         testCaseId: testCase.id,
         input: testCase.input_data,
         expectedOutput: testCase.expected_output,
-        actualOutput: output,
+        output: output,
+        error: isSuccess
+          ? undefined
+          : `Expected: ${expectedOutput}\nGot: ${output}`,
         isSuccess,
       });
 
@@ -203,6 +238,18 @@ export default function CodingQuestion({
         ...prev,
         ...newTestResult,
       }));
+
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        testCaseId: question.testCases[testCaseIndex].id,
+        input: question.testCases[testCaseIndex].input_data,
+        expectedOutput: question.testCases[testCaseIndex].expected_output,
+        error: "An error occurred while running the test case.",
+        isSuccess: false,
+      });
+
       throw error;
     } finally {
       setRunningStatus((prev) => ({ ...prev, [tabKey]: false }));
@@ -225,25 +272,29 @@ export default function CodingQuestion({
     }
   };
 
+  // ... rest of the code remains the same ...
   const getCodeWithInputHandling = (
     code: string,
     language: string,
-    input: string
+    input: string,
+    functionName: string = "flatten_list" // Add this parameter to know which function to test
   ) => {
-    switch (language) {
+    switch (
+      language.toLowerCase() // Use lowercase for case-insensitive comparison
+    ) {
       case "python":
-        return `${code}\n\n# Test input\nprint(${input})`;
+        return `${code}\n\n# Test the function\nprint(${functionName}(${input}))`;
       case "javascript":
-        return `${code}\n\n// Test input\nconsole.log(${input});`;
+        return `${code}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
       case "java":
-        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(${input});\n    }\n}`;
+        // For Java, this would need more complex handling depending on the class structure
+        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(Arrays.toString(${functionName}(${input})));\n    }\n}`;
       case "cpp":
-        return `${code}\n\nint main() {\n    std::cout << ${input} << std::endl;\n    return 0;\n}`;
+        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    for (auto item : result) {\n        std::cout << item << " ";\n    }\n    return 0;\n}`;
       default:
         return code;
     }
   };
-
   const getLanguage = () => {
     const lang = question.language?.toLowerCase() || "python";
     const languageMap: Record<string, string> = {

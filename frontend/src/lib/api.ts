@@ -1,5 +1,7 @@
 // Types
 
+import { addHours } from "date-fns"
+
 
 export type Assignment = {
   id: string
@@ -233,12 +235,13 @@ export async function getExams(token: string, userId: string): Promise<Exam[]> {
         const end = new Date(exam.end_datetime);
         const isSubmitted = exam.status === "submitted"; // you can customize this condition
         const isOpen = !isSubmitted;
-
+        const newDate = addHours(new Date(exam.start_datetime), 2);
         return {
           id: parseInt(exam.id.toString(), 10),
           title: exam.exam?.title || `Exam ${exam.exam || exam.id}`,
           courseName: exam.track ? `Track ${exam.track}` : 'General Exam',
           date: exam.start_datetime,
+          console: exam.start_datetime,
           duration: calculateDurationInMinutes(exam.start_datetime, exam.end_datetime),
           questionsCount: exam.mcqquestions + exam.codingquestions || 0,
           preparationProgress: Math.min(Math.max(exam.preparation_progress || 0, 0), 100),
