@@ -187,7 +187,7 @@ export default function StudentDetailPage() {
             <Tabs defaultValue="courses">
               <TabsList className="mb-4">
                 {/* <TabsTrigger value="courses">Courses</TabsTrigger> */}
-                <TabsTrigger value="grades">Grades</TabsTrigger>
+                {/* <TabsTrigger value="grades">Grades</TabsTrigger> */}
                 {/* <TabsTrigger value="attendance">Attendance</TabsTrigger> */}
                 {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
                 <TabsTrigger value="progress">Progress</TabsTrigger> {/* الجديد */}
