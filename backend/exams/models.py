@@ -9,7 +9,7 @@ User = get_user_model()
 from django.utils.timezone import now
 
 # Exam Model
-class Exam(models.Model):
+class Exam(models.Model): ### plus course name
     title = models.CharField(max_length=255)
     MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
     CodingQuestions = models.ManyToManyField("CodingQuestion", blank=True)
@@ -20,7 +20,7 @@ class Exam(models.Model):
         return self.title
     
 # Temporary Exam Instance Model
-class TemporaryExamInstance(models.Model):
+class TemporaryExamInstance(models.Model): ### plus branch name
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
     track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)    
     students = models.ManyToManyField(Student, blank=True) 
@@ -150,7 +150,12 @@ class CodingTestCase(models.Model):
     question = models.ForeignKey(CodingQuestion, related_name='test_cases', on_delete=models.CASCADE)
     input_data = models.TextField()
     expected_output = models.TextField()
-
+    function_name = models.CharField(
+        max_length=100,
+        blank=True,  # Allows empty for single-function questions
+        default="",  # Empty default
+        help_text="Name of the function to test (leave blank for single-function questions)"
+    )
     def __str__(self):
         return f"Test case for {self.question.title}"
 

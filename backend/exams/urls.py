@@ -23,14 +23,13 @@ urlpatterns = [
     # This endpoint will allow queries like /questions/?difficulty=easy
     path('temp-exams-by-track/<int:track_id>/', GetTempExamByTrack.as_view(), name='temp_exam_by_track'),
     path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
-    path('temp-exams-by-student/<int:student_id>/', GetTempExamByStudent.as_view(), name='temp_exam_by_student'),
     path("exams/logs/", CheatingLogView.as_view()),
     path('exams/logs/<int:exam_id>/', get_cheating_logs, name='get_cheating_logs'),
     path("", include(router.urls)),  # Auto-generates CRUD URLs
     # path('run-code/', StudentExamAnswerViewSet.as_view(), name='run_code'),
     path('submit-code-results/', submit_code_results, name='submit_code_results'),
     path('run-code/', run_code, name='run_code'),
-
+    # path('student-exam-answers/get_student_answers/', StudentExamAnswerViewSet.as_view({'get': 'get_student_answers'}), name='get_student_answers'),
 ]
 
 

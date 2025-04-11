@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Exam, getExams, getExamDetails } from "@/lib/api";
+import { Exam, getExams } from "@/lib/api";
 import { jwtDecode } from "jwt-decode";
 import { getClientSideToken } from "@/lib/cookies";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,10 +24,10 @@ type ExamFilter = "all" | "upcoming" | "in-progress" | "finished" | "submitted";
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [filteredExams, setFilteredExams] = useState<Exam[]>([]);
-  const [examTitles, setExamTitles] = useState<Record<number, string>>({});
   const [activeFilter, setActiveFilter] = useState<ExamFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const formatExamTime = (dateString: string) => {
     const date = new Date(dateString);
     // Adjust for the +2 hours offset by subtracting 2 hours
@@ -40,6 +40,7 @@ export default function ExamsPage() {
       "0"
     )}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
   };
+
   const isExamInProgress = (exam: Exam) => {
     const now = Date.now();
     const examDate = new Date(exam.date);
@@ -104,21 +105,6 @@ export default function ExamsPage() {
         setExams(examsData);
         setFilteredExams(examsData);
 
-        // Fetch titles for exams
-        const titles: Record<number, string> = {};
-        for (const exam of examsData) {
-          if (!examTitles[exam.id]) {
-            try {
-              const details = await getExamDetails(token, exam.id);
-              titles[exam.id] = details.title;
-            } catch (err) {
-              console.error(`Failed to fetch title for exam ${exam.id}:`, err);
-              titles[exam.id] = `Exam ${exam.id}`;
-            }
-            setExamTitles((prev) => ({ ...prev, ...titles }));
-          }
-        }
-
         // Show only 3 most imminent upcoming exams
         const upcomingExams = examsData
           .filter((exam) => isExamUpcoming(exam))
@@ -128,7 +114,7 @@ export default function ExamsPage() {
           .slice(0, 3);
         upcomingExams.forEach((exam) => {
           toast.info(
-            `Upcoming: ${titles[exam.id] || exam.id} — Start at ${new Date(
+            `Upcoming: ${exam.title || exam.id} — Start at ${new Date(
               new Date(exam.date).getTime() - 2 * 60 * 60 * 1000
             ).toLocaleString()}`,
             { autoClose: 8000 }
@@ -197,13 +183,7 @@ export default function ExamsPage() {
             const inProgress = isExamInProgress(exam);
             const upcoming = isExamUpcoming(exam);
             const finished = isExamFinished(exam);
-            const mcqCount = Array.isArray(exam.MCQQuestions)
-              ? exam.MCQQuestions.length
-              : 0;
-            const codingCount = Array.isArray(exam.CodingQuestions)
-              ? exam.CodingQuestions.length
-              : 0;
-            const totalQuestions = mcqCount + codingCount;
+            const totalQuestions = exam.questionsCount || 0;
 
             return (
               <Card key={exam.id} className="overflow-hidden flex flex-col">
@@ -213,11 +193,7 @@ export default function ExamsPage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle>
-                        {examTitles[exam.id] || (
-                          <span className="inline-block h-6 w-full animate-pulse bg-gray-200 rounded"></span>
-                        )}
-                      </CardTitle>
+                      <CardTitle>{exam.title || `Exam ${exam.id}`}</CardTitle>
                       <CardDescription>{exam.courseName}</CardDescription>
                     </div>
                     <span
@@ -254,14 +230,7 @@ export default function ExamsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {totalQuestions} questions
-                      {totalQuestions > 0 && (
-                        <span className="text-muted-foreground text-xs ml-1">
-                          ({mcqCount} MCQ, {codingCount} coding)
-                        </span>
-                      )}
-                    </span>
+                    <span className="text-sm">{totalQuestions} questions</span>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end">
