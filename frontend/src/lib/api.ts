@@ -223,8 +223,6 @@ export async function getExams(token: string, userId: string): Promise<Exam[]> {
     }
 
     const data = await response.json();
-    console.log("Fetched exams:", data.temp_exams);
-
     const now = new Date();
 
     return data.temp_exams
@@ -238,12 +236,12 @@ export async function getExams(token: string, userId: string): Promise<Exam[]> {
         const newDate = addHours(new Date(exam.start_datetime), 2);
         return {
           id: parseInt(exam.id.toString(), 10),
-          title: exam.exam?.title || `Exam ${exam.exam || exam.id}`,
+          title: exam.exam_title,
           courseName: exam.track ? `Track ${exam.track}` : 'General Exam',
           date: exam.start_datetime,
           console: exam.start_datetime,
           duration: calculateDurationInMinutes(exam.start_datetime, exam.end_datetime),
-          questionsCount: exam.mcqquestions + exam.codingquestions || 0,
+          questionsCount: exam.total_questions,
           preparationProgress: Math.min(Math.max(exam.preparation_progress || 0, 0), 100),
           examId: exam.exam || exam.id,
           startDatetime: exam.start_datetime,
@@ -265,15 +263,3 @@ function calculateDurationInMinutes(start: string, end: string): number {
   const endDate = new Date(end);
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }
-
-
-export const getExamDetails = async (token: string, examId: number): Promise<{MCQQuestions: any ,title: string
-}> => {
-  const response = await fetch(`http://127.0.0.1:8000/exam/exams/${examId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) throw new Error('Failed to fetch exam details');
-  return response.json();
-};

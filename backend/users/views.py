@@ -2,9 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from .models import Instructor, Student, User ,Track
+from .models import Branch, Course, Instructor, Student, User ,Track
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .serializers import RegisterSerializer, InstructorSerializer, StudentSerializer
+from .serializers import BranchSerializer, CourseSerializer, RegisterSerializer, InstructorSerializer, StudentSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.conf import settings
@@ -17,7 +17,11 @@ import pandas as pd
 from openpyxl import load_workbook
 import csv
 from random import choice
-import string
+import  string
+from rest_framework import generics 
+
+
+
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -588,3 +592,43 @@ class InstructorViewSet(viewsets.ModelViewSet):
 
         return Response(combined_data, status=status.HTTP_200_OK)
      
+class BranchListCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if it's a list of objects
+        if isinstance(request.data, list):
+            serializer = BranchSerializer(data=request.data, many=True)
+        else:
+            serializer = BranchSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BranchRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = [IsAuthenticated]
+
+# CRUD for Course
+class CourseListCreateView(generics.ListCreateAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+            data = request.data
+            if isinstance(data, list):  # Check if the request body is a list of courses
+                # Create multiple course instances at once
+                serializer = self.get_serializer(data=data, many=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return super().create(request, *args, **kwargs)  # Handle single course creation
+            
+class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]

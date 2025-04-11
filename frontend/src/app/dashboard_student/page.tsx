@@ -11,9 +11,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import {
   BookOpen,
@@ -23,8 +20,8 @@ import {
   Github,
   GraduationCap,
 } from "lucide-react";
-import { Code } from "lucide-react";
-import CountUp from "react-countup";
+
+import CountUp from "react-countup";import { Code } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -39,18 +36,22 @@ import { jwtDecode } from "jwt-decode";
 import {
   type Assignment,
   type Course,
-  type Grade,
   getAssignments,
   getCourses,
   getGradeDistribution,
-  getGrades,
 } from "@/lib/api";
+
+interface ExamScore {
+  exam_instance_id: number;
+  exam_title: string;
+  score: number;
+  total_points: number;
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
   const [gradeDistribution, setGradeDistribution] = useState<
     { grade: string; count: number }[]
   >([]);
@@ -60,6 +61,8 @@ export default function DashboardPage() {
     leetcode_solved: number | null;
   } | null>(null);
   const [studentData, setStudentData] = useState<any>(null);
+  const [examScores, setExamScores] = useState<ExamScore[]>([]);
+
   const fetchExternalStats = async () => {
     try {
       const token = getClientSideToken();
@@ -75,43 +78,41 @@ export default function DashboardPage() {
 
       const data = await res.json();
       setExternalStats(data);
-      console.log("External stats fetched:", data);
     } catch (error) {
       console.error("Error fetching external stats:", error);
       setExternalStats(null);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchExamScores = async () => {
+    try {
+      const token = getClientSideToken();
+      if (!token) throw new Error("Token not found");
+
+      const res = await fetch(
+        "http://127.0.0.1:8000/exam/student-exam-answers/get_user_exams_scores/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch exam scores");
+
+      const data = await res.json();
+      setExamScores(data);
+    } catch (error) {
+      console.error("Error fetching exam scores:", error);
+      setExamScores([]);
     }
   };
 
   useEffect(() => {
     fetchExternalStats();
+    fetchExamScores();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const [assignmentsData, gradesData, gradeDistData] = await Promise.all([
-  //         getAssignments(),
-  //         getGrades(),
-  //         getGradeDistribution(),
-  //       ])
-
-  //       setAssignments(assignmentsData)
-  //       setGrades(gradesData)
-  //       setGradeDistribution(gradeDistData)
-  //     } catch (error) {
-  //       console.error("Error fetching dashboard data:", error)
-  //     } finally {
-  //       setLoading(false)
-  //     }
-  //   }
-
-  //   fetchData()
-  // }, [])
   useEffect(() => {
-    console.log("User data from context:", user);
-
     const fetchStudentData = async () => {
       try {
         const token = getClientSideToken();
@@ -120,8 +121,6 @@ export default function DashboardPage() {
         const decoded: any = jwtDecode(token);
         const userId = decoded.user_id;
 
-        console.log("User ID from token in Dashboard:", userId);
-
         const res = await fetch(
           `http://127.0.0.1:8000/users/students/${userId}/`
         );
@@ -129,7 +128,6 @@ export default function DashboardPage() {
 
         const data = await res.json();
         setStudentData(data);
-        console.log("Student data fetched:", data);
       } catch (error) {
         console.error("Error fetching student data:", error);
         setStudentData(null);
@@ -138,20 +136,16 @@ export default function DashboardPage() {
 
     fetchStudentData();
   }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [coursesData, assignmentsData, gradesData, gradeDistData] =
-          await Promise.all([
-            getCourses(),
-            getAssignments(),
-            getGrades(),
-            getGradeDistribution(),
-          ]);
+        const [coursesData, assignmentsData, gradeDistData] = await Promise.all(
+          [getCourses(), getAssignments(), getGradeDistribution()]
+        );
 
         setCourses(coursesData);
         setAssignments(assignmentsData);
-        setGrades(gradesData);
         setGradeDistribution(gradeDistData);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -169,14 +163,13 @@ export default function DashboardPage() {
   );
   const overdueAssignments = assignments.filter((a) => a.status === "overdue");
 
-  const averageGrade = grades.length
-    ? grades.reduce(
-        (sum, grade) => sum + (grade.score / grade.maxScore) * 100,
+  // Calculate average grade from exam scores instead of mock grades
+  const averageGrade = examScores.length
+    ? examScores.reduce(
+        (sum, exam) => sum + (exam.score / exam.total_points) * 100,
         0
-      ) / grades.length
+      ) / examScores.length
     : 0;
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
   if (loading) {
     return (
@@ -229,8 +222,8 @@ export default function DashboardPage() {
             <GraduationCap className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{averageGrade.toFixed(1)}%</div>
-            <p className='text-xs text-muted-foreground'>Across all courses</p>
+            <div className="text-2xl font-bold">{averageGrade.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">Across all exams</p>
           </CardContent>
         </Card>
         <Card className='bg-card'>
@@ -291,7 +284,7 @@ export default function DashboardPage() {
         </Card>
         <Card className='lg:col-span-3 bg-card'>
           <CardHeader>
-            <CardTitle>Student Progress</CardTitle>
+            <CardTitle>Your Progress</CardTitle>
             <CardDescription>Your coding platform activity</CardDescription>
           </CardHeader>
           <CardContent>
@@ -299,7 +292,7 @@ export default function DashboardPage() {
               {/* GitHub */}
               <div className='flex flex-col items-center gap-2'>
                 <div className='relative w-24 h-24'>
-                  <svg className='transform -rotate-90' viewBox='0 0 36 36'>
+                  <svg  viewBox='0 0 36 36'>
                     <path
                       className='text-muted stroke-current'
                       d='M18 2.0845
@@ -339,7 +332,7 @@ export default function DashboardPage() {
               {/* LeetCode */}
               <div className='flex flex-col items-center gap-2'>
                 <div className='relative w-24 h-24'>
-                  <svg className='transform -rotate-90' viewBox='0 0 36 36'>
+                  <svg  viewBox='0 0 36 36'>
                     <path
                       className='text-muted stroke-current'
                       d='M18 2.0845
@@ -429,42 +422,52 @@ export default function DashboardPage() {
         </Card>
         <Card className='bg-card'>
           <CardHeader>
-            <CardTitle>Recent Grades</CardTitle>
-            <CardDescription>
-              Your most recent grades across all courses
-            </CardDescription>
+            <CardTitle>Recent Exam Scores</CardTitle>
+            <CardDescription>Your most recent exam performance</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='space-y-4'>
-              {grades.length === 0 ? (
-                <p className='text-center text-muted-foreground'>
-                  No grades available
+            <div className="space-y-4">
+              {examScores.length === 0 ? (
+                <p className="text-center text-muted-foreground">
+                  No exam scores available
                 </p>
               ) : (
-                grades
-                  .sort(
-                    (a, b) =>
-                      new Date(b.date).getTime() - new Date(a.date).getTime()
-                  )
+                examScores
+                  .sort((a, b) => b.exam_instance_id - a.exam_instance_id)
                   .slice(0, 5)
-                  .map((grade) => (
-                    <div key={grade.id} className='flex items-center gap-4'>
-                      <div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary/10'>
-                        <GraduationCap className='h-5 w-5 text-primary' />
+                  .map((exam) => {
+                    const percentage = (exam.score / exam.total_points) * 100;
+                    return (
+                      <div
+                        key={exam.exam_instance_id}
+                        className="flex items-center gap-4"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <GraduationCap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {exam.exam_title}
+                          </p>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                percentage >= 70
+                                  ? "bg-green-500"
+                                  : percentage >= 50
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                              }`}
+                              style={{ width: `${Math.min(percentage, 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium">
+                          {exam.score.toFixed(1)}/{exam.total_points.toFixed(1)}
+                        </div>
                       </div>
-                      <div className='flex-1 space-y-1'>
-                        <p className='text-sm font-medium leading-none'>
-                          {grade.assignment}
-                        </p>
-                        <p className='text-xs text-muted-foreground'>
-                          {grade.courseName}
-                        </p>
-                      </div>
-                      <div className='text-sm font-medium'>
-                        {grade.score}/{grade.maxScore}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
               )}
             </div>
           </CardContent>

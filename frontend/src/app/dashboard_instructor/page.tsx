@@ -1,16 +1,31 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Button } from "@/components/ui/button";
-import { UserCircle, Bell, BookOpen, Users, BarChart3, Layers } from "lucide-react";
+import {
+  UserCircle,
+  Bell, 
+  BookOpen,
+  Users,
+  BarChart3,
+  Layers,
+} from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
-
 
 const data = [
   { name: "OOP", score: 65 },

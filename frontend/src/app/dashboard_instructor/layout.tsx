@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import Link from "next/link";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 import { LogOut, Menu, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,22 +24,7 @@ export default function InstructorLayout({
   });
   useEffect(() => {
     const storedRole = Cookies.get("role");
-    const storedUser = Cookies.get("user"); // Assuming you store user info in cookies
     setRole(storedRole || "");
-
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser({
-          name: parsedUser.name || "Instructor",
-          email: parsedUser.email || "",
-          avatar: parsedUser.avatar || "",
-        });
-      } catch (e) {
-        console.error("Error parsing user data", e);
-      }
-    }
-
     setLoading(false);
   }, []);
 
@@ -90,7 +76,11 @@ export default function InstructorLayout({
             { href: "/dashboard_instructor/set-exam", label: "Set Exam" },
             { href: "/dashboard_instructor/add-note", label: "Send Note" },
             { href: "/dashboard_instructor/exam_logs", label: "Exam Logs" },
-            { href: "/dashboard_instructor/students", label: "Student Management" },
+            { href: "/dashboard_instructor/student-answers", label: "Grades" },
+            {
+              href: "/dashboard_instructor/students",
+              label: "Student Management",
+            },
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>
               <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">
@@ -98,36 +88,36 @@ export default function InstructorLayout({
               </p>
             </Link>
           ))}
-          <Link href="/dashboard_instructor/uploadLabs" >
-             <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">Upload Labs</p>
+          <Link href="/dashboard_instructor/uploadLabs">
+            <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">
+              Upload Labs
+            </p>
           </Link>
           {/* Avatar and Logout Section */}
-    
+ 
         </nav>
-
-        {/* Avatar and Logout Section */}
-        <div className="mt-auto pt-4 border-t border-green-600">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{user.name}</p>
-              {user.email && (
-                <p className="text-xs text-green-200">{user.email}</p>
-              )}
+        <div className="mt-auto pt-4 border-t border-blue-600">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{user.name}</p>
+                {user.email && (
+                  <p className="text-xs text-green-200">{user.email}</p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-white bg-[#007acc] hover:bg-blue-700"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="text-white hover:bg-green-600"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
           </div>
-        </div>
       </aside>
 
       {/* Main Content */}

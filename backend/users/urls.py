@@ -1,5 +1,7 @@
 from django.urls import path, include
-from .views import (
+from .views import  (
+    CourseListCreateView, CourseRetrieveUpdateDestroyView, 
+    BranchListCreateView, BranchRetrieveUpdateDestroyView,
     RegisterInstructorAPIView,
     LoginAPIView,
     RegisterStudentAPIView,
@@ -38,6 +40,12 @@ urlpatterns = [
     path('students/<int:user_id>/external-stats/', StudentViewSet.as_view({'get': 'external_stats'}), name='student-external-stats'),
     
     path('instructors/<int:user_id>/', InstructorViewSet.as_view({'get': 'retrieve'}), name='instructor-detail'),
+    path('branches/', BranchListCreateView.as_view(), name='branch-list-create'),
+    path('branches/<int:pk>/', BranchRetrieveUpdateDestroyView.as_view(), name='branch-retrieve-update-destroy'),
+
+    # Course URLs
+    path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
+    path('courses/<int:pk>/', CourseRetrieveUpdateDestroyView.as_view(), name='course-retrieve-update-destroy'),
 
     path('', include(router.urls)),
 ]
