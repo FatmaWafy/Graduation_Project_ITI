@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!token) {
-      return NextResponse.json(
-        { error: "Missing authorization token" }, 
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Missing authorization token" }, { status: 401 })
     }
 
     // Forward to Django backend
@@ -26,9 +23,22 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        question_id: data.questionId,
+        code: data.code,
+        language: data.language,
+        output: data.output,
+        error: data.error,
+        test_case_id: data.testCaseId,
+        input: data.input,
+        expected_output: data.expectedOutput,
+        is_success: data.isSuccess,
+        points: data.points || 0, // Ensure points is included
+      }),
     })
-        console.log("Response from Django backend:", response)
+
+    console.log("Points being sent:", data.points)
+
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Backend error:", errorText)
@@ -39,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const responseData = await response.json()
-    
+
     // Process results for consistent format
     const processedResults = responseData.results?.map((result: any) => ({
       testCaseId: result.test_case_id,
@@ -56,12 +66,8 @@ export async function POST(request: NextRequest) {
       totalScore: responseData.total_score || 0,
       allPassed: responseData.all_passed === true,
     })
-
   } catch (error) {
     console.error("Error in run-code API route:", error)
-    return NextResponse.json(
-      { error: "An error occurred while processing your request" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "An error occurred while processing your request" }, { status: 500 })
   }
 }
