@@ -56,7 +56,7 @@ const studentSchema = z.object({
   track_name: z.string().min(1, { message: "Track name is required" }),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
-  enrollment_date: z.date().optional().nullable(),
+  // enrollment_date: z.date().optional().nullable(),
   status: z.enum(["active", "inactive", "suspended", "graduated"]).optional(),
   notes: z.string().optional().nullable(),
 });
@@ -92,7 +92,7 @@ export function StudentModal({
       track_name: "",
       phone: "",
       address: "",
-      enrollment_date: new Date(),
+      // enrollment_date: new Date(),
       status: "active",
       notes: "",
     },
@@ -109,9 +109,9 @@ export function StudentModal({
         track_name: student.track_name || "",
         phone: student.user.phone || "",
         address: student.user.address || "",
-        enrollment_date: student.user.enrollment_date
-          ? new Date(student.user.enrollment_date)
-          : new Date(),
+        // enrollment_date: student.user.enrollment_date
+        //   ? new Date(student.user.enrollment_date)
+        //   : new Date(),
         status: (student.user.status as any) || "active",
         notes: student.user.notes || "",
       });
@@ -123,7 +123,7 @@ export function StudentModal({
         track_name: "",
         phone: "",
         address: "",
-        enrollment_date: new Date(),
+        // enrollment_date: new Date(),
         status: "active",
         notes: "",
       });
@@ -138,7 +138,7 @@ export function StudentModal({
       ...data,
       // Ensure enrollment_date is in the correct format (YYYY-MM-DD) if it exists
       ...(data.enrollment_date && {
-        enrollment_date: format(data.enrollment_date, "yyyy-MM-dd"),
+        // enrollment_date: format(data.enrollment_date, "yyyy-MM-dd"),
       }),
     };
 
@@ -208,7 +208,7 @@ export function StudentModal({
           address: formattedData.address || "",  // إذا تم تغيير العنوان
           status: formattedData.status || "active", // إذا تم تغيير الحالة
           notes: formattedData.notes || "",  // إذا تم تغيير الملاحظات
-          enrollment_date: formattedData.enrollment_date || "",  // إذا تم تغيير تاريخ التسجيل
+          // enrollment_date: formattedData.enrollment_date || "",  // إذا تم تغيير تاريخ التسجيل
         },
         track_name: formattedData.track_name, // إذا تم تغيير اسم المسار
       
@@ -254,9 +254,9 @@ export function StudentModal({
           role: "student", // Set default role for new students
           phone: formattedData.phone || "",
           address: formattedData.address || "",
-          enrollment_date:
-            formattedData.enrollment_date ||
-            new Date().toISOString().split("T")[0],
+          // enrollment_date:
+          //   formattedData.enrollment_date ||
+          //   new Date().toISOString().split("T")[0],
           status: formattedData.status || "active",
           notes: formattedData.notes || "",
         },
@@ -443,7 +443,7 @@ export function StudentModal({
                 name='enrollment_date'
                 render={({ field }) => (
                   <FormItem className='flex flex-col'>
-                    <FormLabel>Enrollment Date</FormLabel>
+                    {/* <FormLabel>Enrollment Date</FormLabel> */}
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>

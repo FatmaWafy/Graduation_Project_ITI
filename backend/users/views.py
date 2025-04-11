@@ -319,13 +319,23 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         # التحقق من وجود track وتحديثه إذا لزم الأمر
         if 'track' in data:
-            track_id = data.get('track')
+            track_id = data.get('track')  # تتلقى الـ ID هنا
             try:
-                track = Track.objects.get(id=track_id)
-                student.track = track
+                track = Track.objects.get(id=track_id)  # جلب الكائن الصحيح من Track باستخدام الـ ID
+                student.track = track  # تعيين الكائن المسترجع
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # التحقق من وجود branch وتحديثه إذا لزم الأمر
+        if 'branch' in data:
+            branch_id = data.get('branch')
+            try:
+                branch = Branch.objects.get(id=branch_id)  # جلب الكائن الصحيح من Branch باستخدام الـ ID
+                student.branch = branch  # تعيين الكائن المسترجع
+            except Branch.DoesNotExist:
+                return Response({"error": "No branch found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # التحقق من وجود user وتحديثه إذا لزم الأمر
         if 'user' in data:
             user_data = data.pop('user')
             student.user.username = user_data.get('username', student.user.username)
@@ -336,7 +346,9 @@ class StudentViewSet(viewsets.ModelViewSet):
             setattr(student, attr, value)
 
         student.save()
+
         return Response({"message": "Student updated successfully!", "student": self.get_serializer(student).data}, status=status.HTTP_200_OK)
+
 
     @action(detail=False, methods=['get'], url_path='external-stats')
     def external_stats(self, request, user_id=None):
@@ -593,6 +605,10 @@ class InstructorViewSet(viewsets.ModelViewSet):
         return Response(combined_data, status=status.HTTP_200_OK)
      
 class BranchListCreateView(APIView):
+    def get(self, request, *args, **kwargs):
+        branches = Branch.objects.all()
+        serializer = BranchSerializer(branches, many=True)
+        return Response(serializer.data)
     def post(self, request, *args, **kwargs):
         # Check if it's a list of objects
         if isinstance(request.data, list):
@@ -603,6 +619,15 @@ class BranchListCreateView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self, request, *args, **kwargs):
+        # Update branch based on the given ID (assuming it's passed in kwargs)
+        branch = Branch.objects.get(id=kwargs.get('id'))
+        serializer = BranchSerializer(branch, data=request.data, partial=True)  # partial=True allows partial updates
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class BranchRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

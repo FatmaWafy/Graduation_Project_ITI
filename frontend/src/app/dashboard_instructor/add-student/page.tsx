@@ -1,139 +1,4 @@
-// "use client";
 
-// import { useState, useEffect } from "react";
-// import Cookies from "js-cookie";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { Card } from "@/components/ui/card";
-// import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
-
-// export default function AddStudentPage() {
-//   const [studentData, setStudentData] = useState({
-//     username: "",
-//     email: "",
-//     university: "",
-//     graduation_year: "",
-//     college: "",
-//     leetcode_profile: "",
-//     github_profile: "",
-//     track_name: "",
-//   });
-
-//   const [tracks, setTracks] = useState<{ id: number; name: string }[]>([]);
-
-//   const [isSubmitting, setIsSubmitting] = useState(false);
-
-//   useEffect(() => {
-//     const fetchTracks = async () => {
-//       try {
-//         const accessToken = Cookies.get("token");
-//         if (!accessToken) {
-//           console.error("❌ No authentication token found.");
-//           return;
-//         }
-
-//         const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
-//           headers: { Authorization: `Bearer ${accessToken}` },
-//         });
-
-//         const data = await response.json();
-//         if (response.ok) {
-//           setTracks(data || []); // ✅ استخدم `data` مباشرة بدل `data.tracks`
-//         } else {
-//           console.error("❌ Failed to fetch tracks:", data);
-//           setTracks([]);
-//         }
-//       } catch (error) {
-//         console.error("❌ Error fetching tracks:", error);
-//         setTracks([]);
-//       }
-//     };
-
-//     fetchTracks();
-//   }, []);
-
-
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     setStudentData({ ...studentData, [e.target.name]: e.target.value });
-//   };
-
-//   const handleSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     const accessToken = Cookies.get("token");
-
-//     if (!accessToken) {
-//       alert("❌ Authentication Error: No token found. Please log in again.");
-//       return;
-//     }
-
-//     setIsSubmitting(true);
-
-//     try {
-//       const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${accessToken}`,
-//         },
-//         body: JSON.stringify(studentData),
-//       });
-
-//       const data = await response.json();
-
-//       if (response.ok) {
-//         alert("✅ Student added successfully!");
-//       } else {
-//         alert(`❌ Error: ${JSON.stringify(data, null, 2)}`);
-//       }
-//     } catch (error) {
-//       console.error("❌ Request Error:", error);
-//       alert("❌ Something went wrong. Please try again.");
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
-
-//   return (
-//     <div className="w-full h-screen flex items-center justify-center bg-gray-100">
-//       <Card className="w-full max-w-4xl p-8 shadow-lg">
-//         <h2 className="text-3xl font-bold text-green-700 text-center mb-6">📚 Register a New Student</h2>
-
-//         <form className="space-y-4" onSubmit={handleSubmit}>
-//           <div className="grid grid-cols-2 gap-4">
-//             <Input type="text" name="username" placeholder="Username" value={studentData.username} onChange={handleChange} required />
-//             <Input type="email" name="email" placeholder="Email" value={studentData.email} onChange={handleChange} required />
-//           </div>
-
-//           <div className="grid grid-cols-2 gap-4">
-//             <Input type="text" name="university" placeholder="University" value={studentData.university} onChange={handleChange} />
-//             <Input type="number" name="graduation_year" placeholder="Graduation Year" value={studentData.graduation_year} onChange={handleChange} />
-//           </div>
-
-//           <Input type="text" name="college" placeholder="College" value={studentData.college} onChange={handleChange} />
-//           <Input type="url" name="leetcode_profile" placeholder="LeetCode Profile URL" value={studentData.leetcode_profile} onChange={handleChange} />
-//           <Input type="url" name="github_profile" placeholder="GitHub Profile URL" value={studentData.github_profile} onChange={handleChange} />
-
-//           {/* 🔹 Dropdown لاختيار التراك */}
-//           <Select onValueChange={(value) => setStudentData({ ...studentData, track_name: value })}>
-//             <SelectTrigger className="w-full">{studentData.track_name || "Select Track"}</SelectTrigger>
-//             <SelectContent>
-//               {tracks.map((track) => (
-//                 <SelectItem key={track.id} value={track.name}>
-//                   {track.name}
-//                 </SelectItem>
-//               ))}
-//             </SelectContent>
-//           </Select>
-
-
-//           <Button type="submit" className="w-full bg-green-600 hover:bg-green-500" disabled={isSubmitting}>
-//             {isSubmitting ? "Processing..." : "Register Student"}
-//           </Button>
-//         </form>
-//       </Card>
-//     </div>
-//   );
-// }
 "use client"
 
 import type React from "react"
@@ -158,12 +23,16 @@ export default function AddStudentPage() {
     leetcode_username: "",
     github_profile: "",
     track_name: "",
+    branch_name: "",
   })
 
-  const [tracks, setTracks] = useState<{ id: number; name: string }[]>([])
+  
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("single")
+
+  const [tracks, setTracks] = useState<{ id: number; name: string }[]>([])
+  const [branches, setBranch] = useState<{ id: number; name: string }[]>([])
 
   useEffect(() => {
     const fetchTracks = async () => {
@@ -193,6 +62,34 @@ export default function AddStudentPage() {
 
     fetchTracks()
   }, [])
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const accessToken = Cookies.get("token")
+        if (!accessToken) {
+          console.error("❌ No authentication token found.")
+          return
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/users/branches/", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+
+        const data = await response.json()
+        if (response.ok) {
+          setBranch(data || [])
+        } else {
+          console.error("❌ Failed to fetch branches:", data)
+          setBranch([])
+        }
+      } catch (error) {
+        console.error("❌ Error fetching branches:", error)
+        setBranch([])
+      }
+    }
+
+    fetchBranches()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStudentData({ ...studentData, [e.target.name]: e.target.value })
@@ -203,93 +100,66 @@ export default function AddStudentPage() {
       setCsvFile(e.target.files[0])
     }
   }
-
+  const [error, setError] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const accessToken = Cookies.get("token")
-
+    e.preventDefault();
+    setError(null); // Reset any previous errors
+    const accessToken = Cookies.get("token");
+  
     if (!accessToken) {
-      alert("❌ Authentication Error: No token found. Please log in again.")
-      return
+      setError("❌ Authentication Error: No token found. Please log in again.");
+      return;
     }
-
-    setIsSubmitting(true)
-
-    if (activeTab === "bulk") {
-      // إذا تم رفع ملف CSV
-      if (!csvFile) {
-        alert("❌ Please select a CSV file first.")
-        setIsSubmitting(false)
-        return
-      }
-
-      const formData = new FormData()
-      formData.append("file", csvFile)
-
-      try {
-        const response = await fetch("http://127.0.0.1:8000/users/register-students-excel/", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: formData,
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          alert(`✅ ${data.message}`)
-          setCsvFile(null)
-          // Reset file input
-          const fileInput = document.getElementById("csv-upload") as HTMLInputElement
-          if (fileInput) fileInput.value = ""
-        } else {
-          alert(`❌ Error: ${JSON.stringify(data, null, 2)}`)
-        }
-      } catch (error) {
-        console.error("❌ Request Error:", error)
-        alert("❌ Something went wrong. Please try again.")
-      } finally {
-        setIsSubmitting(false)
-      }
-    } else {
-      // إذا لم يتم رفع ملف CSV، نقوم بإرسال البيانات العادية
-      try {
-        const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(studentData),
-        })
-
-        const data = await response.json()
-
-        if (response.ok) {
-          alert("✅ Student added successfully!")
-          // Reset form
-          setStudentData({
-            username: "",
-            email: "",
-            university: "",
-            graduation_year: "",
-            college: "",
-            leetcode_username: "",
-            github_profile: "",
-            track_name: "",
-          })
-        } else {
-          alert(`❌ Error: ${JSON.stringify(data, null, 2)}`)
-        }
-      } catch (error) {
-        console.error("❌ Request Error:", error)
-        alert("❌ Something went wrong. Please try again.")
-      } finally {
-        setIsSubmitting(false)
-      }
+  
+    setIsSubmitting(true);
+  
+    const selectedTrack = tracks.find((track) => track.name === studentData.track_name);
+    const selectedBranch = branches.find((branch) => branch.name === studentData.branch_name);
+  
+    if (!selectedTrack || !selectedBranch) {
+      setError("❌ Please select a valid Track and Branch!");
+      setIsSubmitting(false);
+      return;
     }
-  }
+  
+    try {
+      const { track_name, branch_name, ...rest } = studentData;
+      const payload = { ...rest, track: selectedTrack, branch: selectedBranch };
+  
+      const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        alert("✅ Student added successfully!");
+        setStudentData({
+          username: "",
+          email: "",
+          university: "",
+          graduation_year: "",
+          college: "",
+          leetcode_username: "",
+          github_profile: "",
+          track_name: "",
+          branch_name: "",
+        });
+      } else {
+        setError(`❌ Error: ${JSON.stringify(data, null, 2)}`);
+      }
+    } catch (error) {
+      console.error("❌ Request Error:", error);
+      setError("❌ Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
 return (
   <div className="h-full w-full bg-white p-6">
@@ -462,6 +332,32 @@ return (
                       {tracks.map((track) => (
                         <SelectItem key={track.id} value={track.name}>
                           {track.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="track" className="flex items-center gap-2 text-blue-700">
+                    <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>Branch</span>
+                  </Label>
+                  <Select onValueChange={(value) => setStudentData({ ...studentData, branch_name: value })}>
+                  >
+                    <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectValue placeholder="Select a branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.name}>
+                          {branch.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
