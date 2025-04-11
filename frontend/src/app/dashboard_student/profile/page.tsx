@@ -36,6 +36,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+
 interface StudentData {
   id: number;
   user: {
@@ -88,6 +89,28 @@ export default function ProfilePage() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Added: Handle profile image URL formatting
+  // useEffect(() => {
+  //   if (studentData?.user?.profile_image) {
+  //     const imageUrl = studentData.user.profile_image.startsWith("http")
+  //       ? studentData.user.profile_image
+  //       : `http://127.0.0.1:8000${studentData.user.profile_image}`;
+  //     setProfileImage(imageUrl);
+  //     console.log("Profile image set to:", imageUrl);
+  //   }
+  // }, [studentData]);
+  useEffect(() => {
+    if (studentData?.user?.profile_image) {
+      // Ensure we're using the full URL with timestamp to prevent caching
+      const imageUrl = studentData.user.profile_image.startsWith("http")
+        ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
+        : `http://127.0.0.1:8000${studentData.user.profile_image}?t=${new Date().getTime()}`
+      setProfileImage(imageUrl)
+      console.log("Profile image set to:", imageUrl)
+    }
+  }, [studentData])
+
   const fetchStudentData = async () => {
     setLoading(true);
     try {
@@ -118,7 +141,6 @@ export default function ProfilePage() {
       const student = await res.json();
       setStudentData(student);
       updateFormStateFromStudentData(student);
-      setProfileImage(student.user?.profile_image || null);
     } catch (err) {
       console.error("Error fetching student data:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -126,11 +148,11 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     console.log("User data from context:", user);
-
     fetchStudentData();
-  }, [user]); // Add the user context as a dependency to trigger when user data changes
+  }, [user]);
 
   const updateFormStateFromStudentData = (data: StudentData) => {
     setFormState({
@@ -154,12 +176,10 @@ export default function ProfilePage() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate passwords
     if (passwordValues.newPassword !== passwordValues.confirmPassword) {
       alert("New passwords don't match!");
       return;
     }
-    // Simulate password change
     setTimeout(() => {
       alert("Password changed successfully!");
       setPasswordValues({
@@ -170,7 +190,6 @@ export default function ProfilePage() {
     }, 500);
   };
 
-  // Handle form input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -178,13 +197,11 @@ export default function ProfilePage() {
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle profile image change
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
 
-      // Create a preview URL for the image
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -201,7 +218,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -218,7 +234,6 @@ export default function ProfilePage() {
 
       console.log("Updating profile for student:", studentData);
 
-      // Create the payload with the nested structure that matches your API
       const updatePayload = {
         id: studentData.id,
         user: {
@@ -241,7 +256,6 @@ export default function ProfilePage() {
       const decoded = jwtDecode(token) as { user_id?: string };
       const userId = Number(decoded.user_id);
 
-      // Use the same endpoint structure as in your instructor dashboard
       const response = await fetch(
         `http://127.0.0.1:8000/users/students/${userId}/update/`,
         {
@@ -260,7 +274,7 @@ export default function ProfilePage() {
         throw new Error(`Failed to update profile: ${response.statusText}`);
       }
 
-      // If there's a new profile image, upload it separately
+      // Updated: Image upload with improved handling
       if (imageFile) {
         const formData = new FormData();
         formData.append("profile_image", imageFile);
@@ -270,11 +284,12 @@ export default function ProfilePage() {
           studentData.user.id
         );
         const imageResponse = await fetch(
-          `http://127.0.0.1:8000/users/upload-profile-image/${studentData.user.id}/`,
+          `http://127.0.0.1:8000/users/upload-profile-image/${studentData.id}/`,
           {
             method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
+              // Removed Content-Type header to let browser set it automatically
             },
             body: formData,
           }
@@ -283,6 +298,30 @@ export default function ProfilePage() {
         if (!imageResponse.ok) {
           const errorText = await imageResponse.text();
           console.error("Image upload error response:", errorText);
+          throw new Error("Failed to upload profile image");
+        }
+
+        // Refresh the profile image from the server
+        const updatedImageResponse = await fetch(
+          `http://127.0.0.1:8000/users/students/${userId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (updatedImageResponse.ok) {
+          const updatedData = await updatedImageResponse.json();
+          const newImageUrl = updatedData.user?.profile_image?.startsWith(
+            "http"
+          )
+            ? updatedData.user.profile_image
+            : `http://127.0.0.1:8000${updatedData.user.profile_image}`;
+          setProfileImage(newImageUrl);
+          console.log("Updated profile image URL:", newImageUrl);
+        } else {
+          console.error("Failed to refresh profile image after upload");
         }
       }
 
@@ -308,7 +347,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <Skeleton />; // يمكنك إضافة Skeleton أو Loader هنا أثناء تحميل البيانات
+    return <Skeleton />;
   }
 
   if (error) {
@@ -316,7 +355,7 @@ export default function ProfilePage() {
   }
 
   if (!studentData) {
-    return <div>No student data available</div>; // يمكن إضافة رسالة في حالة عدم وجود بيانات
+    return <div>No student data available</div>;
   }
 
   return (
@@ -353,8 +392,12 @@ export default function ProfilePage() {
                   <div className='relative'>
                     <Avatar className='h-24 w-24'>
                       <AvatarImage
-                        src={profileImage || user?.avatar}
+                        src={profileImage || studentData.user.profile_image}
                         alt={studentData?.user.username}
+                        onError={(e) => {
+                          console.error("Error loading profile image:", e);
+                          e.currentTarget.src = ""; // Clear src to show fallback
+                        }}
                       />
                       <AvatarFallback>
                         {studentData?.user.username.charAt(0).toUpperCase()}
@@ -379,12 +422,13 @@ export default function ProfilePage() {
                   <div className='flex-1'>
                     {isEditing && (
                       <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={triggerFileInput}
-                      >
-                        Change Avatar
-                      </Button>
+                      type="button"
+                      variant='outline'
+                      size='sm'
+                      onClick={triggerFileInput}
+                    >
+                      Change Avatar
+                    </Button>
                     )}
                   </div>
                 </div>
@@ -843,7 +887,6 @@ export default function ProfilePage() {
   );
 }
 
-// Loading skeleton component
 function ProfileSkeleton() {
   return (
     <div className='space-y-6'>

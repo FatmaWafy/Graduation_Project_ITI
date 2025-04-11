@@ -31,6 +31,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     email = models.EmailField(unique=True)
     signup_token = models.CharField(max_length=32, blank=True, null=True, unique=True)  
+    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
 
     groups = models.ManyToManyField(
         Group,

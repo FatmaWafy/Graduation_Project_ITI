@@ -1,8 +1,14 @@
+from rest_framework.decorators import action
+from .serializers import UserProfileImageSerializer
+from .models import Student, Instructor
+from django.shortcuts import get_object_or_404
+from rest_framework import status, permissions
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from .models import Instructor, Student, User ,Track
+from .models import Instructor, Student, User, Track
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import RegisterSerializer, InstructorSerializer, StudentSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -18,7 +24,7 @@ from openpyxl import load_workbook
 import csv
 from random import choice
 import string
-
+import os
 token_generator = PasswordResetTokenGenerator()
 
 
@@ -32,7 +38,8 @@ class RegisterInstructorAPIView(APIView):
         if User.objects.filter(email=data["email"]).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = InstructorSerializer(data={"user": data, "track_name": data.get("track_name")})
+        serializer = InstructorSerializer(
+            data={"user": data, "track_name": data.get("track_name")})
         if serializer.is_valid():
             instructor = serializer.save()
             refresh = RefreshToken.for_user(instructor.user)
@@ -108,6 +115,7 @@ class ResetPasswordRequestAPIView(APIView):
 
         return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
 
+
 class ResetPasswordAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -137,7 +145,6 @@ class ResetPasswordAPIView(APIView):
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
 
 
-
 class RegisterStudentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -148,7 +155,7 @@ class RegisterStudentAPIView(APIView):
         data = request.data.copy()
         data["role"] = "student"
         password = get_random_string(length=12)
-        data["password"] = password  
+        data["password"] = password
 
         instructor = Instructor.objects.get(user=request.user)
 
@@ -159,7 +166,7 @@ class RegisterStudentAPIView(APIView):
         if instructor.tracks.count() > 1:
             if "track_name" not in data:
                 return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
-            
+
             track = instructor.tracks.filter(name=data["track_name"]).first()
             if not track:
                 return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
@@ -169,9 +176,10 @@ class RegisterStudentAPIView(APIView):
         if not track:
             return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
 
-        data["track_name"] = track.name  
+        data["track_name"] = track.name
 
-        serializer = StudentSerializer(data={"user": data, "track_name": data["track_name"]})
+        serializer = StudentSerializer(
+            data={"user": data, "track_name": data["track_name"]})
 
         if serializer.is_valid():
             student = serializer.save()
@@ -209,15 +217,12 @@ class RegisterStudentAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-from rest_framework.decorators import action
-import requests
-
 
 def get_leetcode_solved_problems(leetcode_username):
 
     if '/u/' in leetcode_username:
         leetcode_username = leetcode_username.split('/u/')[-1]
-    
+
     elif leetcode_username.startswith('https://leetcode.com/u/'):
         leetcode_username = leetcode_username.split('/u/')[-1]
 
@@ -227,7 +232,7 @@ def get_leetcode_solved_problems(leetcode_username):
         return None
 
     print(f"Fetching data for LeetCode username: {leetcode_username}")
-    
+
     url = f"https://leetcode-stats-api.herokuapp.com/{leetcode_username}"
     response = requests.get(url)
 
@@ -240,6 +245,7 @@ def get_leetcode_solved_problems(leetcode_username):
     else:
         print(f"Error fetching LeetCode stats: {response.status_code}")
         return None
+
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -266,7 +272,8 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
         # دمج البيانات من جدول الـ User و Student
-        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        # استخدام RegisterSerializer بدلاً من UserSerializer
+        user_data = RegisterSerializer(user).data
         student_data = StudentSerializer(student).data
 
         # دمج البيانات
@@ -280,7 +287,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         data = request.data.copy()
         data["role"] = "student"
-        
+
         track_name = data.get("track_name")
         if not track_name:
             return Response({"error": "Track name is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -303,7 +310,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         """
         # Retrieve user_id from the URL
         user_id = kwargs.get('user_id')
-        
+
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -329,7 +336,8 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         if 'user' in data:
             user_data = data.pop('user')
-            student.user.username = user_data.get('username', student.user.username)
+            student.user.username = user_data.get(
+                'username', student.user.username)
             student.user.email = user_data.get('email', student.user.email)
             student.user.save()
 
@@ -368,13 +376,15 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         # -------- LeetCode --------
         if student.leetcode_profile:
-            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+            leetcode_username = student.leetcode_profile.strip(
+                "/").split("/")[-1]
             leetcode_solved = get_leetcode_solved_problems(leetcode_username)
 
         return Response({
             "github_repos": github_repos,
             "leetcode_solved": leetcode_solved
         })
+
 
 class TrackListAPIView(APIView):
     """
@@ -435,11 +445,12 @@ class RegisterStudentsFromExcelAPIView(APIView):
                 continue  # تجاهل الصف إذا كان التراك غير موجود
 
             # توليد كلمة مرور عشوائية
-            password = ''.join(choice(string.ascii_letters + string.digits) for i in range(12))
+            password = ''.join(
+                choice(string.ascii_letters + string.digits) for i in range(12))
 
             # إنشاء حساب المستخدم الجديد
             user_instance = User.objects.create_user(
-                email=email, 
+                email=email,
                 username=username,  # يمكن استخدام اسم المستخدم كما هو
                 password=password,
                 role='student'  # تعيين دور المستخدم كـ "student"
@@ -484,3 +495,58 @@ class RegisterStudentsFromExcelAPIView(APIView):
         return Response({
             "message": f"{students_added} students added successfully.",
         }, status=status.HTTP_201_CREATED)
+
+
+class UploadUserProfileImage(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            # First try to find the student by ID
+            student = get_object_or_404(Student, id=user_id)
+            user = student.user
+        except:
+            # If not found, try to find the user directly
+            user = get_object_or_404(User, id=user_id)
+        
+        # Check if there's a file in the request
+        if 'profile_image' not in request.FILES:
+            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Log the received file for debugging
+        image_file = request.FILES['profile_image']
+        print(f"Received file: {image_file.name}, size: {image_file.size}, content type: {image_file.content_type}")
+        
+        # If user already has a profile image, delete the old one
+        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
+            try:
+                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
+                print(f"Deleted old profile image: {user.profile_image}")
+            except Exception as e:
+                print(f"Error deleting old profile image: {e}")
+        
+        # Update the user's profile image
+        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            user_instance = serializer.save()
+            
+            # Construct the full URL for the profile image
+            if user_instance.profile_image:
+                # Get the base URL from the request
+                host = request.get_host()
+                protocol = 'https' if request.is_secure() else 'http'
+                base_url = f"{protocol}://{host}"
+                
+                # Construct the full image URL
+                image_url = f"{base_url}{settings.MEDIA_URL}{user_instance.profile_image.name}"
+                
+                return Response({
+                    "message": "Profile image uploaded successfully",
+                    "profile_image": image_url
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    "message": "Profile image could not be saved",
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

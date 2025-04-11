@@ -8,9 +8,10 @@ from .views import (
     StudentViewSet,
     TrackListAPIView,
     RegisterStudentsFromExcelAPIView,
+    UploadUserProfileImage
 )
 from rest_framework.routers import DefaultRouter
-
+ 
 router = DefaultRouter()
 router.register(r'students', StudentViewSet, basename='student')
 
@@ -25,6 +26,7 @@ urlpatterns = [
     path('students/<int:user_id>/', StudentViewSet.as_view({'get': 'retrieve'}), name='student-retrieve'),
     path('students/<int:user_id>/update/', StudentViewSet.as_view({'patch': 'update'}), name='student-update'),
     path('students/<int:user_id>/external-stats/', StudentViewSet.as_view({'get': 'external_stats'}), name='student-external-stats'),
-    
+    path('upload-profile-image/<int:user_id>/', UploadUserProfileImage.as_view(), name='upload_user_profile_image'),
+
     path('', include(router.urls)),
 ]
