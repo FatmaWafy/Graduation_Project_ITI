@@ -1,6 +1,6 @@
 from django.db import models
 from users.models import Track
-from users.models import Student
+from users.models import Student , Branch, Course
 from django.utils.translation import gettext_lazy as _
 import json
 import zlib
@@ -11,6 +11,7 @@ from django.utils.timezone import now
 # Exam Model
 class Exam(models.Model): ### plus course name
     title = models.CharField(max_length=255)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="exams", null=True, blank=True)  
     MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
     CodingQuestions = models.ManyToManyField("CodingQuestion", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -22,8 +23,9 @@ class Exam(models.Model): ### plus course name
 # Temporary Exam Instance Model
 class TemporaryExamInstance(models.Model): ### plus branch name
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
-    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)    
+    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)  
     students = models.ManyToManyField(Student, blank=True) 
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="exam_instances")  
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
 
