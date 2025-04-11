@@ -21,6 +21,31 @@ const LANGUAGE_VERSIONS = {
   typescript: "5.0.3",
 };
 
+const LANGUAGE_STARTER_CODES = {
+  python: (functionName: string) => `def ${functionName}(input):
+    # Your code here
+    return input`,
+
+  javascript: (functionName: string) => `function ${functionName}(input) {
+    // Your code here
+    return input;
+}`,
+
+  java: (functionName: string) => `public class Solution {
+    public static Object ${functionName}(Object input) {
+        // Your code here
+        return input;
+    }
+}`,
+
+  cpp: (functionName: string) => `#include <vector>
+  
+std::vector<int> ${functionName}(std::vector<int> input) {
+    // Your code here
+    return input;
+}`,
+};
+
 const API = axios.create({
   baseURL: "https://emkc.org/api/v2/piston",
 });
@@ -32,6 +57,7 @@ interface CodingQuestionProps {
     description: string;
     starterCode: string;
     language: string;
+    functionName: string;
     testCases: Array<{
       id: number;
       input_data: string;
@@ -132,7 +158,6 @@ export default function CodingQuestion({
       setOutput(output.split("\n"));
       setIsError(error ? true : false);
 
-      // Submit to our API
       await submitToRunCodeAPI({
         questionId: question.id,
         code: answer,
@@ -145,7 +170,6 @@ export default function CodingQuestion({
       setOutput(["An error occurred while executing the code"]);
       console.error("Error executing code:", error);
 
-      // Submit error to our API
       await submitToRunCodeAPI({
         questionId: question.id,
         code: answer,
@@ -167,7 +191,8 @@ export default function CodingQuestion({
       const codeWithInput = getCodeWithInputHandling(
         answer,
         question.language.toLowerCase(),
-        testCase.input_data
+        testCase.input_data,
+        question.functionName
       );
 
       const result = await executeCode(
@@ -175,24 +200,15 @@ export default function CodingQuestion({
         codeWithInput
       );
 
-      // Clean the output by:
-      // 1. Trimming whitespace
-      // 2. Removing any input echo if present
-      // 3. Normalizing the format
       const rawOutput = result.run.output;
       let output = rawOutput.trim();
 
-      // If output contains both input and result (common in some executions)
-      // Split by newlines and take the last line
       const outputLines = output.split("\n");
       if (outputLines.length > 1) {
         output = outputLines[outputLines.length - 1].trim();
       }
 
-      // Clean expected output
       const expectedOutput = testCase.expected_output.trim();
-
-      // Compare the cleaned outputs
       const isSuccess = output === expectedOutput;
 
       const newTestResult = {
@@ -210,7 +226,6 @@ export default function CodingQuestion({
         ...newTestResult,
       }));
 
-      // Submit test case results to our API
       await submitToRunCodeAPI({
         questionId: question.id,
         code: answer,
@@ -272,29 +287,26 @@ export default function CodingQuestion({
     }
   };
 
-  // ... rest of the code remains the same ...
   const getCodeWithInputHandling = (
     code: string,
     language: string,
     input: string,
-    functionName: string = "flatten_list" // Add this parameter to know which function to test
+    functionName: string = "solution"
   ) => {
-    switch (
-      language.toLowerCase() // Use lowercase for case-insensitive comparison
-    ) {
+    switch (language.toLowerCase()) {
       case "python":
         return `${code}\n\n# Test the function\nprint(${functionName}(${input}))`;
       case "javascript":
         return `${code}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
       case "java":
-        // For Java, this would need more complex handling depending on the class structure
-        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(Arrays.toString(${functionName}(${input})));\n    }\n}`;
+        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(${functionName}(${input}));\n    }\n}`;
       case "cpp":
-        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    for (auto item : result) {\n        std::cout << item << " ";\n    }\n    return 0;\n}`;
+        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    std::cout << result << std::endl;\n    return 0;\n}`;
       default:
         return code;
     }
   };
+
   const getLanguage = () => {
     const lang = question.language?.toLowerCase() || "python";
     const languageMap: Record<string, string> = {
@@ -388,7 +400,12 @@ export default function CodingQuestion({
           <Editor
             height="100%"
             defaultLanguage={getLanguage()}
-            defaultValue={question.starterCode}
+            defaultValue={
+              question.starterCode ||
+              LANGUAGE_STARTER_CODES[getLanguage()](
+                question.functionName || "solution"
+              )
+            }
             value={answer}
             onChange={handleEditorChange}
             theme={editorTheme}

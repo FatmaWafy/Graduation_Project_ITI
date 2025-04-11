@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import subprocess
 from django.http import JsonResponse
@@ -6,6 +6,7 @@ from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
+from st_notifications.models import Note
 from users.models import Student, User
 from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
 from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
@@ -41,17 +42,27 @@ class TempExamViewSet(viewsets.ModelViewSet):
     queryset = TemporaryExamInstance.objects.all()
     serializer_class = TempExamSerializer
 
+    from rest_framework.response import Response
+from rest_framework.decorators import action
+from django.core.mail import send_mail
+from django.conf import settings
+from datetime import timedelta
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ExamViewSet(viewsets.ModelViewSet):
+    queryset = TemporaryExamInstance.objects.all()
+    serializer_class = TempExamSerializer
+
     @action(detail=False, methods=['post'])
     def assign_exam(self, request):
         """
-        Assigns an exam to students and sends an email.
-        Returns:
-            - 400 if exam not found
-            - 500 if email sending fails
-            - 200 with list of assigned students on success
+        Assigns an exam to students and sends an email and notification.
         """
-        exam_id = request.data.get('exam_id')
-        student_emails = request.data.get('students', [])  # List of student emails
+        exam_id = request.data.get('exam_id')  # ID of the exam to assign
+        student_ids = request.data.get('students', [])  # List of student IDs
         duration = request.data.get('duration', 60)  # Default 60 mins
 
         # Validate exam exists
@@ -61,39 +72,43 @@ class TempExamViewSet(viewsets.ModelViewSet):
             return Response({"error": "Exam not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         assigned_students = []
-        failed_emails = []
+        failed_students = []
 
-        for email in student_emails:
+        for student_id in student_ids:
             try:
-                # Fetch student via related user email
-                student = Student.objects.get(user__email=email)
+                # Fetch student via student ID
+                student = Student.objects.get(id=student_id)
 
                 # Create temporary exam instance
                 temp_exam = TemporaryExamInstance.objects.create(
                     exam=exam,
-                    student=student,
-                    start_time=now(),
-                    end_time=now() + timedelta(minutes=duration)
+                    students=None,  # Initially leave the students empty
+                    branch=student.branch,  # Assuming the branch is stored in the student model
+                    start_datetime=datetime.now(),
+                    end_datetime=datetime.now() + timedelta(minutes=duration)
                 )
 
-                assigned_students.append(email)
+                # Add student to the many-to-many relationship
+                temp_exam.students.add(student)  # Use .add() instead of direct assignment
+
+                assigned_students.append(student.id)
 
                 # Prepare email content
                 email_subject = f"Your Exam: {exam.title}"
                 email_message = f"""
-Dear {student.user.get_full_name() or student.user.username},
+                Dear {student.user.get_full_name() or student.user.username},
 
-You have been assigned the exam: {exam.title}
+                You have been assigned the exam: {exam.title}
 
-Exam Duration: {duration} minutes
-Available From: {temp_exam.start_time}
-Available Until: {temp_exam.end_time}
+                Exam Duration: {duration} minutes
+                Available From: {temp_exam.start_datetime}
+                Available Until: {temp_exam.end_datetime}
 
-Please log in to your account to take the exam.
+                Please log in to your account to take the exam.
 
-Best regards,
-{request.user.get_full_name() or 'Your Instructor'}
-"""
+                Best regards,
+                {request.user.get_full_name() or 'Your Instructor'}
+                """
 
                 # Send email
                 try:
@@ -101,31 +116,41 @@ Best regards,
                         subject=email_subject,
                         message=email_message,
                         from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[email],
+                        recipient_list=[student.user.email],
                         fail_silently=False
                     )
                 except Exception as e:
-                    failed_emails.append(email)
-                    logger.error(f"Failed to send exam email to {email}: {str(e)}")
+                    failed_students.append(student.id)
+                    logger.error(f"Failed to send exam email to {student.user.email}: {str(e)}")
+
+                # Create a notification/note for the student
+                message = f"You have been assigned the exam: {exam.title}. Please check your account for further details."
+                Note.objects.create(
+                    instructor=request.user.instructor,  # Assuming the instructor is logged in
+                    student=student,
+                    message=message
+                )
 
             except Student.DoesNotExist:
-                failed_emails.append(email)
-                logger.warning(f"Student with email {email} not found")
+                failed_students.append(student_id)
+                logger.warning(f"Student with ID {student_id} not found")
             except Exception as e:
-                failed_emails.append(email)
-                logger.error(f"Error assigning exam to {email}: {str(e)}")
+                failed_students.append(student_id)
+                logger.error(f"Error assigning exam to student ID {student_id}: {str(e)}")
 
         response_data = {
             "message": "Exam assignment completed",
             "assigned_students": assigned_students,
             "total_assigned": len(assigned_students),
-            "failed_emails": failed_emails
+            "failed_students": failed_students
         }
 
-        if failed_emails:
-            response_data["warning"] = f"Failed to process {len(failed_emails)} students"
+        if failed_students:
+            response_data["warning"] = f"Failed to process {len(failed_students)} students"
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
     
     @action(detail=True, methods=['get'])
     def get_questions(self, request, pk=None):
