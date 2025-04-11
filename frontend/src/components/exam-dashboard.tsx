@@ -8,6 +8,7 @@ import QuestionList from "./question-list";
 import CodingQuestion from "./coding-question";
 import MultipleChoiceQuestion from "./multiple-choice-question";
 import { Button } from "@/components/ui/button";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import StudentMonitor from "./monitoring/student-monitor";
 
 const LANGUAGE_VERSIONS = {
   javascript: "18.15.0",
@@ -326,20 +328,18 @@ export default function ExamDashboard() {
           const allPassed =
             results.length > 0 && results.every((r) => r.isSuccess);
 
-          // Add to code_results array
+          // Add to code_results array, score only if all test cases passed
+          const earnedPoints = allPassed ? question.points || 0 : 0;
+
           submissionData.code_results.push({
             question_id: question.id.toString(),
             test_results: results,
-            points: question.points || 0,
           });
 
-          // Add points if all test cases passed
-          if (allPassed) {
-            totalScore += question.points || 0;
-          }
+          // Add to total score if all test cases passed
+          totalScore += earnedPoints;
         }
       });
-
       console.log("Submitting data:", submissionData); // Debug log
 
       const response = await fetch(
@@ -496,6 +496,7 @@ export default function ExamDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}
     </div>
   );
 }
