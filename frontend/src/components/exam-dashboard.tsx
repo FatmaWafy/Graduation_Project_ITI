@@ -16,10 +16,28 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import StudentMonitor from "./monitoring/student-monitor"
+} from "@/components/ui/alert-dialog";
 
-// Define proper types for questions
+const LANGUAGE_VERSIONS = {
+  javascript: "18.15.0",
+  python: "3.10.0",
+  java: "15.0.2",
+  cpp: "10.2.0",
+  csharp: "6.12.0",
+  php: "8.2.0",
+  ruby: "3.2.0",
+  go: "1.18.0",
+  rust: "1.68.0",
+  typescript: "5.0.3",
+};
+
+interface TestCaseResult {
+  input: string;
+  output: string;
+  expectedOutput: string;
+  isSuccess: boolean;
+}
+
 interface Question {
   id: string;
   type: "multiple-choice" | "coding";
@@ -34,15 +52,18 @@ export default function ExamDashboard() {
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(0); // in seconds
+  const [timeLeft, setTimeLeft] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showScoreAlert, setShowScoreAlert] = useState(false);
   const [score, setScore] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeExpired, setTimeExpired] = useState(false);
+  const [codeResults, setCodeResults] = useState<
+    Record<string, TestCaseResult[]>
+  >({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch exam data and questions from API - improved with parallel requests
   useEffect(() => {
     if (!id) return;
 
@@ -52,7 +73,6 @@ export default function ExamDashboard() {
       try {
         setLoading(true);
 
-        // Fetch data in parallel for better performance
         const [tempExamRes, questionsRes] = await Promise.all([
           fetch(`http://127.0.0.1:8000/exam/temp-exams/${id}/`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -70,9 +90,7 @@ export default function ExamDashboard() {
           tempExamRes.json(),
           questionsRes.json(),
         ]);
-        console.log("exam:", tempExamData.exam);
-        console.log("questions:", questionsData);
-        // Get exam details if needed
+
         let examDuration = tempExamData.duration;
         if (!examDuration && tempExamData.exam) {
           const examRes = await fetch(
@@ -87,7 +105,6 @@ export default function ExamDashboard() {
           }
         }
 
-        // Format questions consistently
         const formattedQuestions = [
           ...(questionsData.mcq_questions?.map((q: any) => ({
             id: q.id.toString(),
@@ -114,7 +131,6 @@ export default function ExamDashboard() {
             language: q.language || "python",
           })) || []),
         ];
-        console.log("formattedQuestions:", formattedQuestions);
 
         setExam({
           id: id,
@@ -124,7 +140,6 @@ export default function ExamDashboard() {
         setTimeLeft(examDuration * 60 || 0);
         setQuestions(formattedQuestions);
 
-        // Check if exam was already submitted
         const stored = localStorage.getItem(`submitted_exam_${id}`);
         setIsSubmitted(stored === "true");
       } catch (error) {
@@ -137,7 +152,6 @@ export default function ExamDashboard() {
     fetchExamData();
   }, [id]);
 
-  // Timer effect with improved handling
   useEffect(() => {
     if (timeLeft <= 0 || isSubmitted) return;
 
@@ -155,7 +169,6 @@ export default function ExamDashboard() {
     return () => clearInterval(timer);
   }, [timeLeft, isSubmitted]);
 
-  // Handle time expiration with confirmation
   useEffect(() => {
     if (timeExpired && !isSubmitted) {
       const confirmSubmit = window.confirm(
@@ -174,6 +187,15 @@ export default function ExamDashboard() {
     }));
   };
 
+  const handleTestResultsChange = (
+    questionId: string,
+    results: TestCaseResult[]
+  ) => {
+    setCodeResults((prev) => ({
+      ...prev,
+      [questionId]: results,
+    }));
+  };
   const handleSubmit = async () => {
     if (isSubmitted) {
       alert("You have already submitted this exam.");
@@ -181,30 +203,145 @@ export default function ExamDashboard() {
     }
 
     const token = Cookies.get("token");
-
-    // Improved submission data formatting
-    const submissionData = {
-      exam_instance: id,
-      mcq_answers: {} as Record<string, string>,
-      coding_answers: {} as Record<string, string>,
-    };
-
-    // Process answers with proper validation
-    questions.forEach((question) => {
-      const answer = answers[question.id];
-      if (!answer) return;
-
-      if (question.type === "multiple-choice") {
-        const cleanAnswer = answer.charAt(0).toUpperCase();
-        if (["A", "B", "C", "D"].includes(cleanAnswer)) {
-          submissionData.mcq_answers[question.id] = cleanAnswer;
-        }
-      } else if (question.type === "coding") {
-        submissionData.coding_answers[question.id] = answer.trim();
-      }
-    });
+    setIsLoading(true);
 
     try {
+      // First run all test cases for coding questions
+      const updatedCodeResults: Record<string, TestCaseResult[]> = {
+        ...codeResults,
+      };
+
+      // Run all test cases for each coding question
+      for (const question of questions) {
+        if (question.type === "coding" && answers[question.id]) {
+          try {
+            // Find the coding question component reference
+            const codeAnswer = answers[question.id];
+
+            // Run test cases for this question
+            const testResults: TestCaseResult[] = [];
+
+            for (let i = 0; i < question.testCases.length; i++) {
+              const testCase = question.testCases[i];
+
+              // Prepare code with input handling
+              const language = question.language.toLowerCase();
+              const functionName = testCase.function_name || "solution";
+              const input = testCase.input_data;
+
+              let codeWithInput = "";
+              switch (language) {
+                case "python":
+                  codeWithInput = `${codeAnswer}\n\n# Test the function\nprint(${functionName}(${input}))`;
+                  break;
+                case "javascript":
+                  codeWithInput = `${codeAnswer}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
+                  break;
+                default:
+                  codeWithInput = codeAnswer;
+              }
+
+              // Execute the code
+              const response = await fetch(
+                "https://emkc.org/api/v2/piston/execute",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    language: language,
+                    version: LANGUAGE_VERSIONS[language] || "latest",
+                    files: [{ content: codeWithInput }],
+                  }),
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Failed to execute code");
+              }
+
+              const result = await response.json();
+              const output = result.run.output.trim();
+              const expectedOutput = testCase.expected_output.trim();
+              const isSuccess = output === expectedOutput;
+
+              testResults.push({
+                input: testCase.input_data,
+                output: output,
+                expectedOutput: testCase.expected_output,
+                isSuccess: isSuccess,
+              });
+            }
+
+            updatedCodeResults[question.id] = testResults;
+          } catch (error) {
+            console.error(
+              `Error running test cases for question ${question.id}:`,
+              error
+            );
+            // Create failed test results if execution failed
+            updatedCodeResults[question.id] = question.testCases.map(
+              (testCase: { input_data: any; expected_output: any }) => ({
+                input: testCase.input_data,
+                output: "Error executing code",
+                expectedOutput: testCase.expected_output,
+                isSuccess: false,
+              })
+            );
+          }
+        }
+      }
+
+      // Update code results state
+      setCodeResults(updatedCodeResults);
+
+      // Calculate scores for each question
+      let totalScore = 0;
+      const submissionData = {
+        exam_instance: id,
+        mcq_answers: {} as Record<string, string>,
+        coding_answers: {} as Record<string, string>,
+        code_results: [] as any[],
+      };
+
+      // Process MCQ answers - ensure keys are strings
+      questions.forEach((question) => {
+        const answer = answers[question.id];
+        if (!answer) return;
+
+        if (question.type === "multiple-choice") {
+          const cleanAnswer = answer.charAt(0).toUpperCase();
+          if (["A", "B", "C", "D"].includes(cleanAnswer)) {
+            submissionData.mcq_answers[question.id.toString()] = cleanAnswer;
+
+            // Check if answer is correct and add points
+            if (cleanAnswer === question.correctAnswer) {
+              totalScore += question.points || 0;
+            }
+          }
+        } else if (question.type === "coding") {
+          submissionData.coding_answers[question.id.toString()] = answer.trim();
+
+          // Calculate points based on test case results
+          const results = updatedCodeResults[question.id] || [];
+          const allPassed =
+            results.length > 0 && results.every((r) => r.isSuccess);
+
+          // Add to code_results array
+          submissionData.code_results.push({
+            question_id: question.id.toString(),
+            test_results: results,
+            points: question.points || 0,
+          });
+
+          // Add points if all test cases passed
+          if (allPassed) {
+            totalScore += question.points || 0;
+          }
+        }
+      });
+
+      console.log("Submitting data:", submissionData); // Debug log
+
       const response = await fetch(
         `http://127.0.0.1:8000/exam/exam-answers/submit-answer/`,
         {
@@ -219,6 +356,7 @@ export default function ExamDashboard() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Submission successful:", result); // Debug log
         setScore(result.score || 0);
         setShowScoreAlert(true);
         setIsSubmitted(true);
@@ -231,9 +369,10 @@ export default function ExamDashboard() {
     } catch (error) {
       console.error("Network error:", error);
       alert("Error submitting the exam. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
-
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
@@ -277,7 +416,7 @@ export default function ExamDashboard() {
     );
 
   return (
-    <div className="container mx-auto px-4 pt-6  bg-background">
+    <div className="container mx-auto px-4 pt-6 bg-background">
       <ExamHeader
         title={exam.title}
         timeLeft={formatTime(timeLeft)}
@@ -298,10 +437,13 @@ export default function ExamDashboard() {
         <div className="md:col-span-3 bg-background rounded-lg shadow border border-border">
           {currentQuestion.type === "coding" ? (
             <CodingQuestion
-              question={currentQuestion}
+              question={
+                currentQuestion as MultipleChoiceQuestionProps["question"]
+              }
               onAnswerChange={(answer) =>
                 handleAnswerChange(currentQuestion.id, answer)
               }
+              onTestResultsChange={handleTestResultsChange}
               answer={
                 answers[currentQuestion.id] || currentQuestion.starterCode
               }
@@ -354,7 +496,6 @@ export default function ExamDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} {/* Pass the dynamic exam ID */}
     </div>
   );
 }

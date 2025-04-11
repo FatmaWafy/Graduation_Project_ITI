@@ -28,8 +28,6 @@ export default function InstructorLayout({
     setLoading(false);
   }, []);
 
-
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -81,6 +79,8 @@ export default function InstructorLayout({
               href: "/dashboard_instructor/students",
               label: "Student Management",
             },
+            { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs" },
+            { href: "/dashboard_instructor/profile", label: "Profile" },
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>
               <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">
@@ -88,36 +88,35 @@ export default function InstructorLayout({
               </p>
             </Link>
           ))}
-          <Link href="/dashboard_instructor/uploadLabs">
+          {/* <Link href="/dashboard_instructor/uploadLabs">
             <p className="block px-4 py-3 bg-[#007acc] hover:bg-blue-700 rounded-xl text-center cursor-pointer transition duration-300 text-sm font-medium">
               Upload Labs
             </p>
-          </Link>
+          </Link> */}
           {/* Avatar and Logout Section */}
- 
         </nav>
         <div className="mt-auto pt-4 border-t border-blue-600">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{user.name}</p>
-                {user.email && (
-                  <p className="text-xs text-green-200">{user.email}</p>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-white bg-[#007acc] hover:bg-blue-700"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{user.name}</p>
+              {user.email && (
+                <p className="text-xs text-green-200">{user.email}</p>
+              )}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-white bg-[#007acc] hover:bg-blue-700"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
+        </div>
       </aside>
 
       {/* Main Content */}
