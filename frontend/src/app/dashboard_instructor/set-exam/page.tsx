@@ -196,7 +196,7 @@ export default function SetExamPage() {
     if (formData.track) {
       result = result.filter((student) => student.track === formData.track);
     }
-    
+
 
     setFilteredStudents(result);
   }, [emailFilter, formData.track, allStudents]);
@@ -349,7 +349,7 @@ export default function SetExamPage() {
   if (loading.exams || loading.tracks || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -386,9 +386,8 @@ export default function SetExamPage() {
               displayedExams.map((exam) => (
                 <Card
                   key={exam.id}
-                  className={`overflow-hidden flex flex-col cursor-pointer transition-all hover:shadow-md ${
-                    selectedExam?.id === exam.id ? "ring-2 ring-green-500" : ""
-                  }`}
+                  className={`overflow-hidden flex flex-col cursor-pointer transition-all hover:shadow-md ${selectedExam?.id === exam.id ? "ring-2 ring-[#007acc]" : ""
+                    }`}
                   onClick={() => handleExamSelect(exam)}
                 >
                   <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -427,7 +426,7 @@ export default function SetExamPage() {
                       variant={
                         selectedExam?.id === exam.id ? "default" : "secondary"
                       }
-                      className="w-full"
+                      className="w-full bg-[#007acc] hover:bg-blue-700"
                     >
                       {selectedExam?.id === exam.id
                         ? "Selected"
@@ -556,15 +555,15 @@ export default function SetExamPage() {
                       <button
                         type="button"
                         onClick={handleSelectAllFiltered}
-                        className={`px-3 py-2 text-sm rounded ${
-                          allFilteredSelected()
-                            ? "bg-gray-200 text-gray-700"
-                            : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        }`}
+                        className={`px-3 py-2 text-sm rounded ${allFilteredSelected()
+                            ? "bg-gray-200 text-white"
+                            : "bg-[#007acc] text-white hover:bg-blue-700"
+                          }`}
                         disabled={allFilteredSelected()}
                       >
                         {allFilteredSelected() ? "All Selected" : "Select All"}
                       </button>
+
                       <button
                         type="button"
                         onClick={handleDeselectAll}
@@ -586,11 +585,10 @@ export default function SetExamPage() {
                   filteredStudents.map((student) => (
                     <div
                       key={student.id}
-                      className={`p-3 border-b flex items-center ${
-                        formData.students.includes(student.id)
+                      className={`p-3 border-b flex items-center ${formData.students.includes(student.id)
                           ? "bg-green-50"
                           : "hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -626,7 +624,7 @@ export default function SetExamPage() {
             <button
               type="submit"
               disabled={loading.submitting}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-300"
+              className="px-4 py-2  bg-[#007acc] text-white rounded hover:bg-blue-700 disabled:bg-[#007acc]"
             >
               {loading.submitting ? "Scheduling..." : "Schedule Exam"}
             </button>
@@ -635,4 +633,5 @@ export default function SetExamPage() {
       </div>
     </div>
   );
+
 }

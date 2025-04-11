@@ -334,7 +334,7 @@ export function SendNotificationForm() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full bg-[#007acc] hover:bg-blue-700" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
