@@ -15,14 +15,17 @@ import {
   BookOpen,
 } from "lucide-react"
 import { useParams } from "next/navigation"
-
+import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { StudentModal } from "../components/student-modal"
-import { useStudentById } from "../hooks/use-students"
+import { useStudentById } from "@/app/dashboard_instructor/students/hooks/use-students"
+
+import StudentProgress from "../components/StudentProgress"
 
 export default function StudentDetailPage() {
   const router = useRouter()
@@ -62,6 +65,7 @@ export default function StudentDetailPage() {
     )
   }
 
+
   const getStatusColor = (status: string | undefined) => {
     if (!status) return "bg-gray-100 text-gray-800"
 
@@ -90,10 +94,7 @@ export default function StudentDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Students
         </Button>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Edit className="mr-2 h-4 w-4" />
-          Edit Student
-        </Button>
+        
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -153,7 +154,7 @@ export default function StudentDetailPage() {
                   </div>
                 </div>
               )}
-              {(student.user.enrollment_date || student.enrollment_date) && (
+              {/* {(student.user.enrollment_date || student.enrollment_date) && (
                 <div className="flex items-start">
                   <Calendar className="mr-2 h-5 w-5 text-muted-foreground" />
                   <div>
@@ -163,7 +164,7 @@ export default function StudentDetailPage() {
                     </p>
                   </div>
                 </div>
-              )}
+              )} */}
               {(student.user.notes || student.notes) && (
                 <div className="flex items-start">
                   <FileText className="mr-2 w-5 h-5 text-muted-foreground" />
@@ -185,18 +186,19 @@ export default function StudentDetailPage() {
           <CardContent>
             <Tabs defaultValue="courses">
               <TabsList className="mb-4">
-                <TabsTrigger value="courses">Courses</TabsTrigger>
-                <TabsTrigger value="grades">Grades</TabsTrigger>
-                <TabsTrigger value="attendance">Attendance</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
+                {/* <TabsTrigger value="courses">Courses</TabsTrigger> */}
+                {/* <TabsTrigger value="grades">Grades</TabsTrigger> */}
+                {/* <TabsTrigger value="attendance">Attendance</TabsTrigger> */}
+                {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
+                <TabsTrigger value="progress">Progress</TabsTrigger> {/* الجديد */}
               </TabsList>
-              <TabsContent value="courses" className="space-y-4">
+              {/* <TabsContent value="courses" className="space-y-4">
                 <p className="text-sm text-muted-foreground">Courses that {displayName} is currently enrolled in.</p>
                 <Separator />
                 <div className="py-4 text-center text-muted-foreground">
                   No courses found. Enroll this student in courses from the course management page.
                 </div>
-              </TabsContent>
+              </TabsContent> */}
               <TabsContent value="grades" className="space-y-4">
                 <p className="text-sm text-muted-foreground">Grade history for {displayName}.</p>
                 <Separator />
@@ -204,27 +206,35 @@ export default function StudentDetailPage() {
                   No grades found. Grades will appear here once they are recorded.
                 </div>
               </TabsContent>
-              <TabsContent value="attendance" className="space-y-4">
+              {/* <TabsContent value="attendance" className="space-y-4">
                 <p className="text-sm text-muted-foreground">Attendance record for {displayName}.</p>
                 <Separator />
                 <div className="py-4 text-center text-muted-foreground">
                   No attendance records found. Records will appear here once they are recorded.
                 </div>
-              </TabsContent>
-              <TabsContent value="documents" className="space-y-4">
+              </TabsContent> */}
+              {/* <TabsContent value="documents" className="space-y-4">
                 <p className="text-sm text-muted-foreground">Documents and files related to {displayName}.</p>
                 <Separator />
                 <div className="py-4 text-center text-muted-foreground">
                   No documents found. Upload documents from the document management page.
                 </div>
+              </TabsContent> */}
+              <TabsContent value="progress" className="space-y-4">
+                <p className="text-sm text-muted-foreground">Coding platform activity for {displayName}.</p>
+                <Separator />
+                <div className="py-4">
+                  <StudentProgress studentId={studentId} />
+                </div>
               </TabsContent>
+
             </Tabs>
           </CardContent>
         </Card>
       </div>
 
-      <StudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} student={student} isEditMode={!!student}/>
- 
+      <StudentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} student={student} isEditMode={!!student} />
+
     </div>
   )
 }

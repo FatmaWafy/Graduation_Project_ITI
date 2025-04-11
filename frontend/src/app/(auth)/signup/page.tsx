@@ -117,7 +117,7 @@ export default function SignupPage() {
               {isSubmitting ? "Creating Account..." : "Create Account"}
             </Button>
             <div className="text-center text-sm">
-              Already have an account? <Link href="/signin" className="text-green-500 hover:underline">Sign in</Link>
+              Already have an account? <Link href="/" className="text-green-500 hover:underline">Sign in</Link>
             </div>
           </CardFooter>
         </form>

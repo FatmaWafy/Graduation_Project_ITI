@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Instructor, Student, Track
+from .models import Branch, Course, Instructor, Student, Track
 from PIL import Image
 from django.core.exceptions import ValidationError
 
@@ -99,3 +99,12 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
                     "Only JPEG, PNG, and GIF images are supported.")
 
         return value
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = "__all__"
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = "__all__"

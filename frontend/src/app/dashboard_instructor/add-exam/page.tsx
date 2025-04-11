@@ -1,8 +1,60 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
+import {
+  ChevronDown,
+  ChevronUp,
+  Code,
+  FileQuestion,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+
+interface TestCase {
+  input_data: string;
+  expected_output: string;
+}
 
 interface Question {
   id: number;
@@ -22,6 +74,7 @@ interface Question {
   description?: string;
   starter_code?: string;
   tags?: any[];
+  test_cases?: TestCase[];
 }
 
 export default function AddExamPage() {
@@ -42,7 +95,6 @@ export default function AddExamPage() {
     },
   ]);
 
-  // Added for fetching and filtering questions
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +110,6 @@ export default function AddExamPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
   const [debugInfo, setDebugInfo] = useState<string>("");
 
-  // Function to get token from cookies
   const getTokenFromCookies = () => {
     const cookies = document.cookie.split(";");
     for (const cookie of cookies) {
@@ -70,12 +121,10 @@ export default function AddExamPage() {
     return null;
   };
 
-  // Fetch questions based on selected type and language
   useEffect(() => {
     fetchQuestions();
   }, [questionType, selectedLanguage]);
 
-  // Fix the fetchQuestions function to properly handle language filtering
   const fetchQuestions = async () => {
     setIsLoading(true);
     setError(null);
@@ -87,16 +136,13 @@ export default function AddExamPage() {
         throw new Error("No authentication token found in cookies");
       }
 
-      // Choose URL based on question type
       const baseUrl =
         questionType === "mcq"
           ? "http://127.0.0.1:8000/exam/mcq-filter/"
           : "http://127.0.0.1:8000/exam/coding-filter/";
 
-      // Try different parameter formats for language
       let url = baseUrl;
       if (selectedLanguage !== "all") {
-        // Try exact match first (case sensitive as defined in your model)
         const languageMap: Record<string, string> = {
           python: "Python",
           javascript: "JavaScript",
@@ -107,8 +153,6 @@ export default function AddExamPage() {
         const formattedLanguage =
           languageMap[selectedLanguage.toLowerCase()] || selectedLanguage;
         url = `${baseUrl}?language=${formattedLanguage}`;
-
-        // Log the URL for debugging
         console.log("Fetching questions with URL:", url);
       }
 
@@ -127,14 +171,13 @@ export default function AddExamPage() {
       const data = await response.json();
       console.log("Fetched questions:", data);
 
-      // Make sure each question has a type property and correct structure
       const questionsWithType = data.map((q: any) => {
-        // Handle different field structures between MCQ and coding questions
         if (questionType === "code") {
           return {
             ...q,
             type: "code",
-            question_text: q.title || q.question_text || "", // Use title for display if available
+            question_text: q.title || q.question_text || "",
+            description: q.description || "",
           };
         } else {
           return {
@@ -152,18 +195,21 @@ export default function AddExamPage() {
         }`
       );
       console.error("Failed to fetch questions:", err);
+      toast.error(
+        `Failed to fetch questions: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filter questions based on selected difficulty
   const filteredQuestions =
     selectedDifficulty === "all"
       ? allQuestions
       : allQuestions.filter((q) => q.difficulty === selectedDifficulty);
 
-  // Limit displayed questions unless "Show More" is clicked
   const displayedQuestions = showAllQuestions
     ? filteredQuestions
     : filteredQuestions.slice(0, 4);
@@ -197,6 +243,7 @@ export default function AddExamPage() {
         points: 1.0,
         language: updatedQuestions[index].language || "Python",
         tags: [],
+        test_cases: [],
       };
     }
     setQuestions(updatedQuestions);
@@ -207,11 +254,15 @@ export default function AddExamPage() {
     if (updatedQuestions[index].type === "mcq") {
       updatedQuestions[index].question_text = value;
     } else {
-      // For coding questions, update both title and description
       updatedQuestions[index].title = value;
-      updatedQuestions[index].description = value;
-      updatedQuestions[index].question_text = value; // For display purposes
+      updatedQuestions[index].question_text = value;
     }
+    setQuestions(updatedQuestions);
+  };
+
+  const handleDescriptionChange = (index: number, value: string) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[index].description = value;
     setQuestions(updatedQuestions);
   };
 
@@ -233,7 +284,7 @@ export default function AddExamPage() {
 
   const handleCodeChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
-    updatedQuestions[index].starter_code = value; // Update to match model field name
+    updatedQuestions[index].starter_code = value;
     setQuestions(updatedQuestions);
   };
 
@@ -249,6 +300,38 @@ export default function AddExamPage() {
   const handleLanguageChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index].language = value;
+    setQuestions(updatedQuestions);
+  };
+
+  const handleAddTestCase = (questionIndex: number) => {
+    const updatedQuestions = [...questions];
+    if (!updatedQuestions[questionIndex].test_cases) {
+      updatedQuestions[questionIndex].test_cases = [];
+    }
+    updatedQuestions[questionIndex].test_cases!.push({
+      input_data: "",
+      expected_output: "",
+    });
+    setQuestions(updatedQuestions);
+  };
+
+  const handleRemoveTestCase = (
+    questionIndex: number,
+    testCaseIndex: number
+  ) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionIndex].test_cases!.splice(testCaseIndex, 1);
+    setQuestions(updatedQuestions);
+  };
+
+  const handleTestCaseChange = (
+    questionIndex: number,
+    testCaseIndex: number,
+    field: "input_data" | "expected_output",
+    value: string
+  ) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionIndex].test_cases![testCaseIndex][field] = value;
     setQuestions(updatedQuestions);
   };
 
@@ -276,40 +359,34 @@ export default function AddExamPage() {
     const updatedQuestions = [...questions];
     updatedQuestions.splice(index, 1);
     setQuestions(updatedQuestions);
+    toast.info("Question removed");
   };
 
-  // Fix the addQuestionToExam function to properly handle different question types
   const addQuestionToExam = (question: Question) => {
-    // Preserve the original question type from the fetched data
     const currentType = questionType;
-
-    // Create a properly typed question object
     const questionWithType = {
       ...question,
-      type: currentType, // Set type based on current filter
+      type: currentType,
     };
 
     console.log(`Adding ${currentType} question to exam:`, questionWithType);
 
     if (currentType === "mcq") {
-      // Check if this MCQ question is already added
       if (!selectedQuestions.some((q) => q.id === question.id)) {
-        // Use functional update to ensure we're working with the latest state
         setSelectedQuestions((prevSelected) => [
           ...prevSelected,
           questionWithType,
         ]);
+        toast.success("MCQ question added to exam");
       }
     } else if (currentType === "code") {
-      // Check if this coding question is already added
       if (!codingQuestions.some((q) => q.id === question.id)) {
-        // Use functional update to ensure we're working with the latest state
         setCodedQuestions((prevCoding) => [...prevCoding, questionWithType]);
+        toast.success("Coding question added to exam");
       }
     }
   };
 
-  // Function to remove a question from selected questions
   const removeSelectedQuestion = (questionId: number, type: "mcq" | "code") => {
     if (type === "mcq") {
       setSelectedQuestions(
@@ -318,6 +395,7 @@ export default function AddExamPage() {
     } else {
       setCodedQuestions(codingQuestions.filter((q) => q.id !== questionId));
     }
+    toast.info("Question removed from exam");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -333,34 +411,27 @@ export default function AddExamPage() {
         throw new Error("No authentication token found");
       }
 
-      // Validate exam title
       if (!examTitle.trim()) {
-        alert("Please enter an exam title");
+        toast.error("Please enter an exam title");
         setIsSubmitting(false);
         return;
       }
 
-      // Prepare new MCQ questions (only those with actual content)
       const newMCQs = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
           question_text: q.question_text,
           option_a: q.option_a,
           option_b: q.option_b,
-          option_c: q.option_c || "", // Ensure empty string if null
-          option_d: q.option_d || "", // Ensure empty string if null
+          option_c: q.option_c || "",
+          option_d: q.option_d || "",
           correct_option: q.correct_option,
           difficulty: q.difficulty,
           source: "exam_ui",
           points: q.points || 1.0,
-          language: q.language, // Include language field
+          language: q.language,
         }));
 
-      setDebugInfo(
-        (prev) => prev + "\nPrepared MCQ questions: " + JSON.stringify(newMCQs)
-      );
-
-      // Prepare new coding questions - updated to match model fields
       const newCodingQuestions = questions
         .filter(
           (q) =>
@@ -369,28 +440,19 @@ export default function AddExamPage() {
               (q.question_text && q.question_text.trim() !== ""))
         )
         .map((q) => ({
-          title: q.title || q.question_text, // Use title or question_text
-          description: q.description || q.question_text, // Use description or question_text
+          title: q.title || q.question_text,
+          description: q.description || "",
           difficulty: q.difficulty,
-          starter_code: q.starter_code || "", // Match model field name
+          starter_code: q.starter_code || "",
           source: "exam_ui",
           points: q.points || 1.0,
           language: q.language,
-          tags: q.tags || [], // Add default empty tags array
+          tags: q.tags || [],
         }));
 
-      setDebugInfo(
-        (prev) =>
-          prev +
-          "\nPrepared coding questions: " +
-          JSON.stringify(newCodingQuestions)
-      );
-
-      // Arrays to store newly created question IDs
       const createdMCQIds: number[] = [];
       const createdCodingIds: number[] = [];
 
-      // First, create new MCQ questions if any
       if (newMCQs.length > 0) {
         for (const mcq of newMCQs) {
           try {
@@ -409,20 +471,35 @@ export default function AddExamPage() {
             if (!mcqResponse.ok) {
               const errorData = await mcqResponse.json();
               console.error("Failed to create MCQ:", errorData);
+              toast.error(
+                `Failed to create MCQ: ${errorData.message || "Unknown error"}`
+              );
               continue;
             }
 
             const createdQuestion = await mcqResponse.json();
             createdMCQIds.push(createdQuestion.id);
+            toast.success("MCQ question created successfully");
           } catch (error) {
             console.error("Error creating MCQ:", error);
+            toast.error(
+              `Error creating MCQ: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
           }
         }
       }
 
-      // Create new coding questions if any
       if (newCodingQuestions.length > 0) {
-        for (const codingQ of newCodingQuestions) {
+        for (let i = 0; i < newCodingQuestions.length; i++) {
+          const codingQ = newCodingQuestions[i];
+          const originalQuestion = questions.find(
+            (q) =>
+              (q.type === "code" && q.title === codingQ.title) ||
+              (q.type === "code" && q.question_text === codingQ.title)
+          );
+
           try {
             const codingResponse = await fetch(
               "http://127.0.0.1:8000/exam/code-questions/",
@@ -439,18 +516,72 @@ export default function AddExamPage() {
             if (!codingResponse.ok) {
               const errorData = await codingResponse.json();
               console.error("Failed to create coding question:", errorData);
+              toast.error(
+                `Failed to create coding question: ${
+                  errorData.message || "Unknown error"
+                }`
+              );
               continue;
             }
 
             const createdQuestion = await codingResponse.json();
             createdCodingIds.push(createdQuestion.id);
+            toast.success("Coding question created successfully");
+
+            if (
+              originalQuestion?.test_cases &&
+              originalQuestion.test_cases.length > 0
+            ) {
+              for (const testCase of originalQuestion.test_cases) {
+                try {
+                  const testCaseResponse = await fetch(
+                    "http://127.0.0.1:8000/exam/test-cases/",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        question: createdQuestion.id,
+                        input_data: testCase.input_data,
+                        expected_output: testCase.expected_output,
+                      }),
+                    }
+                  );
+
+                  if (!testCaseResponse.ok) {
+                    const errorData = await testCaseResponse.json();
+                    console.error("Failed to create test case:", errorData);
+                    toast.error(
+                      `Failed to create test case: ${
+                        errorData.message || "Unknown error"
+                      }`
+                    );
+                  } else {
+                    toast.success("Test case added successfully");
+                  }
+                } catch (error) {
+                  console.error("Error creating test case:", error);
+                  toast.error(
+                    `Error creating test case: ${
+                      error instanceof Error ? error.message : "Unknown error"
+                    }`
+                  );
+                }
+              }
+            }
           } catch (error) {
             console.error("Error creating coding question:", error);
+            toast.error(
+              `Error creating coding question: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`
+            );
           }
         }
       }
 
-      // Prepare exam data
       const examData = {
         title: examTitle,
         duration: examDuration,
@@ -461,12 +592,6 @@ export default function AddExamPage() {
         ],
       };
 
-      setDebugInfo(
-        (prev) =>
-          prev + "\nCreating exam with data: " + JSON.stringify(examData)
-      );
-
-      // Create the exam
       const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
         headers: {
@@ -478,20 +603,10 @@ export default function AddExamPage() {
 
       if (!examResponse.ok) {
         const errorData = await examResponse.json();
-        setDebugInfo(
-          (prev) => prev + "\nError creating exam: " + JSON.stringify(errorData)
-        );
         throw new Error(errorData.message || "Failed to create exam");
       }
 
-      const examResult = await examResponse.json();
-      setDebugInfo(
-        (prev) =>
-          prev + "\nExam created successfully: " + JSON.stringify(examResult)
-      );
-
-      // Success - reset form and show success message
-      alert("Exam created successfully!");
+      toast.success("Exam created successfully!");
       setExamTitle("");
       setExamDuration(60);
       setQuestions([
@@ -514,12 +629,10 @@ export default function AddExamPage() {
       setCodedQuestions([]);
       setShowCreateQuestion(false);
 
-      // Optional: Redirect or refresh question bank
       fetchQuestions();
     } catch (error) {
       console.error("Error:", error);
-      setDebugInfo((prev) => prev + "\nFinal error: " + String(error));
-      alert(
+      toast.error(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     } finally {
@@ -527,465 +640,761 @@ export default function AddExamPage() {
     }
   };
 
+  const getDifficultyBadge = (difficulty: string) => {
+    switch (difficulty) {
+      case "Easy":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+            {difficulty}
+          </Badge>
+        );
+      case "Medium":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+            {difficulty}
+          </Badge>
+        );
+      case "Hard":
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+            {difficulty}
+          </Badge>
+        );
+      default:
+        return <Badge>{difficulty}</Badge>;
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-      <h2 className="text-3xl font-bold text-blue-700 text-center mb-6">
-        📝 Add Exam Questions
-      </h2>
+    <div className="container mx-auto py-6 px-4 max-w-6xl">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
 
-      {/* Exam Information Section */}
-      <div className="mb-8 p-4 border rounded-lg bg-gray-50">
-        <h3 className="text-xl font-semibold mb-4">Exam Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium mb-1">Exam Title</label>
-            <input
-              type="text"
-              placeholder="Enter exam title"
-              className="input input-bordered w-full"
-              value={examTitle}
-              onChange={(e) => setExamTitle(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Duration (minutes)</label>
-            <input
-              type="number"
-              placeholder="Enter duration"
-              className="input input-bordered w-full"
-              value={examDuration}
-              onChange={(e) => setExamDuration(Number(e.target.value))}
-              min="1"
-              required
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Question Bank Section */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Question Bank</h3>
-
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-4 items-center">
-            <div>
-              <label className="font-medium mr-2">Filter by Difficulty:</label>
-              <select
-                value={selectedDifficulty}
-                onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="select select-bordered"
-              >
-                <option value="all">All Difficulties</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="font-medium mr-2">Question Type:</label>
-              <select
-                value={questionType}
-                onChange={(e) =>
-                  setQuestionType(e.target.value as "mcq" | "code")
-                }
-                className="select select-bordered"
-              >
-                <option value="mcq">MCQ</option>
-                <option value="code">Code</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="font-medium mr-2">Language:</label>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="select select-bordered"
-              >
-                <option value="all">All Languages</option>
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-                <option value="java">Java</option>
-                <option value="sql">SQL</option>
-              </select>
-            </div>
-          </div>
-
-          <button onClick={fetchQuestions} className="btn btn-outline btn-sm">
-            🔄 Refresh Questions
-          </button>
+      <div className="flex flex-col space-y-8">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Exam Creator</h1>
+          <p className="text-muted-foreground">
+            Create and manage your exams with multiple choice and coding
+            questions.
+          </p>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-4">Loading questions...</div>
-        ) : error ? (
-          <div className="text-red-500 py-4">{error}</div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="table w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th>Question</th>
-                  <th>Type</th>
-                  <th>Difficulty</th>
-                  <th>Language</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedQuestions.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-4">
-                      No questions found for the selected criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  displayedQuestions.map((question) => (
-                    <tr key={question.id} className="border-t">
-                      <td className="max-w-md truncate">
-                        {question.question_text || question.title}
-                      </td>
-                      <td>{questionType === "mcq" ? "MCQ" : "Code"}</td>
-                      <td>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            question.difficulty === "Easy"
-                              ? "bg-green-100 text-green-800"
-                              : question.difficulty === "Medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {question.difficulty}
-                        </span>
-                      </td>
-                      <td>{question.language || "N/A"}</td>
-                      <td>
-                        <button
-                          onClick={() => addQuestionToExam(question)}
-                          className="btn btn-primary btn-sm"
-                          disabled={
-                            questionType === "mcq"
-                              ? selectedQuestions.some(
-                                  (q) => q.id === question.id
-                                )
-                              : codingQuestions.some(
-                                  (q) => q.id === question.id
-                                )
-                          }
-                        >
-                          Add to Exam
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-
-            {/* Show More / Show Less Button */}
-            {filteredQuestions.length > 4 && (
-              <div className="text-center py-3 border-t">
-                <button
-                  onClick={() => setShowAllQuestions(!showAllQuestions)}
-                  className="btn btn-sm btn-ghost"
-                >
-                  {showAllQuestions
-                    ? "Show Less"
-                    : `Show More (${filteredQuestions.length - 4} more)`}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Selected Questions Section */}
-      {(selectedQuestions.length > 0 || codingQuestions.length > 0) && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Selected Questions</h3>
-          <div className="space-y-4">
-            {/* MCQ Questions */}
-            {selectedQuestions.length > 0 && (
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h4 className="font-medium mb-2">
-                  MCQ Questions ({selectedQuestions.length})
-                </h4>
-                {selectedQuestions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="flex justify-between items-center py-2 border-b last:border-b-0"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {question.question_text}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Type: MCQ | Difficulty:{" "}
-                        <span
-                          className={`${
-                            question.difficulty === "Easy"
-                              ? "text-green-600"
-                              : question.difficulty === "Medium"
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {question.difficulty}
-                        </span>
-                        {" | Language: "}
-                        {question.language || "N/A"}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeSelectedQuestion(question.id, "mcq")}
-                      className="btn btn-error btn-sm ml-4"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Coding Questions */}
-            {codingQuestions.length > 0 && (
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <h4 className="font-medium mb-2">
-                  Coding Questions ({codingQuestions.length})
-                </h4>
-                {codingQuestions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="flex justify-between items-center py-2 border-b last:border-b-0"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {question.question_text || question.title}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Type: Code | Difficulty:{" "}
-                        <span
-                          className={`${
-                            question.difficulty === "Easy"
-                              ? "text-green-600"
-                              : question.difficulty === "Medium"
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {question.difficulty}
-                        </span>{" "}
-                        | Language: {question.language || "N/A"}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        removeSelectedQuestion(question.id, "code")
-                      }
-                      className="btn btn-error btn-sm ml-4"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Toggle for Custom Question Creation */}
-      <div className="mb-6">
-        <button
-          type="button"
-          onClick={() => setShowCreateQuestion(!showCreateQuestion)}
-          className="btn btn-outline w-full"
-        >
-          {showCreateQuestion
-            ? "Hide Question Creator"
-            : "Create Custom Questions"}
-        </button>
-      </div>
-
-      {/* Create Custom Questions Section - only shown when toggled */}
-      {showCreateQuestion && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">
-            Create Custom Questions
-          </h3>
-          <div className="space-y-6">
-            {questions.map((q, qIndex) => (
-              <div
-                key={qIndex}
-                className="p-4 border rounded-lg shadow-md bg-gray-50 space-y-4 relative"
-              >
-                <button
-                  onClick={() => removeQuestion(qIndex)}
-                  className="btn btn-error btn-sm absolute top-2 right-2"
-                >
-                  ×
-                </button>
-
-                <select
-                  className="select select-bordered w-full"
-                  value={q.type}
-                  onChange={(e) =>
-                    handleTypeChange(qIndex, e.target.value as "mcq" | "code")
-                  }
-                >
-                  <option value="mcq">Multiple Choice Question</option>
-                  <option value="code">Code Editor Question</option>
-                </select>
-
-                <input
-                  type="text"
-                  placeholder={
-                    q.type === "mcq" ? "Enter the question" : "Enter the title"
-                  }
-                  className="input input-bordered w-full"
-                  value={q.type === "mcq" ? q.question_text : q.title || ""}
-                  onChange={(e) => handleQuestionChange(qIndex, e.target.value)}
+        <Card>
+          <CardHeader>
+            <CardTitle>Exam Information</CardTitle>
+            <CardDescription>
+              Set the basic information for your exam.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="exam-title">Exam Title</Label>
+                <Input
+                  id="exam-title"
+                  placeholder="Enter exam title"
+                  value={examTitle}
+                  onChange={(e) => setExamTitle(e.target.value)}
+                  required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exam-duration">Duration (minutes)</Label>
+                <Input
+                  id="exam-duration"
+                  type="number"
+                  placeholder="Enter duration"
+                  value={examDuration}
+                  onChange={(e) => setExamDuration(Number(e.target.value))}
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                {/* Language field for both question types */}
-                <div>
-                  <label className="block font-medium mb-1">Language:</label>
-                  <select
-                    value={q.language}
-                    onChange={(e) =>
-                      handleLanguageChange(qIndex, e.target.value)
-                    }
-                    className="select select-bordered w-full"
-                    required
-                  >
-                    <option value="Python">Python</option>
-                    <option value="JavaScript">JavaScript</option>
-                    <option value="Java">Java</option>
-                    <option value="SQL">SQL</option>
-                  </select>
+        <Tabs defaultValue="question-bank" className="w-full">
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="question-bank">Question Bank</TabsTrigger>
+            <TabsTrigger value="selected-questions">
+              Selected Questions (
+              {selectedQuestions.length + codingQuestions.length})
+            </TabsTrigger>
+            <TabsTrigger value="create-questions">Create Questions</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="question-bank" className="space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Question Bank</CardTitle>
+                <CardDescription>
+                  Browse and select questions from the existing question bank.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="question-type">Question Type</Label>
+                    <Select
+                      value={questionType}
+                      onValueChange={(value) =>
+                        setQuestionType(value as "mcq" | "code")
+                      }
+                    >
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mcq">Multiple Choice</SelectItem>
+                        <SelectItem value="code">Coding</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="difficulty-filter">Difficulty</Label>
+                    <Select
+                      value={selectedDifficulty}
+                      onValueChange={setSelectedDifficulty}
+                    >
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Select difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Difficulties</SelectItem>
+                        <SelectItem value="Easy">Easy</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Hard">Hard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="language-filter">Language</Label>
+                    <Select
+                      value={selectedLanguage}
+                      onValueChange={setSelectedLanguage}
+                    >
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Languages</SelectItem>
+                        <SelectItem value="python">Python</SelectItem>
+                        <SelectItem value="javascript">JavaScript</SelectItem>
+                        <SelectItem value="java">Java</SelectItem>
+                        <SelectItem value="sql">SQL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={fetchQuestions}
+                      className="h-10 w-10"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      <span className="sr-only">Refresh questions</span>
+                    </Button>
+                  </div>
                 </div>
 
-                {q.type === "mcq" && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block font-medium">Difficulty:</label>
-                      <select
-                        value={q.difficulty}
-                        onChange={(e) =>
-                          handleDifficultyChange(
-                            qIndex,
-                            e.target.value as "Easy" | "Medium" | "Hard"
-                          )
-                        }
-                        className="select select-bordered w-full"
-                      >
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                      </select>
-                    </div>
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : error ? (
+                  <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-md">
+                    {error}
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50%]">Question</TableHead>
+                          <TableHead>Difficulty</TableHead>
+                          <TableHead>Language</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayedQuestions.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="text-center py-6 text-muted-foreground"
+                            >
+                              No questions found for the selected criteria.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          displayedQuestions.map((question) => (
+                            <TableRow key={question.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  {question.type === "mcq" ? (
+                                    <FileQuestion className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <Code className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <span className="line-clamp-1">
+                                    {question.question_text || question.title}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {getDifficultyBadge(question.difficulty)}
+                              </TableCell>
+                              <TableCell>
+                                {question.language || "N/A"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  onClick={() => addQuestionToExam(question)}
+                                  size="sm"
+                                  disabled={
+                                    questionType === "mcq"
+                                      ? selectedQuestions.some(
+                                          (q) => q.id === question.id
+                                        )
+                                      : codingQuestions.some(
+                                          (q) => q.id === question.id
+                                        )
+                                  }
+                                >
+                                  Add to Exam
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      {["A", "B", "C", "D"].map((option) => (
-                        <div key={option} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`correct-${qIndex}`}
-                            checked={q.correct_option === option}
-                            onChange={() =>
-                              handleCorrectAnswerChange(qIndex, option)
-                            }
-                          />
-                          <input
-                            type="text"
-                            placeholder={`Option ${option}`}
-                            className="input input-bordered w-full"
-                            value={
-                              (q[
-                                `option_${option.toLowerCase()}` as keyof Question
-                              ] as string) || ""
-                            }
-                            onChange={(e) =>
-                              handleOptionChange(
-                                qIndex,
-                                `option_${option.toLowerCase()}` as
-                                  | "option_a"
-                                  | "option_b"
-                                  | "option_c"
-                                  | "option_d",
-                                e.target.value
-                              )
-                            }
-                          />
+                    {filteredQuestions.length > 4 && (
+                      <div className="flex justify-center py-3 border-t">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setShowAllQuestions(!showAllQuestions)}
+                          className="text-sm"
+                        >
+                          {showAllQuestions ? (
+                            <>
+                              <ChevronUp className="mr-2 h-4 w-4" />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="mr-2 h-4 w-4" />
+                              Show More ({filteredQuestions.length - 4} more)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="selected-questions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Selected Questions</CardTitle>
+                <CardDescription>
+                  Questions that will be included in your exam.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {selectedQuestions.length === 0 &&
+                codingQuestions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No questions selected yet. Add questions from the Question
+                    Bank.
+                  </div>
+                ) : (
+                  <>
+                    {selectedQuestions.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium">
+                          Multiple Choice Questions ({selectedQuestions.length})
+                        </h3>
+                        <div className="rounded-md border divide-y">
+                          {selectedQuestions.map((question) => (
+                            <div key={question.id} className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <div className="font-medium">
+                                    {question.question_text}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    {getDifficultyBadge(question.difficulty)}
+                                    <span>|</span>
+                                    <span>
+                                      Language: {question.language || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    removeSelectedQuestion(question.id, "mcq")
+                                  }
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Remove</span>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {q.type === "code" && (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="block font-medium">Difficulty:</label>
-                      <select
-                        value={q.difficulty}
-                        onChange={(e) =>
-                          handleDifficultyChange(
-                            qIndex,
-                            e.target.value as "Easy" | "Medium" | "Hard"
-                          )
-                        }
-                        className="select select-bordered w-full"
-                      >
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-medium">Starter Code:</label>
-                      <textarea
-                        placeholder="Enter the starter code"
-                        className="textarea textarea-bordered w-full h-28"
-                        value={q.starter_code || ""}
-                        onChange={(e) =>
-                          handleCodeChange(qIndex, e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                      </div>
+                    )}
 
-            <button
-              type="button"
-              onClick={addQuestion}
-              className="btn btn-outline btn-primary w-full"
+                    {codingQuestions.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium">
+                          Coding Questions ({codingQuestions.length})
+                        </h3>
+                        <div className="rounded-md border divide-y">
+                          {codingQuestions.map((question) => (
+                            <div key={question.id} className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <div className="font-medium">
+                                    {question.question_text || question.title}
+                                  </div>
+                                  {question.description && (
+                                    <div className="text-sm text-muted-foreground line-clamp-2">
+                                      {question.description}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    {getDifficultyBadge(question.difficulty)}
+                                    <span>|</span>
+                                    <span>
+                                      Language: {question.language || "N/A"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    removeSelectedQuestion(question.id, "code")
+                                  }
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Remove</span>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="create-questions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Custom Questions</CardTitle>
+                <CardDescription>
+                  Create new questions to add to your exam.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Accordion
+                  type="multiple"
+                  className="w-full"
+                  defaultValue={["question-0"]}
+                >
+                  {questions.map((question, index) => (
+                    <AccordionItem
+                      key={index}
+                      value={`question-${index}`}
+                      className="border rounded-lg px-2 mb-4"
+                    >
+                      <div className="flex items-center justify-between py-4">
+                        <AccordionTrigger className="hover:no-underline">
+                          <span className="font-medium">
+                            {question.type === "mcq"
+                              ? "Multiple Choice Question"
+                              : "Coding Question"}{" "}
+                            {index + 1}
+                          </span>
+                        </AccordionTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeQuestion(index);
+                          }}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </div>
+                      <AccordionContent className="pb-4 space-y-4">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Question Type</Label>
+                            <Select
+                              value={question.type}
+                              onValueChange={(value) =>
+                                handleTypeChange(index, value as "mcq" | "code")
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select question type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="mcq">
+                                  Multiple Choice Question
+                                </SelectItem>
+                                <SelectItem value="code">
+                                  Coding Question
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>
+                              {question.type === "mcq"
+                                ? "Question Text"
+                                : "Question Title"}
+                            </Label>
+                            <Input
+                              placeholder={
+                                question.type === "mcq"
+                                  ? "Enter the question"
+                                  : "Enter the title"
+                              }
+                              value={
+                                question.type === "mcq"
+                                  ? question.question_text
+                                  : question.title || ""
+                              }
+                              onChange={(e) =>
+                                handleQuestionChange(index, e.target.value)
+                              }
+                            />
+                          </div>
+
+                          {question.type === "code" && (
+                            <div className="space-y-2">
+                              <Label>Description</Label>
+                              <Textarea
+                                placeholder="Enter the question description"
+                                className="min-h-[100px]"
+                                value={question.description || ""}
+                                onChange={(e) =>
+                                  handleDescriptionChange(index, e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+
+                          <div className="space-y-2">
+                            <Label>Language</Label>
+                            <Select
+                              value={question.language}
+                              onValueChange={(value) =>
+                                handleLanguageChange(index, value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Python">Python</SelectItem>
+                                <SelectItem value="JavaScript">
+                                  JavaScript
+                                </SelectItem>
+                                <SelectItem value="Java">Java</SelectItem>
+                                <SelectItem value="SQL">SQL</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Difficulty</Label>
+                            <Select
+                              value={question.difficulty}
+                              onValueChange={(value) =>
+                                handleDifficultyChange(
+                                  index,
+                                  value as "Easy" | "Medium" | "Hard"
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select difficulty" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Easy">Easy</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="Hard">Hard</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Points</Label>
+                            <Input
+                              type="number"
+                              placeholder="Enter points"
+                              value={question.points || 1}
+                              onChange={(e) => {
+                                const updatedQuestions = [...questions];
+                                updatedQuestions[index].points = Number(
+                                  e.target.value
+                                );
+                                setQuestions(updatedQuestions);
+                              }}
+                              min="0.1"
+                              step="0.1"
+                            />
+                          </div>
+
+                          {question.type === "mcq" ? (
+                            <div className="space-y-4">
+                              <Label>Options</Label>
+                              <RadioGroup
+                                value={question.correct_option || "A"}
+                                onValueChange={(value) =>
+                                  handleCorrectAnswerChange(index, value)
+                                }
+                              >
+                                {["A", "B", "C", "D"].map((option) => (
+                                  <div
+                                    key={option}
+                                    className="flex items-center space-x-2 space-y-2"
+                                  >
+                                    <div className="grid gap-1.5">
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem
+                                          value={option}
+                                          id={`option-${index}-${option}`}
+                                        />
+                                        <Label
+                                          htmlFor={`option-${index}-${option}`}
+                                          className="font-normal"
+                                        >
+                                          Option {option}
+                                        </Label>
+                                      </div>
+                                    </div>
+                                    <Input
+                                      placeholder={`Enter option ${option}`}
+                                      value={
+                                        (question[
+                                          `option_${option.toLowerCase()}` as keyof Question
+                                        ] as string) || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleOptionChange(
+                                          index,
+                                          `option_${option.toLowerCase()}` as
+                                            | "option_a"
+                                            | "option_b"
+                                            | "option_c"
+                                            | "option_d",
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label>Starter Code</Label>
+                                <Textarea
+                                  placeholder="Enter the starter code"
+                                  className="font-mono min-h-[150px]"
+                                  value={question.starter_code || ""}
+                                  onChange={(e) =>
+                                    handleCodeChange(index, e.target.value)
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label>Test Cases</Label>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAddTestCase(index)}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Test Case
+                                  </Button>
+                                </div>
+
+                                {question.test_cases &&
+                                question.test_cases.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {question.test_cases.map(
+                                      (testCase, tcIndex) => (
+                                        <Card key={tcIndex}>
+                                          <CardHeader className="py-3">
+                                            <div className="flex items-center justify-between">
+                                              <CardTitle className="text-sm font-medium">
+                                                Test Case {tcIndex + 1}
+                                              </CardTitle>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                  handleRemoveTestCase(
+                                                    index,
+                                                    tcIndex
+                                                  )
+                                                }
+                                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                              >
+                                                <X className="h-4 w-4" />
+                                                <span className="sr-only">
+                                                  Remove
+                                                </span>
+                                              </Button>
+                                            </div>
+                                          </CardHeader>
+                                          <CardContent className="py-2 space-y-4">
+                                            <div className="space-y-2">
+                                              <Label className="text-sm">
+                                                Input
+                                              </Label>
+                                              <Textarea
+                                                placeholder="Input data"
+                                                className="font-mono min-h-[80px]"
+                                                value={testCase.input_data}
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "input_data",
+                                                    e.target.value
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-sm">
+                                                Expected Output
+                                              </Label>
+                                              <Textarea
+                                                placeholder="Expected output"
+                                                className="font-mono min-h-[80px]"
+                                                value={testCase.expected_output}
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "expected_output",
+                                                    e.target.value
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      )
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 border rounded-md text-muted-foreground">
+                                    No test cases added yet.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addQuestion}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Another Question
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <Button
+              onClick={handleSubmit}
+              className="w-full h-12 text-lg"
+              disabled={isSubmitting}
             >
-              ➕ Add Another Question
-            </button>
-          </div>
-        </div>
-      )}
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-5 w-5" />
+                  Create Exam
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
-      <button
-        onClick={handleSubmit}
-        className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-green-500 transition-all duration-300 shadow-md"
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? "Submitting..." : "Submit Exam"}
-      </button>
-
-      {/* Debug info - can be removed in production */}
-      {debugInfo && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs font-mono whitespace-pre-wrap">
-          <h4 className="font-bold mb-2">Debug Info:</h4>
-          {debugInfo}
-        </div>
-      )}
+        {debugInfo && (
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs font-mono bg-muted p-4 rounded-md overflow-auto max-h-[200px]">
+                {debugInfo}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

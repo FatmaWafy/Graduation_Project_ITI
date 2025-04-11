@@ -1,345 +1,312 @@
-// "use client"
+"use client";
 
-// import { useState } from "react"
-// import Editor from "@monaco-editor/react"
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// import { Button } from "@/components/ui/button"
-// import { Play } from "lucide-react"
+import { useState, useEffect } from "react";
+import axios from "axios";
+import Editor, { loader } from "@monaco-editor/react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Play, CheckCircle2, XCircle } from "lucide-react";
+import { useTheme } from "next-themes";
 
-// interface CodingQuestionProps {
-//   question: {
-//     id: string
-//     title: string
-//     description: string
-//     starterCode: string
-//     testCases: Array<{
-//       input: string
-//       expected: string
-//     }>
-//     language: string
-//   }
-//   onAnswerChange: (code: string) => void
-//   answer: string
-// }
+const LANGUAGE_VERSIONS = {
+  javascript: "18.15.0",
+  python: "3.10.0",
+  java: "15.0.2",
+  cpp: "10.2.0",
+  csharp: "6.12.0",
+  php: "8.2.0",
+  ruby: "3.2.0",
+  go: "1.18.0",
+  rust: "1.68.0",
+  typescript: "5.0.3",
+};
 
-// export default function CodingQuestion({ question, onAnswerChange, answer }: CodingQuestionProps) {
-//   const [activeTab, setActiveTab] = useState<string>("case1")
-//   const [testResults, setTestResults] = useState<Record<string, { status: string; output?: string; error?: string }>>(
-//     {},
-//   )
-//   const [isRunning, setIsRunning] = useState(false)
-
-//   const handleEditorChange = (value: string | undefined) => {
-//     if (value !== undefined) {
-//       onAnswerChange(value)
-//     }
-//   }
-
-//   const runTestCase = (testCaseIndex: number) => {
-//     setIsRunning(true)
-
-//     // In a real app, you would send the code to your Django backend for execution
-//     // This is a mock implementation
-//     setTimeout(() => {
-//       const testCase = question.testCases[testCaseIndex]
-//       const tabKey = `case${testCaseIndex + 1}`
-
-//       // Mock test execution - in reality, this would be done on the server
-//       try {
-//         // Simulate a successful test for demo purposes
-//         const success = Math.random() > 0.3 // 70% chance of success
-
-//         if (success) {
-//           setTestResults((prev) => ({
-//             ...prev,
-//             [tabKey]: {
-//               status: "success",
-//               output: testCase.expected,
-//             },
-//           }))
-//         } else {
-//           setTestResults((prev) => ({
-//             ...prev,
-//             [tabKey]: {
-//               status: "error",
-//               error: "Your solution produced an incorrect result.",
-//             },
-//           }))
-//         }
-//       } catch (error) {
-//         setTestResults((prev) => ({
-//           ...prev,
-//           [tabKey]: {
-//             status: "error",
-//             error: error instanceof Error ? error.message : "An unknown error occurred",
-//           },
-//         }))
-//       }
-
-//       setIsRunning(false)
-//     }, 1000)
-//   }
-
-//   return (
-//     <div className="flex flex-col md:flex-row h-[calc(100vh-250px)]">
-//       {/* Question description panel */}
-//       <div className="w-full md:w-1/2 p-4 overflow-y-auto border-b md:border-b-0 md:border-r">
-//         <h2 className="text-xl font-bold mb-4">{question.title}</h2>
-//         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: question.description }} />
-//       </div>
-
-//       {/* Code editor panel */}
-//       <div className="w-full md:w-1/2 flex flex-col">
-//         <div className="flex items-center justify-between p-2 border-b">
-//           <div className="flex items-center">
-//             <span className="text-sm font-medium mr-2">{question.language}</span>
-//           </div>
-//           <Button
-//             size="sm"
-//             onClick={() => runTestCase(Number.parseInt(activeTab.replace("case", "")) - 1)}
-//             disabled={isRunning}
-//           >
-//             <Play className="h-4 w-4 mr-1" />
-//             Run
-//           </Button>
-//         </div>
-
-//         <div className="flex-grow">
-//           <Editor
-//             height="100%"
-//             defaultLanguage={question.language}
-//             value={answer}
-//             onChange={handleEditorChange}
-//             theme="vs-light"
-//             options={{
-//               minimap: { enabled: false },
-//               scrollBeyondLastLine: false,
-//               fontSize: 14,
-//               tabSize: 2,
-//               automaticLayout: true,
-//             }}
-//           />
-//         </div>
-
-//         <div className="border-t">
-//           <Tabs defaultValue="case1" value={activeTab} onValueChange={setActiveTab}>
-//             <div className="flex items-center justify-between p-2 border-b">
-//               <TabsList>
-//                 {question.testCases.map((_, index) => (
-//                   <TabsTrigger
-//                     key={`case${index + 1}`}
-//                     value={`case${index + 1}`}
-//                     className={`
-//                       ${testResults[`case${index + 1}`]?.status === "success" ? "text-green-500" : ""}
-//                       ${testResults[`case${index + 1}`]?.status === "error" ? "text-red-500" : ""}
-//                     `}
-//                   >
-//                     Case {index + 1}
-//                   </TabsTrigger>
-//                 ))}
-//               </TabsList>
-//               <span className="text-xs text-gray-500">Test Result</span>
-//             </div>
-
-//             {question.testCases.map((testCase, index) => (
-//               <TabsContent key={`case${index + 1}`} value={`case${index + 1}`} className="p-4">
-//                 <div className="mb-2">
-//                   <div className="text-sm font-medium mb-1">Input:</div>
-//                   <pre className="bg-gray-50 p-2 rounded text-sm">{testCase.input}</pre>
-//                 </div>
-
-//                 <div>
-//                   <div className="text-sm font-medium mb-1">Expected Output:</div>
-//                   <pre className="bg-gray-50 p-2 rounded text-sm">{testCase.expected}</pre>
-//                 </div>
-
-//                 {testResults[`case${index + 1}`] && (
-//                   <div className="mt-4">
-//                     <div className="text-sm font-medium mb-1">Your Output:</div>
-//                     {testResults[`case${index + 1}`].status === "success" ? (
-//                       <pre className="bg-green-50 text-green-700 p-2 rounded text-sm">
-//                         {testResults[`case${index + 1}`].output}
-//                       </pre>
-//                     ) : (
-//                       <pre className="bg-red-50 text-red-700 p-2 rounded text-sm">
-//                         {testResults[`case${index + 1}`].error}
-//                       </pre>
-//                     )}
-//                   </div>
-//                 )}
-//               </TabsContent>
-//             ))}
-//           </Tabs>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
- 
-"use client"
-
-import { useState, useEffect } from "react"
-import Editor, { loader } from "@monaco-editor/react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Play } from "lucide-react"
-import { useTheme } from "next-themes"
+const API = axios.create({
+  baseURL: "https://emkc.org/api/v2/piston",
+});
 
 interface CodingQuestionProps {
   question: {
-    id: string
-    title: string
-    description: string
-    starterCode: string
+    id: string;
+    title: string;
+    description: string;
+    starterCode: string;
+    language: string;
     testCases: Array<{
-      input: string
-      expected: string
-    }>
-    language: string
-  }
-  onAnswerChange: (code: string) => void
-  answer: string
+      id: number;
+      input_data: string;
+      expected_output: string;
+    }>;
+  };
+  onAnswerChange: (code: string) => void;
+  answer: string;
 }
 
-export default function CodingQuestion({ question, onAnswerChange, answer }: CodingQuestionProps) {
-  const [activeTab, setActiveTab] = useState<string>("case1")
-  const [testResults, setTestResults] = useState<Record<string, { status: string; output?: string; error?: string }>>(
-    {},
-  )
-  const [isRunning, setIsRunning] = useState(false)
-  const { theme } = useTheme()
-  const [editorTheme, setEditorTheme] = useState("vs-dark")
+export default function CodingQuestion({
+  question,
+  onAnswerChange,
+  answer,
+}: CodingQuestionProps) {
+  const [activeTab, setActiveTab] = useState<string>("case1");
+  const [testResults, setTestResults] = useState<
+    Record<string, { status: string; output?: string; error?: string }>
+  >({});
+  const [runningStatus, setRunningStatus] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [output, setOutput] = useState<string[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const { theme } = useTheme();
+  const [editorTheme, setEditorTheme] = useState("vs-dark");
+  const [testScores, setTestScores] = useState<Record<string, number>>({});
 
-  // Set up Monaco editor with custom themes
   useEffect(() => {
-    loader.init().then((monaco) => {
-      // Define custom VS Code dark theme
-      monaco.editor.defineTheme("custom-vs-dark", {
-        base: "vs-dark",
-        inherit: true,
-        rules: [
-          { token: "keyword", foreground: "569cd6" }, // def, class
-          { token: "type", foreground: "4ec9b0" }, // List, int
-          { token: "string", foreground: "ce9178" }, // """
-          { token: "comment", foreground: "6A9955" }, // comments
-          { token: "number", foreground: "b5cea8" }, // numbers
-          { token: "delimiter", foreground: "d4d4d4" }, // brackets, commas
-          { token: "annotation", foreground: "dcdcaa" }, // :type, :rtype
-          { token: "identifier", foreground: "9cdcfe" }, // variable names
-          { token: "operator", foreground: "d4d4d4" }, // operators
-        ],
-        colors: {
-          "editor.background": "#1e1e1e",
-          "editor.foreground": "#d4d4d4",
-          "editorLineNumber.foreground": "#858585",
-          "editorCursor.foreground": "#d4d4d4",
-          "editor.selectionBackground": "#264f78",
-          "editor.inactiveSelectionBackground": "#3a3d41",
-          "editorWhitespace.foreground": "#3B3B3B",
-        },
-      })
-
-      // Define custom VS Code light theme
-      monaco.editor.defineTheme("custom-vs-light", {
-        base: "vs",
-        inherit: true,
-        rules: [
-          { token: "keyword", foreground: "0000ff" }, // def, class
-          { token: "type", foreground: "267f99" }, // List, int
-          { token: "string", foreground: "a31515" }, // """
-          { token: "comment", foreground: "008000" }, // comments
-          { token: "number", foreground: "098658" }, // numbers
-          { token: "delimiter", foreground: "000000" }, // brackets, commas
-          { token: "annotation", foreground: "795e26" }, // :type, :rtype
-          { token: "identifier", foreground: "001080" }, // variable names
-          { token: "operator", foreground: "000000" }, // operators
-        ],
-        colors: {
-          "editor.background": "#ffffff",
-          "editor.foreground": "#000000",
-          "editorLineNumber.foreground": "#237893",
-          "editorCursor.foreground": "#000000",
-          "editor.selectionBackground": "#add6ff",
-          "editor.inactiveSelectionBackground": "#e5ebf1",
-          "editorWhitespace.foreground": "#d3d3d3",
-        },
-      })
-
-      // Update theme based on system preference
-      setEditorTheme(theme === "dark" ? "custom-vs-dark" : "custom-vs-light")
-    })
-  }, [theme])
+    if (question.testCases && question.testCases.length > 0) {
+      setActiveTab(`case1`);
+    }
+  }, [question.testCases]);
 
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
-      onAnswerChange(value)
+      onAnswerChange(value);
     }
-  }
+  };
 
-  const runTestCase = (testCaseIndex: number) => {
-    setIsRunning(true)
-
-    // In a real app, you would send the code to your Django backend for execution
-    // This is a mock implementation
-    setTimeout(() => {
-      const testCase = question.testCases[testCaseIndex]
-      const tabKey = `case${testCaseIndex + 1}`
-
-      // Mock test execution - in reality, this would be done on the server
-      try {
-        // Simulate a successful test for demo purposes
-        const success = Math.random() > 0.3 // 70% chance of success
-
-        if (success) {
-          setTestResults((prev) => ({
-            ...prev,
-            [tabKey]: {
-              status: "success",
-              output: testCase.expected,
-            },
-          }))
-        } else {
-          setTestResults((prev) => ({
-            ...prev,
-            [tabKey]: {
-              status: "error",
-              error: "Your solution produced an incorrect result.",
-            },
-          }))
-        }
-      } catch (error) {
-        setTestResults((prev) => ({
-          ...prev,
-          [tabKey]: {
-            status: "error",
-            error: error instanceof Error ? error.message : "An unknown error occurred",
+  const executeCode = async (language: string, sourceCode: string) => {
+    try {
+      const response = await API.post("/execute", {
+        language: language,
+        version: LANGUAGE_VERSIONS[language],
+        files: [
+          {
+            content: sourceCode,
           },
-        }))
+        ],
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error executing code:", error);
+      throw error;
+    }
+  };
+
+  const submitToRunCodeAPI = async (data: {
+    questionId: string;
+    code: string;
+    language: string;
+    output?: string;
+    error?: string;
+    testCaseId?: number;
+    input?: string;
+    expectedOutput?: string;
+    isSuccess?: boolean;
+  }) => {
+    try {
+      const response = await axios.post("/api/run-code", {
+        questionId: data.questionId,
+        code: data.code,
+        language: data.language,
+        output: data.output,
+        error: data.error,
+        testCaseId: data.testCaseId,
+        input: data.input,
+        expectedOutput: data.expectedOutput,
+        isSuccess: data.isSuccess,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error submitting to run-code API:", error);
+      throw error;
+    }
+  };
+
+  const runCode = async () => {
+    if (!answer) return;
+    try {
+      setIsLoading(true);
+      const result = await executeCode(question.language.toLowerCase(), answer);
+      const output = result.run.output;
+      const error = result.run.stderr;
+
+      setOutput(output.split("\n"));
+      setIsError(error ? true : false);
+
+      // Submit to our API
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        output: output,
+        error: error,
+      });
+    } catch (error) {
+      setIsError(true);
+      setOutput(["An error occurred while executing the code"]);
+      console.error("Error executing code:", error);
+
+      // Submit error to our API
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        error: "An error occurred while executing the code",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const runTestCase = async (testCaseIndex: number) => {
+    const tabKey = `case${testCaseIndex + 1}`;
+    setRunningStatus((prev) => ({ ...prev, [tabKey]: true }));
+
+    try {
+      const testCase = question.testCases[testCaseIndex];
+
+      const codeWithInput = getCodeWithInputHandling(
+        answer,
+        question.language.toLowerCase(),
+        testCase.input_data
+      );
+
+      const result = await executeCode(
+        question.language.toLowerCase(),
+        codeWithInput
+      );
+
+      // Clean the output by:
+      // 1. Trimming whitespace
+      // 2. Removing any input echo if present
+      // 3. Normalizing the format
+      const rawOutput = result.run.output;
+      let output = rawOutput.trim();
+
+      // If output contains both input and result (common in some executions)
+      // Split by newlines and take the last line
+      const outputLines = output.split("\n");
+      if (outputLines.length > 1) {
+        output = outputLines[outputLines.length - 1].trim();
       }
 
-      setIsRunning(false)
-    }, 1000)
-  }
+      // Clean expected output
+      const expectedOutput = testCase.expected_output.trim();
 
-  // Get language from backend and normalize it
+      // Compare the cleaned outputs
+      const isSuccess = output === expectedOutput;
+
+      const newTestResult = {
+        [tabKey]: {
+          status: isSuccess ? "success" : "error",
+          output: output,
+          error: isSuccess
+            ? undefined
+            : `Expected: ${expectedOutput}\nGot: ${output}\nInput: ${testCase.input_data}`,
+        },
+      };
+
+      setTestResults((prev) => ({
+        ...prev,
+        ...newTestResult,
+      }));
+
+      // Submit test case results to our API
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        testCaseId: testCase.id,
+        input: testCase.input_data,
+        expectedOutput: testCase.expected_output,
+        output: output,
+        error: isSuccess
+          ? undefined
+          : `Expected: ${expectedOutput}\nGot: ${output}`,
+        isSuccess,
+      });
+
+      return newTestResult;
+    } catch (error) {
+      console.error("Error running test case:", error);
+      const newTestResult = {
+        [tabKey]: {
+          status: "error",
+          error: "An error occurred while running the test case.",
+        },
+      };
+      setTestResults((prev) => ({
+        ...prev,
+        ...newTestResult,
+      }));
+
+      await submitToRunCodeAPI({
+        questionId: question.id,
+        code: answer,
+        language: question.language,
+        testCaseId: question.testCases[testCaseIndex].id,
+        input: question.testCases[testCaseIndex].input_data,
+        expectedOutput: question.testCases[testCaseIndex].expected_output,
+        error: "An error occurred while running the test case.",
+        isSuccess: false,
+      });
+
+      throw error;
+    } finally {
+      setRunningStatus((prev) => ({ ...prev, [tabKey]: false }));
+    }
+  };
+
+  const runAllTestCases = async () => {
+    if (!question.testCases || question.testCases.length === 0) return;
+
+    try {
+      setIsLoading(true);
+      const results = await Promise.all(
+        question.testCases.map((_, index) => runTestCase(index))
+      );
+      return results;
+    } catch (error) {
+      console.error("Error running all test cases:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ... rest of the code remains the same ...
+  const getCodeWithInputHandling = (
+    code: string,
+    language: string,
+    input: string,
+    functionName: string = "flatten_list" // Add this parameter to know which function to test
+  ) => {
+    switch (
+      language.toLowerCase() // Use lowercase for case-insensitive comparison
+    ) {
+      case "python":
+        return `${code}\n\n# Test the function\nprint(${functionName}(${input}))`;
+      case "javascript":
+        return `${code}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
+      case "java":
+        // For Java, this would need more complex handling depending on the class structure
+        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(Arrays.toString(${functionName}(${input})));\n    }\n}`;
+      case "cpp":
+        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    for (auto item : result) {\n        std::cout << item << " ";\n    }\n    return 0;\n}`;
+      default:
+        return code;
+    }
+  };
   const getLanguage = () => {
-    // Monaco editor expects lowercase language identifiers
-    const lang = question.language?.toLowerCase() || "python"
-
-    // Map some common language names to Monaco's expected identifiers
+    const lang = question.language?.toLowerCase() || "python";
     const languageMap: Record<string, string> = {
       js: "javascript",
       py: "python",
       ts: "typescript",
       "c++": "cpp",
       "c#": "csharp",
-    }
+    };
+    return languageMap[lang] || lang;
+  };
 
-    return languageMap[lang] || lang
-  }
-
-  // VS Code-like editor options
   const editorOptions = {
     minimap: { enabled: true },
     scrollBeyondLastLine: false,
@@ -370,100 +337,195 @@ export default function CodingQuestion({ question, onAnswerChange, answer }: Cod
     acceptSuggestionOnEnter: "on",
     quickSuggestions: true,
     quickSuggestionsDelay: 100,
+  };
+
+  if (!Array.isArray(question.testCases)) {
+    return <div>No test cases available</div>;
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-250px)] bg-background ">
-      {/* Question description panel */}
+    <div className="flex flex-col md:flex-row h-[calc(100vh-250px)] bg-background">
       <div className="w-full md:w-1/2 p-4 overflow-y-auto border-b md:border-b-0 md:border-r border-border bg-background">
-        <h2 className="text-xl font-bold mb-4 text-foreground">{question.title}</h2>
+        <h2 className="text-xl font-bold mb-4 text-foreground">
+          {question.title}
+        </h2>
         <div
           className="prose max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground"
           dangerouslySetInnerHTML={{ __html: question.description }}
         />
       </div>
 
-      {/* Code editor panel - VS Code style */}
       <div className="w-full md:w-1/2 flex flex-col bg-background">
         <div className="flex items-center justify-between p-2 border-b border-border bg-background">
           <div className="flex items-center">
-            <span className="text-sm font-medium mr-2 text-foreground lowercase">{question.language}</span>
+            <span className="text-sm font-medium mr-2 text-foreground lowercase">
+              {getLanguage()}
+            </span>
           </div>
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => runTestCase(Number.parseInt(activeTab.replace("case", "")) - 1)}
-            disabled={isRunning}
-          >
-            <Play className="h-4 w-4 mr-1" />
-            Run
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runAllTestCases}
+              disabled={isLoading}
+            >
+              <Play className="h-4 w-4 mr-1" />
+              {isLoading ? "Running..." : "Run All Tests"}
+            </Button>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={runCode}
+              disabled={isLoading}
+            >
+              <Play className="h-4 w-4 mr-1" />
+              {isLoading ? "Running..." : "Run Code"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex-grow">
           <Editor
             height="100%"
             defaultLanguage={getLanguage()}
+            defaultValue={question.starterCode}
             value={answer}
             onChange={handleEditorChange}
             theme={editorTheme}
             options={editorOptions}
-            className="monaco-editor"
-            loading={<div className="flex items-center justify-center h-full text-foreground">Loading editor...</div>}
+            loading={
+              <div className="flex items-center justify-center h-full text-foreground">
+                Loading editor...
+              </div>
+            }
           />
         </div>
 
         <div className="border-t border-border bg-background">
-          <Tabs defaultValue="case1" value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between p-2 border-b border-border bg-background">
-              <TabsList className="bg-muted">
-                {question.testCases.map((_, index) => (
+          <Tabs
+            defaultValue="case1"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="bg-muted">
+              <TabsTrigger value="output">Output</TabsTrigger>
+              {question.testCases.map((_, index) => {
+                const tabKey = `case${index + 1}`;
+                const result = testResults[tabKey];
+                const score = testScores[tabKey];
+
+                return (
                   <TabsTrigger
-                    key={`case${index + 1}`}
-                    value={`case${index + 1}`}
+                    key={tabKey}
+                    value={tabKey}
                     className={`
-                      ${testResults[`case${index + 1}`]?.status === "success" ? "text-green-500" : ""}
-                      ${testResults[`case${index + 1}`]?.status === "error" ? "text-red-500" : ""}
+                      ${result?.status === "success" ? "text-green-500" : ""}
+                      ${result?.status === "error" ? "text-red-500" : ""}
                     `}
                   >
                     Case {index + 1}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <span className="text-xs text-muted-foreground">Test Result</span>
-            </div>
-
-            {question.testCases.map((testCase, index) => (
-              <TabsContent key={`case${index + 1}`} value={`case${index + 1}`} className="p-4 bg-background">
-                <div className="mb-2">
-                  <div className="text-sm font-medium mb-1 text-foreground">Input:</div>
-                  <pre className="bg-muted p-2 rounded text-sm text-muted-foreground">{testCase.input}</pre>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium mb-1 text-foreground">Expected Output:</div>
-                  <pre className="bg-muted p-2 rounded text-sm text-muted-foreground">{testCase.expected}</pre>
-                </div>
-
-                {testResults[`case${index + 1}`] && (
-                  <div className="mt-4">
-                    <div className="text-sm font-medium mb-1 text-foreground">Your Output:</div>
-                    {testResults[`case${index + 1}`].status === "success" ? (
-                      <pre className="bg-green-950/20 text-green-500 p-2 rounded text-sm border border-green-900/30">
-                        {testResults[`case${index + 1}`].output}
-                      </pre>
-                    ) : (
-                      <pre className="bg-red-950/20 text-red-500 p-2 rounded text-sm border border-red-900/30">
-                        {testResults[`case${index + 1}`].error}
-                      </pre>
+                    {score !== undefined && (
+                      <span className="ml-1 text-xs">({score} pts)</span>
                     )}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            <TabsContent value="output">
+              <div className="p-4">
+                <h3 className="text-lg font-medium mb-2 text-foreground">
+                  Output
+                </h3>
+                <div
+                  className={`p-2 rounded-md font-mono text-sm min-h-[100px] ${
+                    isError ? "bg-red-100 text-red-600" : "bg-muted"
+                  }`}
+                >
+                  {output ? (
+                    output.map((line, i) => (
+                      <div key={i} className="whitespace-pre-wrap">
+                        {line}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground">
+                      Click "Run Code" to see the output here
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {question.testCases.map((testCase, index) => {
+              const tabKey = `case${index + 1}`;
+              const result = testResults[tabKey];
+              const score = testScores[tabKey];
+
+              return (
+                <TabsContent key={tabKey} value={tabKey}>
+                  <div className="flex flex-col p-4 border-t border-border bg-background">
+                    <div>
+                      <h3 className="text-lg text-foreground">Test Input</h3>
+                      <div
+                        className="p-2 bg-muted rounded-md text-foreground font-mono"
+                        dangerouslySetInnerHTML={{
+                          __html: testCase.input_data,
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-lg text-foreground mt-2">
+                        Expected Output
+                      </h3>
+                      <div
+                        className="p-2 bg-muted rounded-md text-foreground font-mono"
+                        dangerouslySetInnerHTML={{
+                          __html: testCase.expected_output,
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => runTestCase(index)}
+                        disabled={runningStatus[tabKey]}
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        {runningStatus[tabKey] ? "Running..." : "Run Test"}
+                      </Button>
+                      {score !== undefined && (
+                        <div className="mt-2 text-sm text-foreground">
+                          Score: {score} points
+                        </div>
+                      )}
+                      {result?.status === "success" && (
+                        <div className="flex items-center text-green-500 mt-2">
+                          <CheckCircle2 className="mr-2" />
+                          Passed
+                        </div>
+                      )}
+                      {result?.status === "error" && (
+                        <div className="flex items-center text-red-500 mt-2">
+                          <XCircle className="mr-2" />
+                          Failed
+                        </div>
+                      )}
+                      {result?.error && (
+                        <div className="mt-2 text-red-500 font-mono whitespace-pre-wrap">
+                          {result.error}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </TabsContent>
-            ))}
+                </TabsContent>
+              );
+            })}
           </Tabs>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import Cookies from "js-cookie";
 import {
   Card,
   CardContent,
@@ -173,23 +175,37 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setPasswordValues((prev) => ({ ...prev, [name]: value }));
   };
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordValues.newPassword !== passwordValues.confirmPassword) {
       alert("New passwords don't match!");
       return;
     }
-    setTimeout(() => {
+  
+    try {
+      if (!studentData) {
+        alert("Student data not loaded");
+        return;
+      }
+  
+      const res = await axios.post("http://localhost:8000/users/change-password/", {
+        student_id: studentData.id, // أهم تعديل هنا
+        currentPassword: passwordValues.currentPassword,
+        newPassword: passwordValues.newPassword,
+      });
+  
       alert("Password changed successfully!");
       setPasswordValues({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
-    }, 500);
+    } catch (error: any) {
+      alert(error.response?.data?.error || "Something went wrong");
+    }
   };
-
+  
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {

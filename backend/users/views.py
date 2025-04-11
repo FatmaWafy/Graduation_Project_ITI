@@ -8,9 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from .models import Instructor, Student, User, Track
+from .models import Branch, Course, Instructor, Student, User, Track
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .serializers import RegisterSerializer, InstructorSerializer, StudentSerializer
+from .serializers import BranchSerializer, CourseSerializer, RegisterSerializer, InstructorSerializer, StudentSerializer
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.conf import settings
@@ -23,8 +23,13 @@ import pandas as pd
 from openpyxl import load_workbook
 import csv
 from random import choice
-import string
+import  string
 import os
+from rest_framework import generics 
+
+
+
+
 token_generator = PasswordResetTokenGenerator()
 
 
@@ -247,6 +252,7 @@ def get_leetcode_solved_problems(leetcode_username):
         return None
 
 
+
 class StudentViewSet(viewsets.ModelViewSet):
     """
     CRUD operations for Students
@@ -262,9 +268,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
 
         try:
-            # البحث عن المستخدم باستخدام الـ user ID
             user = User.objects.get(id=user_id)
-            # البحث عن الطالب المرتبط بالـ user
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -275,8 +279,6 @@ class StudentViewSet(viewsets.ModelViewSet):
         # استخدام RegisterSerializer بدلاً من UserSerializer
         user_data = RegisterSerializer(user).data
         student_data = StudentSerializer(student).data
-
-        # دمج البيانات
         combined_data = {**user_data, **student_data}
 
         return Response(combined_data, status=status.HTTP_200_OK)
@@ -302,20 +304,20 @@ class StudentViewSet(viewsets.ModelViewSet):
             student = serializer.save()
             return Response({"message": "Student created successfully!", "student": serializer.data}, status=status.HTTP_201_CREATED)
 
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         """
         Update an existing student
         """
-        # Retrieve user_id from the URL
         user_id = kwargs.get('user_id')
+
 
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get the User and the related Student
             user = User.objects.get(id=user_id)
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
@@ -323,9 +325,9 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Student.DoesNotExist:
             return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Now that you have the student, update as needed
         data = request.data.copy()
 
+        # التحقق من وجود track وتحديثه إذا لزم الأمر
         if 'track' in data:
             track_id = data.get('track')
             try:
@@ -341,7 +343,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             student.user.email = user_data.get('email', student.user.email)
             student.user.save()
 
-        # Update remaining fields in the student
         for attr, value in data.items():
             setattr(student, attr, value)
 
@@ -354,7 +355,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # البحث عن الطالب باستخدام الـ user_id
             user = User.objects.get(id=user_id)
             student = Student.objects.get(user=user)
         except User.DoesNotExist:
@@ -386,6 +386,56 @@ class StudentViewSet(viewsets.ModelViewSet):
         })
 
 
+    @action(detail=False, methods=['get'], url_path='external-stats/by-student-id/(?P<student_id>[^/.]+)')
+    def external_stats_by_student_id(self, request, student_id=None):
+        if not student_id:
+            return Response({"error": "Student ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        github_repos = None
+        leetcode_solved = None
+
+        # -------- GitHub --------
+        if student.github_profile:
+            github_username = student.github_profile.strip("/").split("/")[-1]
+            github_url = f"https://api.github.com/users/{github_username}"
+            github_response = requests.get(github_url)
+            if github_response.status_code == 200:
+                github_data = github_response.json()
+                github_repos = github_data.get("public_repos")
+
+        # -------- LeetCode --------
+        if student.leetcode_profile:
+            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+
+        return Response({
+            "github_repos": github_repos,
+            "leetcode_solved": leetcode_solved
+        })
+
+    @action(detail=False, methods=['get'], url_path='by-id/(?P<student_id>[^/.]+)')
+    def get_by_student_id(self, request, student_id=None):
+        """
+        Retrieve a student using the student ID (not the user ID)
+        """
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(student.user).data
+        student_data = StudentSerializer(student).data
+
+        combined_data = {**user_data, **student_data}
+        return Response(combined_data, status=status.HTTP_200_OK)
+
+
+
 class TrackListAPIView(APIView):
     """
     API endpoint to get all available tracks.
@@ -395,6 +445,7 @@ class TrackListAPIView(APIView):
     def get(self, request):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
+
 
 
 class RegisterStudentsFromExcelAPIView(APIView):
@@ -550,3 +601,103 @@ class UploadUserProfileImage(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
+
+    def post(self, request):
+        student_id = request.data.get("student_id")
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+
+        try:
+            student = Student.objects.get(id=student_id)
+            user = student.user
+
+            if not user.check_password(current_password):
+                return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if len(new_password) < 8:
+                return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class InstructorViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for Instructors
+    """
+    queryset = Instructor.objects.all()
+    serializer_class = InstructorSerializer
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific instructor based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')  # جلب الـ user ID من الـ URL
+
+        try:
+            user = User.objects.get(id=user_id)
+            instructor = Instructor.objects.get(user=user)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(user).data  # استخدام RegisterSerializer بدلاً من UserSerializer
+        instructor_data = InstructorSerializer(instructor).data
+
+        combined_data = {**user_data, **instructor_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
+     
+class BranchListCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Check if it's a list of objects
+        if isinstance(request.data, list):
+            serializer = BranchSerializer(data=request.data, many=True)
+        else:
+            serializer = BranchSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BranchRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = [IsAuthenticated]
+
+# CRUD for Course
+class CourseListCreateView(generics.ListCreateAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+            data = request.data
+            if isinstance(data, list):  # Check if the request body is a list of courses
+                # Create multiple course instances at once
+                serializer = self.get_serializer(data=data, many=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return super().create(request, *args, **kwargs)  # Handle single course creation
+            
+class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated]

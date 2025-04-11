@@ -1,6 +1,6 @@
 from django.db import models
 from users.models import Track
-from users.models import Student
+from users.models import Student , Branch, Course
 from django.utils.translation import gettext_lazy as _
 import json
 import zlib
@@ -9,8 +9,9 @@ User = get_user_model()
 from django.utils.timezone import now
 
 # Exam Model
-class Exam(models.Model):
+class Exam(models.Model): ### plus course name
     title = models.CharField(max_length=255)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="exams", null=True, blank=True)  
     MCQQuestions = models.ManyToManyField("MCQQuestion", blank=True)
     CodingQuestions = models.ManyToManyField("CodingQuestion", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -20,10 +21,11 @@ class Exam(models.Model):
         return self.title
     
 # Temporary Exam Instance Model
-class TemporaryExamInstance(models.Model):
+class TemporaryExamInstance(models.Model): ### plus branch name
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
-    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)    
+    track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)  
     students = models.ManyToManyField(Student, blank=True) 
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="exam_instances")  
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
 
@@ -150,7 +152,12 @@ class CodingTestCase(models.Model):
     question = models.ForeignKey(CodingQuestion, related_name='test_cases', on_delete=models.CASCADE)
     input_data = models.TextField()
     expected_output = models.TextField()
-
+    function_name = models.CharField(
+        max_length=100,
+        blank=True,  # Allows empty for single-function questions
+        default="",  # Empty default
+        help_text="Name of the function to test (leave blank for single-function questions)"
+    )
     def __str__(self):
         return f"Test case for {self.question.title}"
 

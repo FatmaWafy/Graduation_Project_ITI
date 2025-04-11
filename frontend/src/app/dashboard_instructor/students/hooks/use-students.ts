@@ -133,11 +133,17 @@ export function useStudents() {
   }
 }
 
-export function useStudentById(id: number) {
-  return useQuery<Student, ApiError>({
-    queryKey: ["student", id],
-    queryFn: () => fetchStudentById(id),
-    enabled: !!id,
+export const useStudentById = (studentId: number) => {
+  return useQuery({
+    queryKey: ["student", studentId],
+    queryFn: async () => {
+      const res = await fetch(`http://127.0.0.1:8000/users/students/by-id/${studentId}/`)
+      if (!res.ok) {
+        throw new Error("Failed to fetch student")
+      }
+      return res.json()
+    },
+    enabled: !!studentId, // عشان مايضربش قبل ما الـ id يوصل
   })
 }
 

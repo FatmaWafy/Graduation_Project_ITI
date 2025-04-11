@@ -1,205 +1,154 @@
-"use client";
-import { useEffect, useState } from "react";
+"use client"
 
-export default function Home() {
-  const [tasks, setTasks] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState("");
-  const [error, setError] = useState(null);
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
-  // const [predefinedNotifications, setPredefinedNotifications] = useState([]);
+import Cookies from "js-cookie"
+import { BookOpen, Eye, EyeOff, LockKeyhole } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [activeTab, setActiveTab] = useState<"login" | "forgot-password">("login")
 
-  // useEffect(() => {
-  //   fetch("http://127.0.0.1:8000/notifications/predefined/")
-  //     .then((res) => res.json())
-  //     .then((data) => setPredefinedNotifications(data))
-  //     .catch((err) =>
-  //       console.error("Error fetching predefined notifications:", err)
-  //     );
-  // }, []);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
 
-  // useEffect(() => {
-  //   fetch("http://127.0.0.1:8000/api/tasks/")
-  //     .then((res) => res.json())
-  //     .then((data) => setTasks(data))
-  //     .catch((err) => setError("Failed to fetch tasks"));
-  // }, []);
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/notifications/students/")
-      .then((res) => res.json())
-      .then((data) => setStudents(data))
-      .catch((err) => console.error("Error fetching students:", err));
-  }, []);
-
-  const fetchNotifications = async () => {
     try {
-      const res = await fetch(
-        "http://127.0.0.1:8000/notifications/notes/"
-      );
-      const data = await res.json();
-      setNotifications(data);
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-    }
-  };
-
-  const addStudent = async () => {
-    if (!name || !email) return setError("Please enter name and email");
-
-    const res = await fetch("http://127.0.0.1:8000/notifications/students/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
-    });
-
-    if (res.ok) {
-      const newStudent = await res.json();
-      setStudents([...students, newStudent]);
-      setName("");
-      setEmail("");
-      setError(null);
-    }
-  };
-
-  const sendNotes = async () => {
-    if (!message || !selectedStudent)
-      return setError("Please select a student and enter a message");
-
-    const res = await fetch(
-      "http://127.0.0.1:8000/notifications/notes/",
-      {
+      const res = await fetch("http://127.0.0.1:8000/users/login/", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student: selectedStudent, message }),
-      }
-    );
+        body: JSON.stringify({ email, password }),
+      })
 
-    if (res.ok) {
-      setMessage("");
-      fetchNotifications(); // Refresh the list
-      setError(null);
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Login failed")
+
+      if (data.access) {
+        Cookies.set("token", data.access, { expires: 7, secure: true, sameSite: "Lax" })
+      } else {
+        throw new Error("Token is missing")
+      }
+
+      if (data.role) {
+        Cookies.set("role", data.role, { expires: 7, secure: true, sameSite: "Lax" })
+        const dashboardPath = data.role === "instructor" ? "/dashboard_instructor" : "/dashboard_student"
+        router.push(dashboardPath)
+      } else {
+        throw new Error("Role is missing")
+      }
+    } catch (err: any) {
+      setError(err.message)
     }
-  };
+  }
 
   return (
-    <div className='p-8 max-w-2xl mx-auto space-y-6'>
-      {error && <p className='text-red-500 text-center'>{error}</p>}
-
-      <div className='bg-gray-100 p-4 rounded-lg'>
-        <h2 className='text-lg font-semibold'>قائمة المهام</h2>
-        {tasks.length ? (
-          <ul className='mt-2 space-y-2'>
-            {tasks.map((task) => (
-              <li key={task.id} className='border p-2 rounded'>
-                {task.title} - {task.completed ? "✅ مكتمل" : "❌ غير مكتمل"}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className='text-gray-500'>⏳ جاري تحميل البيانات...</p>
-        )}
-      </div>
-
-      <div className='bg-gray-100 p-4 rounded-lg'>
-        <h2 className='text-lg font-semibold'>إضافة طالب جديد</h2>
-        <input
-          type='text'
-          placeholder='الاسم'
-          className='border p-2 w-full my-2 rounded'
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type='email'
-          placeholder='الإيميل'
-          className='border p-2 w-full my-2 rounded'
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button
-          onClick={addStudent}
-          className='bg-blue-500 text-white px-4 py-2 rounded w-full'
-        >
-          إضافة الطالب
-        </button>
-      </div>
-
-      {/* <div className='bg-gray-100 p-4 rounded-lg'>
-        <h2 className='text-lg font-semibold'>إرسال ملاحظة</h2>
-        <select
-          className='border p-2 w-full my-2 rounded'
-          value={selectedStudent}
-          onChange={(e) => setSelectedStudent(e.target.value)}
-        >
-          <option value=''>اختر طالبًا</option>
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className='border p-2 w-full my-2 rounded'
-          onChange={(e) => setMessage(e.target.value)}
-        >
-          <option value=''>اختر إشعارًا جاهزًا</option>
-          {predefinedNotifications.map((notif) => (
-            <option key={notif.id} value={notif.message}>
-              {notif.message}
-            </option>
-          ))}
-        </select>
-        <textarea
-          placeholder='الرسالة'
-          className='border p-2 w-full my-2 rounded'
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <button
-          onClick={sendNotes}
-          className='bg-green-500 text-white px-4 py-2 rounded w-full'
-        >
-          إرسال الإشعار
-        </button>
-      </div> */}
-
-      <div className='bg-gray-100 p-4 rounded-lg'>
-        <h2 className='text-lg font-semibold'>قائمة الطلاب</h2>
-        {students.length ? (
-          students.map((student) => (
-            <div key={student.id} className='border-b py-2'>
-              <p className='font-semibold'>{student.name}</p>
-              <p className='text-gray-600'>{student.email}</p>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Card className="mx-auto w-full max-w-md border-slate-200 shadow-lg">
+        <CardHeader className="space-y-1 text-center pb-6">
+          <div className="flex justify-center">
+            <div className="rounded-full bg-blue-50 p-3">
+              <BookOpen className="h-8 w-8 text-blue-600" />
             </div>
-          ))
-        ) : (
-          <p className='text-gray-500'>لا يوجد طلاب بعد.</p>
-        )}
-      </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-800 mt-4">Exam Portal</CardTitle>
+          <CardDescription className="text-slate-500">Sign in to access your examination dashboard</CardDescription>
+        </CardHeader>
 
-      <div className='bg-gray-100 p-4 rounded-lg'>
-        <h2 className='text-lg font-semibold'>الإشعارات</h2>
-        <button
-          onClick={fetchNotifications}
-          className='bg-yellow-500 text-white px-4 py-2 rounded w-full mb-2'
-        >
-          تحديث الإشعارات
-        </button>
-        {notifications.length ? (
-          notifications.map((notif) => (
-            <p key={notif.id} className='border-b py-2'>
-              {notif.message} (طالب: {notif.student})
-            </p>
-          ))
-        ) : (
-          <p className='text-gray-500'>لا يوجد إشعارات.</p>
-        )}
-      </div>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-5">
+            {error && (
+              <Alert variant="destructive" className="bg-red-50 text-red-700 border-red-200">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-700">
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="student@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-slate-200 focus-visible:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-slate-700">
+                  Password
+                </Label>
+                <Link href="/forget_pass" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="border-slate-200 focus-visible:ring-blue-500 pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-slate-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                className="text-blue-600 border-slate-300 data-[state=checked]:bg-blue-600"
+              />
+              <Label htmlFor="remember" className="text-sm text-slate-600">
+                Remember me for 30 days
+              </Label>
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-4 pt-2 pb-6">
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium">
+              <LockKeyhole className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+
+            <div className="text-center text-sm text-slate-600">
+              Don't have an account?{" "}
+              <Link href="/signup" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                Register
+              </Link>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
-  );
+  )
 }

@@ -74,16 +74,40 @@ class Track(models.Model):
 
     def __str__(self):
         return self.name
+class Branch(models.Model):
+    name = models.CharField(max_length=100, unique=True)
 
+    class Meta:
+        verbose_name = "Branch"
+        verbose_name_plural = "Branches"
+
+    def __str__(self):
+        return self.name
+
+
+class Course(models.Model):
+    name = models.CharField(max_length=255)
+    track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="courses")
+    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True, related_name="courses")
+
+    class Meta:
+        verbose_name = "Course"
+        verbose_name_plural = "Courses"
+
+    def __str__(self):
+        return f"{self.name} ({self.track.name})"
+    
 # 🔹 Student Model (مع إضافة التراك)
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     track = models.ForeignKey(Track, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")  
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="students") 
 
     university = models.CharField(max_length=100, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     college = models.CharField(max_length=100, blank=True, null=True)
-    leetcode_profile = models.URLField(blank=True, null=True)
+    leetcode_profile = models.CharField(max_length=255, blank=True, null=True)
+
     github_profile = models.URLField(blank=True, null=True)
 
     class Meta:
@@ -92,3 +116,5 @@ class Student(models.Model):
 
     def __str__(self):
         return f"Student: {self.user.username} - Track: {self.track.name if self.track else 'No Track'}"
+
+

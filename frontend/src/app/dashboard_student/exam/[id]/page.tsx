@@ -6,8 +6,8 @@ export default function ExamPage() {
     <main className=" bg-gray-50">
       <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
         <ExamDashboard />
+        
       </Suspense>
     </main>
   )
 }
-

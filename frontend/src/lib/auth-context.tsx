@@ -1,7 +1,10 @@
+
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import Cookies from "js-cookie";
+import Cookies from "js-cookie"
+import { jwtDecode } from "jwt-decode"
+import axios from "axios"
 
 type User = {
   id: string
@@ -10,7 +13,6 @@ type User = {
   avatar: string
   role: "student"
 }
-
 type AuthContextType = {
   user: User | null
   loading: boolean
@@ -28,49 +30,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in via cookies
-    const token = Cookies.get("token");
-    const role = Cookies.get("role");
+    const token = Cookies.get("token")
 
-    if (token && role) {
-      setUser({
-        id: "1",
-        name: "User",
-        email: "user@example.com",
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: role as "student",
-      });
-    }
-    setLoading(false);
-  }, []);
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token)
 
-  const login = async (email: string, password: string, rememberMe = false) => {
-    setLoading(true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data
-      const userData: User = {
-        id: "1",
-        name: "Alex Johnson",
-        email: email,
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: "student",
+        setUser({
+          id: decoded.user_id?.toString(),
+          name: decoded.name || "User",
+          email: decoded.email,
+          avatar: "/placeholder.svg?height=40&width=40",
+          role: decoded.role,
+        })
+      } catch (error) {
+        console.error("Failed to decode token:", error)
+        setUser(null)
       }
-
-      setUser(userData)
-
-      // Store token and role in cookies
-      Cookies.set("token", "mockToken", { expires: 7, secure: true, sameSite: "Lax" });
-      Cookies.set("role", userData.role, { expires: 7, secure: true, sameSite: "Lax" });
-    } catch (error) {
-      console.error("Login failed", error)
-      throw error
-    } finally {
-      setLoading(false)
     }
+
+    setLoading(false)
+  }, [])
+
+
+interface JWTTokenPayload {
+  user_id: number
+  exp: number
+  iat: number
+  jti: string
+}
+
+const login = async (email: string, password: string, rememberMe = false) => {
+  setLoading(true)
+  try {
+    // 1. Send login request to backend
+    const response = await axios.post("http://localhost:8000/api/token/", {
+      email,
+      password,
+    })
+
+    const token = response.data.access
+    console.log("Token received:", token)
+
+    // 2. Decode the token to get user_id
+    const decoded: JWTTokenPayload = jwtDecode(token)
+    const userId = decoded.user_id
+    console.log("Decoded user_id:", userId)
+
+    // 3. Fetch user data using user_id
+    const userRes = await axios.get(`http://localhost:8000/users/students/${userId}/`)
+    console.log("User data received:", userRes.data)
+
+    const userData: User = {
+      id: userRes.data.id,
+      name: userRes.data.name,
+      email: userRes.data.email,
+      avatar: userRes.data.avatar || "/placeholder.svg?height=40&width=40",
+      role: userRes.data.role || "student",
+    }
+
+    setUser(userData)
+
+    // 4. Store token and role in cookies
+    Cookies.set("token", token, {
+      expires: rememberMe ? 7 : undefined,
+      secure: true,
+      sameSite: "Lax",
+    })
+    Cookies.set("role", userData.role, {
+      expires: rememberMe ? 7 : undefined,
+      secure: true,
+      sameSite: "Lax",
+    })
+
+  } catch (error: any) {
+    console.error("Login failed:", error)
+    throw new Error(error.response?.data?.detail || "Login failed")
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const logout = () => {
     setUser(null);
