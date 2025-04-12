@@ -55,6 +55,8 @@ class User(AbstractUser):
 class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor", null=True, blank=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
+    branch = models.ForeignKey("Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="instructors")  # 🔹 الربط بالفرع
+
 
     class Meta:
         verbose_name = "Instructor"
