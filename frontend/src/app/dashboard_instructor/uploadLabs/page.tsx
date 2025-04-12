@@ -909,12 +909,12 @@ export default function LabsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="file">Upload PDF File</Label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    className={`border-2  border-dashed rounded-lg p-6 transition-colors ${
                       isDragging
-                        ? "border-primary bg-primary/5"
+                        ? "border-[#007acc] bg-[#c7e5ff]"
                         : file
-                          ? "border-green-500 bg-green-50"
-                          : "border-border hover:border-primary/50"
+                          ? "border-[#007acc]"
+                          : "  hover:border-[#007acc]"
                     }`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -923,8 +923,8 @@ export default function LabsPage() {
                     <div className="flex flex-col items-center justify-center space-y-3 text-center">
                       {file ? (
                         <>
-                          <div className="p-3 rounded-full bg-green-100">
-                            <File className="h-6 w-6 text-green-600" />
+                          <div className="p-3 rounded-full bg-green-100 bg-[#c7e5ff]">
+                            <File className="h-6 w-6 text-[#007acc]" />
                           </div>
                           <div>
                             <p className="font-medium">{file.name}</p>
@@ -936,8 +936,8 @@ export default function LabsPage() {
                         </>
                       ) : (
                         <>
-                          <div className="p-3 rounded-full bg-primary/10">
-                            <Upload className="h-6 w-6 text-primary" />
+                          <div className="p-3 rounded-full bg-[#c7e5ff]">
+                            <Upload className="h-6 w-6 text-[#007acc]" />
                           </div>
                           <div>
                             <p className="font-medium">Click to upload or drag and drop</p>
@@ -966,7 +966,7 @@ export default function LabsPage() {
                     </div>
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${uploadSuccess ? "bg-green-500" : "bg-primary"}`}
+                        className={`h-full ${uploadSuccess ? "bg-green-500" : "bg-[#007acc]"}`}
                         style={{ width: `${uploadProgress}%` }}
                       ></div>
                     </div>
@@ -992,15 +992,15 @@ export default function LabsPage() {
                 )}
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" disabled={!file || !track || isUploading}>
+                <Button  type="submit" className="w-full bg-[#007acc] hover:bg-[#007abc]" disabled={!file || !track || isUploading}>
                   {isUploading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin bg-[#007acc]" />
                       Uploading...
                     </>
                   ) : (
                     <>
-                      <FileUp className="mr-2 h-4 w-4" />
+                      <FileUp className="mr-2 h-4 w-4 bg-[#007acc]" />
                       Upload and Send to Students
                     </>
                   )}
@@ -1024,13 +1024,13 @@ export default function LabsPage() {
               ) : labs.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No labs have been uploaded yet</p>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     className="mt-4"
                     onClick={() => document.querySelector('[data-value="upload"]')?.click()}
                   >
                     Upload Your First Lab
-                  </Button>
+                  </Button> */}
                 </div>
               ) : (
                 <div className="rounded-md border">

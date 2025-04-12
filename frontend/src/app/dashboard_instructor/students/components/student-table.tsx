@@ -86,36 +86,36 @@ export function StudentTable({
     },
 
     // will continue after edit backend (enrollment_date)
-    {
-      id: "enrollment_date",
-      header: ({ column }) => (
-        <Button
-          variant='ghost'
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Enrollment Date
-          {{
-            asc: <ChevronUp className='ml-2 h-4 w-4' />,
-            desc: <ChevronDown className='ml-2 h-4 w-4' />,
-          }[column.getIsSorted() as string] ?? (
-            <ChevronsUpDown className='ml-2 h-4 w-4' />
-          )}
-        </Button>
-      ),
-      cell: ({ row }) => {
-        const rawDate = row.original.enrollment_date;
-        if (!rawDate) {
-          return <div className='text-red-500'>Invalid Date</div>;
-        }
+    // {
+    //   id: "enrollment_date",
+    //   header: ({ column }) => (
+    //     <Button
+    //       variant='ghost'
+    //       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    //     >
+    //       Enrollment Date
+    //       {{
+    //         asc: <ChevronUp className='ml-2 h-4 w-4' />,
+    //         desc: <ChevronDown className='ml-2 h-4 w-4' />,
+    //       }[column.getIsSorted() as string] ?? (
+    //         <ChevronsUpDown className='ml-2 h-4 w-4' />
+    //       )}
+    //     </Button>
+    //   ),
+    //   cell: ({ row }) => {
+    //     const rawDate = row.original.enrollment_date;
+    //     if (!rawDate) {
+    //       return <div className='text-red-500'>Invalid Date</div>;
+    //     }
 
-        const date = dayjs(rawDate);
-        return date.isValid() ? (
-          <div>{date.format("DD/MM/YYYY")}</div>
-        ) : (
-          <div className='text-red-500'>❌ Invalid Date</div>
-        );
-      },
-    },
+    //     const date = dayjs(rawDate);
+    //     return date.isValid() ? (
+    //       <div>{date.format("DD/MM/YYYY")}</div>
+    //     ) : (
+    //       <div className='text-red-500'>❌ Invalid Date</div>
+    //     );
+    //   },
+    // },
 
     {
       id: "actions",

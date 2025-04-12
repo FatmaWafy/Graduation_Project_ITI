@@ -51,8 +51,9 @@ class InstructorSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
-    track = serializers.PrimaryKeyRelatedField(
-        queryset=Track.objects.all())  # هنا هنخليها تستقبل الـ ID مباشرة
+    track = serializers.SlugRelatedField(queryset=Track.objects.all(), slug_field='name')
+    branch = serializers.SlugRelatedField(queryset=Branch.objects.all(), slug_field='name')
+
 
     class Meta:
         model = Student
@@ -60,13 +61,17 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
-        track = validated_data.pop("track")
+        track_name = validated_data.pop("track")
+        branch_name = validated_data.pop("branch")
+
+        # البحث عن الـ Track و Branch بناءً على الاسم
+        track = Track.objects.get(name=track_name)
+        branch = Branch.objects.get(name=branch_name)
 
         user_data["role"] = "student"
         user = User.objects.create_user(**user_data)
 
-        student = Student.objects.create(
-            user=user, track=track, **validated_data)
+        student = Student.objects.create(user=user, track=track, branch=branch, **validated_data)
 
         return student
 

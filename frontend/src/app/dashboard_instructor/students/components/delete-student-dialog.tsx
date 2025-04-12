@@ -59,8 +59,8 @@ export function DeleteStudentDialog({ isOpen, onClose, student }: DeleteStudentD
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button className="bg-[#007acc] hover:bg-[#007abc]" variant="destructive" onClick={handleDelete} disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin " />}
             Delete
           </Button>
         </AlertDialogFooter>

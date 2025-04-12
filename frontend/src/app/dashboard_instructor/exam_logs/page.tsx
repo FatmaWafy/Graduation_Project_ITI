@@ -63,7 +63,7 @@ export default function ExamLogsIndexPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#007acc]"></div>
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function ExamLogsIndexPage() {
             </CardHeader>
             <CardContent className="flex justify-center py-4">
               <Link href={`/dashboard_instructor/exam_logs/${exam.id}`} passHref>
-                <Button className="bg-[#004E8C] hover:bg-[#0059A8] text-white px-6 py-2 rounded-md">
+                <Button className="bg-[#007acc] hover:bg-[#007abc] text-white px-6 py-2 rounded-md">
                   View Logs
                 </Button>
               </Link>

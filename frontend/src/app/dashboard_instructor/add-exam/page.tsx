@@ -861,8 +861,9 @@ export default function AddExamPage() {
                               <TableCell>
                                 {question.language || "N/A"}
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right ">
                                 <Button
+                                className="bg-[#007acc] hover:bg-blue-700  rounded-md text-white font-semibold"
                                   onClick={() => addQuestionToExam(question)}
                                   size="sm"
                                   disabled={
@@ -1193,17 +1194,18 @@ export default function AddExamPage() {
                                 {["A", "B", "C", "D"].map((option) => (
                                   <div
                                     key={option}
-                                    className="flex items-center space-x-2 space-y-2"
+                                    className="flex items-center space-x-2 space-y-2 "
                                   >
                                     <div className="grid gap-1.5">
-                                      <div className="flex items-center space-x-2">
+                                      <div className="flex items-center space-x-2 ">
                                         <RadioGroupItem
+                                        className="text-[#007acc]  border-[#007acc]"
                                           value={option}
                                           id={`option-${index}-${option}`}
                                         />
                                         <Label
                                           htmlFor={`option-${index}-${option}`}
-                                          className="font-normal"
+                                          className="font-normal "
                                         >
                                           Option {option}
                                         </Label>
@@ -1360,11 +1362,11 @@ export default function AddExamPage() {
           </TabsContent>
         </Tabs>
 
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className="  border-0">
           <CardContent className="pt-6">
             <Button
               onClick={handleSubmit}
-              className="w-full h-12 text-lg"
+              className="w-full h-12 text-lg bg-[#007acc] hover:bg-blue-700  rounded-md text-white font-semibold"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -1374,7 +1376,7 @@ export default function AddExamPage() {
                 </>
               ) : (
                 <>
-                  <Save className="mr-2 h-5 w-5" />
+                  <Save className="mr-2 h-5 w-5 " />
                   Create Exam
                 </>
               )}

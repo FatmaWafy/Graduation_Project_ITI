@@ -347,11 +347,12 @@ export default function SetExamPage() {
   if (loading.exams || loading.tracks || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#007acc]"></div>
       </div>
     );
   }
 
+ 
   const displayedExams = showAllExams
     ? filteredExams
     : filteredExams.slice(0, 6);
@@ -446,7 +447,7 @@ export default function SetExamPage() {
               <Button
                 variant="ghost"
                 onClick={() => setShowAllExams(!showAllExams)}
-                className="text-primary"
+                className="text-[#007acc]"
               >
                 {showAllExams
                   ? "Show Less"

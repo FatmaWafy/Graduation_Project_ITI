@@ -52,7 +52,7 @@ const studentSchema = z.object({
     .string()
     .min(6, { message: "Password must be at least 6 characters" })
     .optional()
-    .or(z.literal("")),  
+    .or(z.literal("")),
   track_name: z.string().min(1, { message: "Track name is required" }),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -182,7 +182,7 @@ export function StudentModal({
       if (formattedData.track_name !== student.track_name) {
         userUpdates.track_name = formattedData.track_name || "";
       }
-     
+
       // if (formattedData.university !== student.university) {
       //   userUpdates.university = formattedData.university;
       // }
@@ -202,17 +202,15 @@ export function StudentModal({
       const updatePayload: Record<string, any> = {
         id: student.id,
         user: {
-          username: formattedData.username,  // إذا تم تغيير اسم المستخدم
-          email: formattedData.email,        // إذا تم تغيير البريد الإلكتروني
-          phone: formattedData.phone || "",  // إذا تم تغيير رقم الهاتف
-          address: formattedData.address || "",  // إذا تم تغيير العنوان
+          username: formattedData.username, // إذا تم تغيير اسم المستخدم
+          email: formattedData.email, // إذا تم تغيير البريد الإلكتروني
+          phone: formattedData.phone || "", // إذا تم تغيير رقم الهاتف
+          address: formattedData.address || "", // إذا تم تغيير العنوان
           status: formattedData.status || "active", // إذا تم تغيير الحالة
-          notes: formattedData.notes || "",  // إذا تم تغيير الملاحظات
-          enrollment_date: formattedData.enrollment_date || "",  // إذا تم تغيير تاريخ التسجيل
+          notes: formattedData.notes || "", // إذا تم تغيير الملاحظات
+          enrollment_date: formattedData.enrollment_date || "", // إذا تم تغيير تاريخ التسجيل
         },
         track_name: formattedData.track_name, // إذا تم تغيير اسم المسار
-      
-        
       };
 
       // Only include track_name if it changed
@@ -331,19 +329,48 @@ export function StudentModal({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name='track_name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Track Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Computer Science' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className='grid grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='track_name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Track Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Computer Science' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value || "active"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select student status' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='active'>Active</SelectItem>
+                        <SelectItem value='inactive'>Inactive</SelectItem>
+                        <SelectItem value='suspended'>Suspended</SelectItem>
+                        <SelectItem value='graduated'>Graduated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* <FormField
               control={form.control}
@@ -375,7 +402,8 @@ export function StudentModal({
                 )
               )}
             /> */}
-            <FormField
+            
+            {/* <FormField
               control={form.control}
               name='password'
               render={({ field }) =>
@@ -418,7 +446,7 @@ export function StudentModal({
                   <></> // ده هيرجع React Fragment فارغ لو `isEditMode` كان true
                 )
               }
-            />
+            /> */}
 
             <div className='grid grid-cols-2 gap-4'>
               <FormField
@@ -442,14 +470,14 @@ export function StudentModal({
                 control={form.control}
                 name='enrollment_date'
                 render={({ field }) => (
-                  <FormItem className='flex flex-col'>
-                    <FormLabel>Enrollment Date</FormLabel>
+                  <FormItem  >
+                    <FormLabel   >Enrollment Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <FormControl>
+                        <FormControl >
                           <Button
                             variant={"outline"}
-                            className={`w-full pl-3 text-left font-normal ${
+                            className={` w-full pl-3 text-left font-normal ${
                               !field.value ? "text-muted-foreground" : ""
                             }`}
                           >
@@ -485,6 +513,7 @@ export function StudentModal({
                 )}
               />
             </div>
+
             <FormField
               control={form.control}
               name='address'
@@ -502,33 +531,7 @@ export function StudentModal({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name='status'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value || "active"}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select student status' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value='active'>Active</SelectItem>
-                      <SelectItem value='inactive'>Inactive</SelectItem>
-                      <SelectItem value='suspended'>Suspended</SelectItem>
-                      <SelectItem value='graduated'>Graduated</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name='notes'
@@ -551,7 +554,7 @@ export function StudentModal({
               <Button type='button' variant='outline' onClick={onClose}>
                 Cancel
               </Button>
-              <Button type='submit' disabled={isPending}>
+              <Button type='submit' disabled={isPending} className="bg-[#007acc] hover:bg-[#007abc]">
                 {isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
                 {student ? "Update Student" : "Add Student"}
               </Button>
