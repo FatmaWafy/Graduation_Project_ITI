@@ -114,21 +114,49 @@ class StudentExamAnswer(models.Model):
         return total_score
 
     def submit_exam(self, answers_dict):
-        print(f"Received answers_dict: {answers_dict}")  # Debugging line
+        print("Received answers_dict:", answers_dict)
 
-        if now() > self.exam_instance.end_datetime:
-            return {"error": "Time is up! You can't submit this exam."}
+        try:
+            self.set_answers(answers_dict)
 
-        self.set_answers(answers_dict)
+            total_score = 0
 
-        mcq_score = self.calculate_score()
-        code_results = answers_dict.get("code_results", [])
-        code_score = sum([entry.get("score", 0) for entry in code_results])
+            # Score MCQs
+            mcq_answers = answers_dict.get("mcq_answers", {})
+            for question_id_str, selected_option in mcq_answers.items():
+                try:
+                    question_id = int(question_id_str)
+                    question = MCQQuestion.objects.get(id=question_id)
+                    if question.correct_option == selected_option:
+                        total_score += question.points
+                except MCQQuestion.DoesNotExist:
+                    continue
 
-        self.score = mcq_score + code_score
-        self.save()
+            # Score coding questions
+            code_results = answers_dict.get("code_results", [])
+            for result in code_results:
+                question_id = result.get("question_id")
+                test_results = result.get("test_results", [])
+                
+                # Check if all test cases passed
+                all_passed = all(test.get("isSuccess", False) for test in test_results)
 
-        return {"message": "Exam submitted successfully.", "score": self.score}
+                if all_passed:
+                    try:
+                        question = CodingQuestion.objects.get(id=question_id)
+                        total_score += question.points
+                    except CodingQuestion.DoesNotExist:
+                        continue
+
+            self.score = total_score
+            self.save()
+
+            return {"message": "Exam submitted successfully."}
+
+        except Exception as e:
+            return {"error": str(e)}
+
+
 
 
 class CodingQuestion(models.Model):

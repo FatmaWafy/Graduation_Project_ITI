@@ -1,31 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Branch, Course, Instructor, Student, Track
+from .models import Branch, Course, Instructor, Student , Track
 from PIL import Image
 from django.core.exceptions import ValidationError
-
 User = get_user_model()
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "role", "profile_image"]
+        fields = ["username", "email", "password", "role"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = User.objects.create(**validated_data)
-        # 🔹 استخدام set_password() لضمان تشفير كلمة المرور
-        user.set_password(password)
+        user.set_password(password)  # 🔹 استخدام set_password() لضمان تشفير كلمة المرور
         user.save()
         return user
 
-
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
-    # 🔹 التأكد من أن track_name مطلوب
-    track_name = serializers.CharField(write_only=True, required=True)
+    track_name = serializers.CharField(write_only=True, required=True)  # 🔹 التأكد من أن track_name مطلوب
 
     class Meta:
         model = Instructor
@@ -48,12 +43,9 @@ class InstructorSerializer(serializers.ModelSerializer):
 
         return instructor
 
-
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
-    track = serializers.SlugRelatedField(queryset=Track.objects.all(), slug_field='name')
-    branch = serializers.SlugRelatedField(queryset=Branch.objects.all(), slug_field='name')
-
+    track = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all())  # هنا هنخليها تستقبل الـ ID مباشرة
 
     class Meta:
         model = Student
@@ -61,20 +53,24 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
-        track_name = validated_data.pop("track")
-        branch_name = validated_data.pop("branch")
-
-        # البحث عن الـ Track و Branch بناءً على الاسم
-        track = Track.objects.get(name=track_name)
-        branch = Branch.objects.get(name=branch_name)
+        track = validated_data.pop("track")
 
         user_data["role"] = "student"
         user = User.objects.create_user(**user_data)
 
-        student = Student.objects.create(user=user, track=track, branch=branch, **validated_data)
+        student = Student.objects.create(user=user, track=track, **validated_data)
 
         return student
 
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = "__all__"
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = "__all__"
 
 class UserProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,12 +100,3 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
                     "Only JPEG, PNG, and GIF images are supported.")
 
         return value
-class BranchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Branch
-        fields = "__all__"
-
-class CourseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Course
-        fields = "__all__"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Editor, { loader } from "@monaco-editor/react";
+import Editor from "@monaco-editor/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Play, CheckCircle2, XCircle } from "lucide-react";
@@ -25,6 +25,13 @@ const API = axios.create({
   baseURL: "https://emkc.org/api/v2/piston",
 });
 
+interface TestCaseResult {
+  input: string;
+  output: string;
+  expectedOutput: string;
+  isSuccess: boolean;
+}
+
 interface CodingQuestionProps {
   question: {
     id: string;
@@ -36,15 +43,18 @@ interface CodingQuestionProps {
       id: number;
       input_data: string;
       expected_output: string;
+      function_name: string;
     }>;
   };
   onAnswerChange: (code: string) => void;
+  onTestResultsChange?: (questionId: string, results: TestCaseResult[]) => void;
   answer: string;
 }
 
 export default function CodingQuestion({
   question,
   onAnswerChange,
+  onTestResultsChange,
   answer,
 }: CodingQuestionProps) {
   const [activeTab, setActiveTab] = useState<string>("case1");
@@ -59,7 +69,6 @@ export default function CodingQuestion({
   const [isError, setIsError] = useState(false);
   const { theme } = useTheme();
   const [editorTheme, setEditorTheme] = useState("vs-dark");
-  const [testScores, setTestScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (question.testCases && question.testCases.length > 0) {
@@ -91,36 +100,6 @@ export default function CodingQuestion({
     }
   };
 
-  const submitToRunCodeAPI = async (data: {
-    questionId: string;
-    code: string;
-    language: string;
-    output?: string;
-    error?: string;
-    testCaseId?: number;
-    input?: string;
-    expectedOutput?: string;
-    isSuccess?: boolean;
-  }) => {
-    try {
-      const response = await axios.post("/api/run-code", {
-        questionId: data.questionId,
-        code: data.code,
-        language: data.language,
-        output: data.output,
-        error: data.error,
-        testCaseId: data.testCaseId,
-        input: data.input,
-        expectedOutput: data.expectedOutput,
-        isSuccess: data.isSuccess,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error submitting to run-code API:", error);
-      throw error;
-    }
-  };
-
   const runCode = async () => {
     if (!answer) return;
     try {
@@ -131,27 +110,10 @@ export default function CodingQuestion({
 
       setOutput(output.split("\n"));
       setIsError(error ? true : false);
-
-      // Submit to our API
-      await submitToRunCodeAPI({
-        questionId: question.id,
-        code: answer,
-        language: question.language,
-        output: output,
-        error: error,
-      });
     } catch (error) {
       setIsError(true);
       setOutput(["An error occurred while executing the code"]);
       console.error("Error executing code:", error);
-
-      // Submit error to our API
-      await submitToRunCodeAPI({
-        questionId: question.id,
-        code: answer,
-        language: question.language,
-        error: "An error occurred while executing the code",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +129,8 @@ export default function CodingQuestion({
       const codeWithInput = getCodeWithInputHandling(
         answer,
         question.language.toLowerCase(),
-        testCase.input_data
+        testCase.input_data,
+        testCase.function_name
       );
 
       const result = await executeCode(
@@ -175,24 +138,14 @@ export default function CodingQuestion({
         codeWithInput
       );
 
-      // Clean the output by:
-      // 1. Trimming whitespace
-      // 2. Removing any input echo if present
-      // 3. Normalizing the format
       const rawOutput = result.run.output;
       let output = rawOutput.trim();
-
-      // If output contains both input and result (common in some executions)
-      // Split by newlines and take the last line
       const outputLines = output.split("\n");
       if (outputLines.length > 1) {
         output = outputLines[outputLines.length - 1].trim();
       }
 
-      // Clean expected output
       const expectedOutput = testCase.expected_output.trim();
-
-      // Compare the cleaned outputs
       const isSuccess = output === expectedOutput;
 
       const newTestResult = {
@@ -210,22 +163,32 @@ export default function CodingQuestion({
         ...newTestResult,
       }));
 
-      // Submit test case results to our API
-      await submitToRunCodeAPI({
-        questionId: question.id,
-        code: answer,
-        language: question.language,
-        testCaseId: testCase.id,
+      const testResult: TestCaseResult = {
         input: testCase.input_data,
-        expectedOutput: testCase.expected_output,
         output: output,
-        error: isSuccess
-          ? undefined
-          : `Expected: ${expectedOutput}\nGot: ${output}`,
+        expectedOutput: testCase.expected_output,
         isSuccess,
-      });
+      };
 
-      return newTestResult;
+      // Update all results in parent component
+      if (onTestResultsChange) {
+        const allResults = question.testCases.map((_, idx) => {
+          if (idx === testCaseIndex) {
+            return testResult;
+          }
+          const tabKey = `case${idx + 1}`;
+          const res = testResults[tabKey] || { status: "pending" };
+          return {
+            input: question.testCases[idx].input_data,
+            output: res.output || "",
+            expectedOutput: question.testCases[idx].expected_output,
+            isSuccess: res.status === "success",
+          };
+        });
+        onTestResultsChange(question.id, allResults);
+      }
+
+      return testResult;
     } catch (error) {
       console.error("Error running test case:", error);
       const newTestResult = {
@@ -239,17 +202,6 @@ export default function CodingQuestion({
         ...newTestResult,
       }));
 
-      await submitToRunCodeAPI({
-        questionId: question.id,
-        code: answer,
-        language: question.language,
-        testCaseId: question.testCases[testCaseIndex].id,
-        input: question.testCases[testCaseIndex].input_data,
-        expectedOutput: question.testCases[testCaseIndex].expected_output,
-        error: "An error occurred while running the test case.",
-        isSuccess: false,
-      });
-
       throw error;
     } finally {
       setRunningStatus((prev) => ({ ...prev, [tabKey]: false }));
@@ -261,40 +213,48 @@ export default function CodingQuestion({
 
     try {
       setIsLoading(true);
-      const results = await Promise.all(
-        question.testCases.map((_, index) => runTestCase(index))
-      );
+      const results: TestCaseResult[] = [];
+
+      for (let index = 0; index < question.testCases.length; index++) {
+        const result = await runTestCase(index);
+        if (result) {
+          results.push(result);
+        }
+      }
+
+      // Update test results in parent component
+      if (onTestResultsChange) {
+        onTestResultsChange(question.id, results);
+      }
+
       return results;
     } catch (error) {
       console.error("Error running all test cases:", error);
+      return [];
     } finally {
       setIsLoading(false);
     }
   };
-
-  // ... rest of the code remains the same ...
   const getCodeWithInputHandling = (
     code: string,
     language: string,
     input: string,
-    functionName: string = "flatten_list" // Add this parameter to know which function to test
+    functionName: string
   ) => {
-    switch (
-      language.toLowerCase() // Use lowercase for case-insensitive comparison
-    ) {
+    switch (language.toLowerCase()) {
       case "python":
         return `${code}\n\n# Test the function\nprint(${functionName}(${input}))`;
       case "javascript":
         return `${code}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
       case "java":
-        // For Java, this would need more complex handling depending on the class structure
-        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(Arrays.toString(${functionName}(${input})));\n    }\n}`;
+        return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(${functionName}(${input}));\n    }\n}`;
       case "cpp":
-        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    for (auto item : result) {\n        std::cout << item << " ";\n    }\n    return 0;\n}`;
+        return `${code}\n\nint main() {\n    auto result = ${functionName}(${input});\n    std::cout << result;\n    return 0;\n}`;
       default:
         return code;
     }
   };
+
   const getLanguage = () => {
     const lang = question.language?.toLowerCase() || "python";
     const languageMap: Record<string, string> = {
@@ -412,7 +372,6 @@ export default function CodingQuestion({
               {question.testCases.map((_, index) => {
                 const tabKey = `case${index + 1}`;
                 const result = testResults[tabKey];
-                const score = testScores[tabKey];
 
                 return (
                   <TabsTrigger
@@ -424,9 +383,6 @@ export default function CodingQuestion({
                     `}
                   >
                     Case {index + 1}
-                    {score !== undefined && (
-                      <span className="ml-1 text-xs">({score} pts)</span>
-                    )}
                   </TabsTrigger>
                 );
               })}
@@ -460,7 +416,6 @@ export default function CodingQuestion({
             {question.testCases.map((testCase, index) => {
               const tabKey = `case${index + 1}`;
               const result = testResults[tabKey];
-              const score = testScores[tabKey];
 
               return (
                 <TabsContent key={tabKey} value={tabKey}>
@@ -496,11 +451,6 @@ export default function CodingQuestion({
                         <Play className="h-4 w-4 mr-1" />
                         {runningStatus[tabKey] ? "Running..." : "Run Test"}
                       </Button>
-                      {score !== undefined && (
-                        <div className="mt-2 text-sm text-foreground">
-                          Score: {score} points
-                        </div>
-                      )}
                       {result?.status === "success" && (
                         <div className="flex items-center text-green-500 mt-2">
                           <CheckCircle2 className="mr-2" />

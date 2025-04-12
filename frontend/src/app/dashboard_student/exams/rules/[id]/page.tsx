@@ -34,7 +34,7 @@ useEffect(() => {
     }
 
     const examId = Array.isArray(id) ? id[0] : id
-    router.push(`/dashboard_student/exam/${examId}`)
+    router.push(`/dashboard_student/exams/exam/${examId}`)
   }
 
   if (loading) {

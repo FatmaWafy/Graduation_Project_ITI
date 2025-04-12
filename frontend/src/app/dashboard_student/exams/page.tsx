@@ -254,7 +254,7 @@ export default function ExamsPage() {
                     </Button>
                   ) : (
                     <Link
-                      href={`/dashboard_student/rules/${exam.id}`}
+                      href={`/dashboard_student/exams/rules/${exam.id}`}
                       className="w-full"
                     >
                       <Button variant="default" className="w-full">

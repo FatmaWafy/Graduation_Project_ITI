@@ -1,6 +1,4 @@
-
-
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -19,9 +17,11 @@ import {
   Clock,
   Github,
   GraduationCap,
+  FileText,
 } from "lucide-react";
 
-import CountUp from "react-countup";import { Code } from "lucide-react";
+import CountUp from "react-countup";
+import { Code } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -29,6 +29,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getClientSideToken } from "@/lib/cookies";
 import { jwtDecode } from "jwt-decode";
@@ -36,9 +38,11 @@ import { jwtDecode } from "jwt-decode";
 import {
   type Assignment,
   type Course,
+  type Exam,
   getAssignments,
   getCourses,
   getGradeDistribution,
+  getExams,
 } from "@/lib/api";
 
 interface ExamScore {
@@ -52,6 +56,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [upcomingExams, setUpcomingExams] = useState<Exam[]>([]);
   const [gradeDistribution, setGradeDistribution] = useState<
     { grade: string; count: number }[]
   >([]);
@@ -107,9 +112,44 @@ export default function DashboardPage() {
     }
   };
 
+  // Function to fetch upcoming exams
+  const fetchUpcomingExams = async () => {
+    try {
+      const token = getClientSideToken();
+      if (!token) throw new Error("Token not found");
+
+      const decoded: any = jwtDecode(token);
+      const userId = decoded.user_id;
+
+      if (!userId) throw new Error("User ID not found in token");
+
+      const examsData = await getExams(token, userId);
+      if (!examsData) throw new Error("No exams data received");
+
+      // Filter for upcoming exams only
+      const upcoming = examsData
+        .filter((exam) => isExamUpcoming(exam))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 5); // Show only 5 most imminent exams
+
+      setUpcomingExams(upcoming);
+    } catch (error) {
+      console.error("Error fetching upcoming exams:", error);
+      setUpcomingExams([]);
+    }
+  };
+
+  // Function to check if an exam is upcoming
+  const isExamUpcoming = (exam: Exam) => {
+    const examDate = new Date(exam.date);
+    examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+    return Date.now() < examDate.getTime();
+  };
+
   useEffect(() => {
     fetchExternalStats();
     fetchExamScores();
+    fetchUpcomingExams();
   }, []);
 
   useEffect(() => {
@@ -171,81 +211,79 @@ export default function DashboardPage() {
       ) / examScores.length
     : 0;
 
+  // Get upcoming exams in the next 7 days
+  const examsThisWeek = upcomingExams.filter((exam) => {
+    const examDate = new Date(exam.date);
+    examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+    return examDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  }).length;
+
   if (loading) {
     return (
-      <div className='flex h-full items-center justify-center'>
-        <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent'></div>
+      <div className="flex h-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='flex flex-col gap-4 md:flex-row'>
-        <div className='flex-1'>
-          <h1 className='text-3xl font-bold tracking-tight'>
-            Welcome back,{studentData?.username || user?.name}
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {studentData?.username || user?.name}
           </h1>
-          <p className='text-muted-foreground'>
+          <p className="text-muted-foreground">
             Here's an overview of your academic progress
           </p>
         </div>
       </div>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Pending Assignments
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Upcoming Exams
             </CardTitle>
-            <Clock className='h-4 w-4 text-muted-foreground' />
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
-              {pendingAssignments.length}
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              Due this week:{" "}
-              {
-                pendingAssignments.filter(
-                  (a) =>
-                    new Date(a.dueDate) <=
-                    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                ).length
-              }
+            <div className="text-2xl font-bold">{upcomingExams.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Due this week: {examsThisWeek}
             </p>
           </CardContent>
         </Card>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Average Grade</CardTitle>
-            <GraduationCap className='h-4 w-4 text-muted-foreground' />
+        <Card className="bg-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{averageGrade.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">Across all exams</p>
           </CardContent>
         </Card>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+        <Card className="bg-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Completed Tasks
             </CardTitle>
-            <CheckCircle className='h-4 w-4 text-muted-foreground' />
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className="text-2xl font-bold">
               {completedAssignments.length}
             </div>
-            <p className='text-xs text-muted-foreground'>
+            <p className="text-xs text-muted-foreground">
               Out of {assignments.length} total
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
-        <Card className='lg:col-span-4 bg-card'>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4 bg-card">
           <CardHeader>
             <CardTitle>Course Progress</CardTitle>
             <CardDescription>
@@ -253,18 +291,18 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='h-[300px]'>
-              <ResponsiveContainer width='100%' height='100%'>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={courses}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid
-                    strokeDasharray='3 3'
-                    className='stroke-muted'
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
                   />
-                  <XAxis dataKey='title' className='text-muted-foreground' />
-                  <YAxis className='text-muted-foreground' />
+                  <XAxis dataKey="title" className="text-muted-foreground" />
+                  <YAxis className="text-muted-foreground" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--card)",
@@ -273,98 +311,98 @@ export default function DashboardPage() {
                     }}
                   />
                   <Bar
-                    dataKey='progress'
-                    fill='hsl(var(--primary))'
-                    name='Progress (%)'
+                    dataKey="progress"
+                    fill="hsl(var(--primary))"
+                    name="Progress (%)"
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
-        <Card className='lg:col-span-3 bg-card'>
+        <Card className="lg:col-span-3 bg-card">
           <CardHeader>
             <CardTitle>Your Progress</CardTitle>
             <CardDescription>Your coding platform activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='grid grid-cols-2 gap-6 justify-items-center'>
+            <div className="grid grid-cols-2 gap-6 justify-items-center">
               {/* GitHub */}
-              <div className='flex flex-col items-center gap-2'>
-                <div className='relative w-24 h-24'>
-                  <svg  viewBox='0 0 36 36'>
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative w-24 h-24">
+                  <svg viewBox="0 0 36 36">
                     <path
-                      className='text-muted stroke-current'
-                      d='M18 2.0845
+                      className="text-muted stroke-current"
+                      d="M18 2.0845
                  a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
-                      fill='none'
-                      strokeWidth='2'
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
                     />
                     <path
-                      className='text-primary stroke-current'
+                      className="text-primary stroke-current"
                       strokeDasharray={`${Math.min(
                         (externalStats?.github_repos || 0) * 10,
                         100
                       )}, 100`}
-                      d='M18 2.0845
+                      d="M18 2.0845
                  a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
-                      fill='none'
-                      strokeWidth='2'
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
                     />
                     <text
-                      x='18'
-                      y='20.35'
-                      className='text-sm fill-primary'
-                      textAnchor='middle'
+                      x="18"
+                      y="20.35"
+                      className="text-sm fill-primary"
+                      textAnchor="middle"
                     >
                       {externalStats?.github_repos || 0}
                     </text>
                   </svg>
                 </div>
-                <div className='flex items-center gap-1 text-sm font-medium'>
-                  <Github className='h-4 w-4 text-muted-foreground' />
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <Github className="h-4 w-4 text-muted-foreground" />
                   GitHub Repos
                 </div>
               </div>
 
               {/* LeetCode */}
-              <div className='flex flex-col items-center gap-2'>
-                <div className='relative w-24 h-24'>
-                  <svg  viewBox='0 0 36 36'>
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative w-24 h-24">
+                  <svg viewBox="0 0 36 36">
                     <path
-                      className='text-muted stroke-current'
-                      d='M18 2.0845
+                      className="text-muted stroke-current"
+                      d="M18 2.0845
                  a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
-                      fill='none'
-                      strokeWidth='2'
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
                     />
                     <path
-                      className='text-green-500 stroke-current'
+                      className="text-green-500 stroke-current"
                       strokeDasharray={`${Math.min(
                         (externalStats?.leetcode_solved || 0) / 2,
                         100
                       )}, 100`}
-                      d='M18 2.0845
+                      d="M18 2.0845
                  a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
-                      fill='none'
-                      strokeWidth='2'
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      strokeWidth="2"
                     />
                     <text
-                      x='18'
-                      y='20.35'
-                      className='text-sm fill-green-500'
-                      textAnchor='middle'
+                      x="18"
+                      y="20.35"
+                      className="text-sm fill-green-500"
+                      textAnchor="middle"
                     >
                       {externalStats?.leetcode_solved || 0}
                     </text>
                   </svg>
                 </div>
-                <div className='flex items-center gap-1 text-sm font-medium'>
-                  <Code className='h-4 w-4 text-muted-foreground' />
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <Code className="h-4 w-4 text-muted-foreground" />
                   LeetCode Solved
                 </div>
               </div>
@@ -373,54 +411,58 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className='grid gap-4 md:grid-cols-2'>
-        <Card className='bg-card'>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle>Upcoming Assignments</CardTitle>
+            <CardTitle>Upcoming Exams</CardTitle>
             <CardDescription>
-              Your pending assignments sorted by due date
+              Your upcoming exams sorted by date
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className='space-y-4'>
-              {pendingAssignments.length === 0 ? (
-                <p className='text-center text-muted-foreground'>
-                  No pending assignments
+            <div className="space-y-4">
+              {upcomingExams.length === 0 ? (
+                <p className="text-center text-muted-foreground">
+                  No upcoming exams
                 </p>
               ) : (
-                pendingAssignments
-                  .sort(
-                    (a, b) =>
-                      new Date(a.dueDate).getTime() -
-                      new Date(b.dueDate).getTime()
-                  )
-                  .slice(0, 5)
-                  .map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className='flex items-center gap-4'
-                    >
-                      <div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary/10'>
-                        <Calendar className='h-5 w-5 text-primary' />
+                upcomingExams.map((exam) => {
+                  const examDate = new Date(exam.date);
+                  examDate.setHours(examDate.getHours() - 2); // Adjust for +2 offset
+
+                  return (
+                    <div key={exam.id} className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <FileText className="h-5 w-5 text-primary" />
                       </div>
-                      <div className='flex-1 space-y-1'>
-                        <p className='text-sm font-medium leading-none'>
-                          {assignment.title}
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {exam.title || `Exam ${exam.id}`}
                         </p>
-                        <p className='text-xs text-muted-foreground'>
-                          {assignment.courseName}
+                        <p className="text-xs text-muted-foreground">
+                          {exam.courseName} • {exam.duration} minutes
                         </p>
                       </div>
-                      <div className='text-sm text-muted-foreground'>
-                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                      <div className="text-sm text-muted-foreground">
+                        {examDate.toLocaleString()}
                       </div>
                     </div>
-                  ))
+                  );
+                })
               )}
             </div>
+            {upcomingExams.length > 0 && (
+              <div className="mt-4 flex justify-end">
+                <Link href="/dashboard_student/exams">
+                  <Button variant="outline" size="sm">
+                    View All Exams
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
-        <Card className='bg-card'>
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle>Recent Exam Scores</CardTitle>
             <CardDescription>Your most recent exam performance</CardDescription>
@@ -472,7 +514,6 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'></div>
       </div>
     </div>
   );

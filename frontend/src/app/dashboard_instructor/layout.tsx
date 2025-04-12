@@ -76,17 +76,19 @@ export default function InstructorLayout({
             { href: "/dashboard_instructor/add-student", label: "Add Student" },
             { href: "/dashboard_instructor/add-exam", label: "Add Exam" },
             { href: "/dashboard_instructor/set-exam", label: "Set Exam" },
-            { href: "/dashboard_instructor/add-note", label: "Send Note" },
             { href: "/dashboard_instructor/exam_logs", label: "Exam Logs" },
+            { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs" },
+            { href: "/dashboard_instructor/add-note", label: "Send Note" },
             { href: "/dashboard_instructor/student-answers", label: "Grades" },
             {
               href: "/dashboard_instructor/students",
               label: "Student Management",
             },
-            { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs" },
+            { href: "/dashboard_instructor/profile", label: "Profile" },
+        
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>
-              <p className='bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'>
+              <p className='bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors  '>
                 {sidebarOpen ? item.label : item.label[0]}
               </p>
             </Link>
@@ -113,7 +115,7 @@ export default function InstructorLayout({
               variant='ghost'
               size='icon'
               onClick={handleLogout}
-              className={`text-white bg-[#007acc] hover:bg-[#007abc] ${
+              className={`text-white bg-[#007acc] hover:bg-[#007abc] hover:text-white ${
                 !sidebarOpen ? "mx-auto" : ""
               }`}
             >
