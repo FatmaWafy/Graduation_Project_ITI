@@ -57,7 +57,7 @@ class StudentSerializer(serializers.ModelSerializer):
         track_name = validated_data.pop("track")
         branch_name = validated_data.pop("branch")
 
-        # البحث عن الـ Track و Branch بناءً على الاسم
+        
         track = Track.objects.get(name=track_name)
         branch = Branch.objects.get(name=branch_name)
 

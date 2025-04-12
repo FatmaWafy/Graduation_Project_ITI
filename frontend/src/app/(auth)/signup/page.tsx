@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, Eye, EyeOff } from "lucide-react";
@@ -18,10 +18,54 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     track_name: "",
+    branch_name: "",
   });
+  const [branches, setBranches] = useState([]);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tracks, setTracks] = useState([]);
+
+
+  // Fetch branches
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/users/branches/");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setBranches(data);
+        } else {
+          setBranches([]);
+          console.error("Unexpected response for branches:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      }
+    };
+    fetchBranches();
+  }, []);
+
+  // Fetch tracks
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/users/get-tracks/");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setTracks(data);
+        } else {
+          setTracks([]);
+          console.error("Unexpected response for tracks:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+      }
+    };
+
+    fetchTracks();
+  }, []);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,15 +76,17 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.track_name) {
+    const { name, email, password, confirmPassword, track_name, branch_name } = formData;
+
+    if (!name || !email || !password || !confirmPassword || !track_name || !branch_name) {
       setError("All fields are required");
       return;
     }
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    if (formData.password.length < 8) {
+    if (password.length < 8) {
       setError("Password must be at least 8 characters long");
       return;
     }
@@ -50,10 +96,18 @@ export default function SignupPage() {
       const response = await fetch("http://127.0.0.1:8000/users/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: name,
+          email,
+          password,
+          track_name,
+          branch_name,
+        }),
       });
+
       if (!response.ok) throw new Error("Failed to create account");
-      router.push("/login?registered=true");
+
+      router.push("/");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -92,8 +146,27 @@ export default function SignupPage() {
                 className="w-full p-2 border rounded-md"
               >
                 <option value="" disabled>Select your track</option>
-                {["Full-Stack Python", "Front-End", "Back-End", "AI/ML", "Mobile Development"].map((track) => (
-                  <option key={track} value={track}>{track}</option>
+                {tracks.map((track) => (
+                  <option key={track.id} value={track.name}>{track.name}</option>
+
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="branch_name">Select Branch</Label>
+              <select
+                id="branch_name"
+                name="branch_name"
+                value={formData.branch_name}
+                onChange={handleChange}
+                required
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="" disabled>Select your branch</option>
+                {branches.map((branch, idx) => (
+                  <option key={branch.id} value={branch.name}>{branch.name}</option>
+
                 ))}
               </select>
             </div>

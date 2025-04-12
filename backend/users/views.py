@@ -319,19 +319,23 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         # التحقق من وجود track وتحديثه إذا لزم الأمر
         if 'track' in data:
-            track_id = data.get('track')  # تتلقى الـ ID هنا
+            track_data = data.get('track')
+            track_id = track_data.get('id') if isinstance(track_data, dict) else track_data
             try:
-                track = Track.objects.get(id=track_id)  # جلب الكائن الصحيح من Track باستخدام الـ ID
-                student.track = track  # تعيين الكائن المسترجع
+                track = Track.objects.get(id=track_id)
+                student.track = track
+                data.pop('track')  # 🛠️ احذفي track من data بعد ما استخدمتيه
             except Track.DoesNotExist:
                 return Response({"error": "No track found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # التحقق من وجود branch وتحديثه إذا لزم الأمر
+# التحقق من وجود branch وتحديثه إذا لزم الأمر
         if 'branch' in data:
-            branch_id = data.get('branch')
+            branch_data = data.get('branch')
+            branch_id = branch_data.get('id') if isinstance(branch_data, dict) else branch_data
             try:
-                branch = Branch.objects.get(id=branch_id)  # جلب الكائن الصحيح من Branch باستخدام الـ ID
-                student.branch = branch  # تعيين الكائن المسترجع
+                branch = Branch.objects.get(id=branch_id)
+                student.branch = branch
+                data.pop('branch')  # 🛠️ احذفي branch من data بعد ما استخدمتيه
             except Branch.DoesNotExist:
                 return Response({"error": "No branch found with this ID."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -547,7 +551,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
     
 
 class ChangePasswordAPIView(APIView):
-    permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
+    permission_classes = [AllowAny]  
 
     def post(self, request):
         student_id = request.data.get("student_id")
@@ -605,6 +609,7 @@ class InstructorViewSet(viewsets.ModelViewSet):
         return Response(combined_data, status=status.HTTP_200_OK)
      
 class BranchListCreateView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
         branches = Branch.objects.all()
         serializer = BranchSerializer(branches, many=True)
@@ -633,7 +638,7 @@ class BranchListCreateView(APIView):
 class BranchRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 # CRUD for Course
 class CourseListCreateView(generics.ListCreateAPIView):

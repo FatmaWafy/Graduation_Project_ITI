@@ -76,7 +76,7 @@ export default function SetExamPage() {
   const [emailFilter, setEmailFilter] = useState("");
   const [examSearch, setExamSearch] = useState("");
   const [showAllExams, setShowAllExams] = useState(false);
-  const [branchFilter, setBranchFilter] = useState("");
+  // const [branchFilter, setBranchFilter] = useState("");
 
   const [formData, setFormData] = useState<TemporaryExamData>({
     exam: 0,
