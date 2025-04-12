@@ -36,6 +36,14 @@ token_generator = PasswordResetTokenGenerator()
 class RegisterInstructorAPIView(APIView):
     permission_classes = [AllowAny]
 
+    # قائمة البرانشات المعتمدة
+    valid_branches = [
+        "Smart Village", "New Capital", "Cairo University", "Alexandria", "Assiut", 
+        "Aswan", "Beni Suef", "Fayoum", "Ismailia", "Mansoura", "Menofia", "Minya", 
+        "Qena", "Sohag", "Tanta", "Zagazig", "New Valley", "Damanhour", "Al Arish", 
+        "Banha", "Port Said", "Cairo Branch"
+    ]
+
     def post(self, request):
         data = request.data.copy()
         data["role"] = "instructor"
@@ -43,8 +51,15 @@ class RegisterInstructorAPIView(APIView):
         if User.objects.filter(email=data["email"]).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if "branch" not in data:
+            return Response({"error": "Branch is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if data["branch"] not in self.valid_branches:
+            return Response({"error": f"The branch '{data['branch']}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = InstructorSerializer(
-            data={"user": data, "track_name": data.get("track_name")})
+            data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]})
+
         if serializer.is_valid():
             instructor = serializer.save()
             refresh = RefreshToken.for_user(instructor.user)
@@ -55,7 +70,6 @@ class RegisterInstructorAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
@@ -149,7 +163,6 @@ class ResetPasswordAPIView(APIView):
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
 
-
 class RegisterStudentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -168,6 +181,7 @@ class RegisterStudentAPIView(APIView):
         if instructor.tracks.count() == 0:
             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # إذا كان للمدرب أكتر من تراك، يجب تحديد التراك
         if instructor.tracks.count() > 1:
             if "track_name" not in data:
                 return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
@@ -182,9 +196,15 @@ class RegisterStudentAPIView(APIView):
             return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
 
         data["track_name"] = track.name
+        data["branch"] = instructor.branch.name  # ربط الطالب بالبرانش الخاص بالإنستراكتور
 
         serializer = StudentSerializer(
-            data={"user": data, "track_name": data["track_name"]})
+            data={
+                "user": data,
+                "track": data["track_name"],
+                "branch": data["branch"],  # التعديل هنا لربط البرانش بالطالب
+            }
+        )
 
         if serializer.is_valid():
             student = serializer.save()
@@ -196,6 +216,7 @@ class RegisterStudentAPIView(APIView):
             Your student account has been created successfully.
 
             Track: {student.track.name}
+            Branch: {student.branch.name}
             Email: {student.user.email}
             Password: {password}
 

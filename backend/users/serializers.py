@@ -24,8 +24,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
-    # 🔹 التأكد من أن track_name مطلوب
     track_name = serializers.CharField(write_only=True, required=True)
+    branch = serializers.CharField(write_only=True, required=True)  # إضافة حقل البرانش
 
     class Meta:
         model = Instructor
@@ -34,39 +34,47 @@ class InstructorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user_data = validated_data.pop("user")
         track_name = validated_data.pop("track_name")
+        branch_name = validated_data.pop("branch")
 
-        # تعيين دور المستخدم كمدرب
         user_data["role"] = "instructor"
         user = User.objects.create_user(**user_data)
 
-        # البحث عن التراك أو إنشاؤه
         track, created = Track.objects.get_or_create(name=track_name)
 
-        instructor = Instructor.objects.create(user=user, **validated_data)
+        branch, created = Branch.objects.get_or_create(name=branch_name)
+
+        instructor = Instructor.objects.create(user=user, branch=branch, **validated_data)
+        
         track.instructor = instructor
         track.save()
 
         return instructor
 
 
+
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track = serializers.SlugRelatedField(queryset=Track.objects.all(), slug_field='name')
-    branch = serializers.SlugRelatedField(queryset=Branch.objects.all(), slug_field='name')
 
 
     class Meta:
         model = Student
         fields = "__all__"
+        extra_kwargs = {
+            "branch": {"read_only": True},  # نمنع التعديل عليه من اليوزر
+        }
 
     def create(self, validated_data):
         user_data = validated_data.pop("user")
         track_name = validated_data.pop("track")
-        branch_name = validated_data.pop("branch")
 
-        # البحث عن الـ Track و Branch بناءً على الاسم
+        # البحث عن التراك
         track = Track.objects.get(name=track_name)
-        branch = Branch.objects.get(name=branch_name)
+        instructor = track.instructor
+        if instructor and instructor.branch:
+            branch = instructor.branch
+        else:
+            raise serializers.ValidationError("This track has no instructor with a branch assigned.")
 
         user_data["role"] = "student"
         user = User.objects.create_user(**user_data)
@@ -74,6 +82,7 @@ class StudentSerializer(serializers.ModelSerializer):
         student = Student.objects.create(user=user, track=track, branch=branch, **validated_data)
 
         return student
+
 
 
 class UserProfileImageSerializer(serializers.ModelSerializer):
