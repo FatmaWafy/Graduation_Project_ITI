@@ -10,7 +10,7 @@ export interface Student {
     status?: string
     notes?: string
   }
-  track?: number
+  // track?: string
   track_name?: string
   university?: string | null
   graduation_year?: string | null

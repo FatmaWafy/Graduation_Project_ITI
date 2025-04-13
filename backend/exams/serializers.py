@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CheatingLog, CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer, CodingTestCase
+from .models import CheatingLog, CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer, CodingTestCase, Course
 
 class ExamSerializer(serializers.ModelSerializer):
     mcq_questions = serializers.PrimaryKeyRelatedField(
@@ -12,7 +12,11 @@ class ExamSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
-
+    Course = serializers.PrimaryKeyRelatedField(
+        queryset=Course.objects.all(),
+        many=True,
+        required=False
+    )
     class Meta:
         model = Exam
         fields = '__all__'

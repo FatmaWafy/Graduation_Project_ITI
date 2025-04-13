@@ -73,7 +73,6 @@ export default function InstructorLayout({
         <nav className='flex flex-col gap-4'>
           {[
             { href: "/dashboard_instructor", label: "Dashboard" },
-            { href: "/dashboard_instructor/add-student", label: "Add Student" },
             { href: "/dashboard_instructor/add-exam", label: "Add Exam" },
             { href: "/dashboard_instructor/set-exam", label: "Set Exam" },
             { href: "/dashboard_instructor/exam_logs", label: "Exam Logs" },

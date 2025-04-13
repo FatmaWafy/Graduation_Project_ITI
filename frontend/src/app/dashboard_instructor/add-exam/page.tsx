@@ -49,11 +49,18 @@ import {
   Save,
   Trash2,
   X,
+  BookOpen,
+  Clock,
+  ListChecks,
+  PenTool,
+  Database,
+  Lightbulb,
 } from "lucide-react";
 
 interface TestCase {
   input_data: string;
   expected_output: string;
+  function_name?: string;
 }
 
 interface Question {
@@ -75,6 +82,12 @@ interface Question {
   starter_code?: string;
   tags?: any[];
   test_cases?: TestCase[];
+}
+
+interface Course {
+  id: number;
+  name: string;
+  description?: string;
 }
 
 export default function AddExamPage() {
@@ -109,6 +122,9 @@ export default function AddExamPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(false);
 
   const getTokenFromCookies = () => {
     const cookies = document.cookie.split(";");
@@ -121,9 +137,47 @@ export default function AddExamPage() {
     return null;
   };
 
+  const fetchCourses = async () => {
+    setIsLoadingCourses(true);
+    try {
+      const token = getTokenFromCookies();
+      if (!token) {
+        throw new Error("No authentication token found in cookies");
+      }
+
+      const response = await fetch("http://127.0.0.1:8000/users/courses/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCourses(data);
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
+      toast.error(
+        `Failed to fetch courses: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  };
+
   useEffect(() => {
     fetchQuestions();
   }, [questionType, selectedLanguage]);
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   const fetchQuestions = async () => {
     setIsLoading(true);
@@ -311,6 +365,7 @@ export default function AddExamPage() {
     updatedQuestions[questionIndex].test_cases!.push({
       input_data: "",
       expected_output: "",
+      function_name: "",
     });
     setQuestions(updatedQuestions);
   };
@@ -327,7 +382,7 @@ export default function AddExamPage() {
   const handleTestCaseChange = (
     questionIndex: number,
     testCaseIndex: number,
-    field: "input_data" | "expected_output",
+    field: "input_data" | "expected_output" | "function_name",
     value: string
   ) => {
     const updatedQuestions = [...questions];
@@ -546,6 +601,8 @@ export default function AddExamPage() {
                         question: createdQuestion.id,
                         input_data: testCase.input_data,
                         expected_output: testCase.expected_output,
+                        function_name:
+                          testCase.function_name || "function_name",
                       }),
                     }
                   );
@@ -585,6 +642,7 @@ export default function AddExamPage() {
       const examData = {
         title: examTitle,
         duration: examDuration,
+        course: selectedCourse || null,
         MCQQuestions: [...selectedQuestions.map((q) => q.id), ...createdMCQIds],
         CodingQuestions: [
           ...codingQuestions.map((q) => q.id),
@@ -644,19 +702,19 @@ export default function AddExamPage() {
     switch (difficulty) {
       case "Easy":
         return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+          <Badge className='bg-green-100 text-green-800 hover:bg-green-200'>
             {difficulty}
           </Badge>
         );
       case "Medium":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+          <Badge className='bg-yellow-100 text-yellow-800 hover:bg-yellow-200'>
             {difficulty}
           </Badge>
         );
       case "Hard":
         return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+          <Badge className='bg-red-100 text-red-800 hover:bg-red-200'>
             {difficulty}
           </Badge>
         );
@@ -666,9 +724,9 @@ export default function AddExamPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-6xl">
+    <div className='container mx-auto py-6 px-4 max-w-6xl'>
       <ToastContainer
-        position="top-right"
+        position='top-right'
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -679,155 +737,248 @@ export default function AddExamPage() {
         pauseOnHover
       />
 
-      <div className="flex flex-col space-y-8">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Exam Creator</h1>
-          <p className="text-muted-foreground">
+      <div className='flex flex-col space-y-8'>
+        <div className='flex flex-col space-y-2'>
+          <h1 className='text-3xl font-bold tracking-tight text-[#007acc]'>
+            Exam Creator
+          </h1>
+          <p className='text-[#007abc]'>
             Create and manage your exams with multiple choice and coding
             questions.
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Exam Information</CardTitle>
-            <CardDescription>
+        <Card className='border-[#c7e5ff] shadow-md'>
+          <CardHeader className='bg-gradient-to-r from-[#007acc] to-[#007abc] text-white rounded-t-lg'>
+            <CardTitle className='flex items-center gap-2'>
+              <BookOpen className='h-5 w-5' />
+              Exam Information
+            </CardTitle>
+            <CardDescription className='text-white/80'>
               Set the basic information for your exam.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="exam-title">Exam Title</Label>
+          <CardContent className='p-6'>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='exam-title'
+                  className='text-[#007acc] font-medium flex items-center gap-2'
+                >
+                  <PenTool className='h-4 w-4' />
+                  Exam Title
+                </Label>
                 <Input
-                  id="exam-title"
-                  placeholder="Enter exam title"
+                  id='exam-title'
+                  placeholder='Enter exam title'
                   value={examTitle}
                   onChange={(e) => setExamTitle(e.target.value)}
                   required
+                  className='border-[#c7e5ff] focus:border-[#007acc] focus:ring-[#007acc]'
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="exam-duration">Duration (minutes)</Label>
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='course-select'
+                  className='text-[#007acc] font-medium flex items-center gap-2'
+                >
+                  <BookOpen className='h-4 w-4' />
+                  Course
+                </Label>
+                <Select
+                  value={selectedCourse}
+                  onValueChange={setSelectedCourse}
+                >
+                  <SelectTrigger
+                    id='course-select'
+                    className='border-[#c7e5ff] focus:border-[#007acc] focus:ring-[#007acc]'
+                  >
+                    <SelectValue placeholder='Select a course' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='none'>None</SelectItem>
+                    {isLoadingCourses ? (
+                      <SelectItem value='loading' disabled>
+                        Loading courses...
+                      </SelectItem>
+                    ) : courses.length > 0 ? (
+                      courses.map((course) => (
+                        <SelectItem
+                          key={course.id}
+                          value={course.id.toString()}
+                        >
+                          {course.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value='no-courses' disabled>
+                        No courses available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='space-y-2'>
+                <Label
+                  htmlFor='exam-duration'
+                  className='text-[#007acc] font-medium flex items-center gap-2'
+                >
+                  <Clock className='h-4 w-4' />
+                  Duration (minutes)
+                </Label>
                 <Input
-                  id="exam-duration"
-                  type="number"
-                  placeholder="Enter duration"
+                  id='exam-duration'
+                  type='number'
+                  placeholder='Enter duration'
                   value={examDuration}
                   onChange={(e) => setExamDuration(Number(e.target.value))}
-                  min="1"
+                  min='1'
                   required
+                  className='border-[#c7e5ff] focus:border-[#007acc] focus:ring-[#007acc]'
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="question-bank" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="question-bank">Question Bank</TabsTrigger>
-            <TabsTrigger value="selected-questions">
+        <Tabs defaultValue='question-bank' className='w-full'>
+          <TabsList className='grid grid-cols-3 mb-6 bg-[#c7e5ff]'>
+            <TabsTrigger
+              value='question-bank'
+              className='data-[state=active]:bg-[#007acc] data-[state=active]:text-white'
+            >
+              <Database className='h-4 w-4 mr-2' />
+              Question Bank
+            </TabsTrigger>
+            <TabsTrigger
+              value='selected-questions'
+              className='data-[state=active]:bg-[#007acc] data-[state=active]:text-white'
+            >
+              <ListChecks className='h-4 w-4 mr-2' />
               Selected Questions (
               {selectedQuestions.length + codingQuestions.length})
             </TabsTrigger>
-            <TabsTrigger value="create-questions">Create Questions</TabsTrigger>
+            <TabsTrigger
+              value='create-questions'
+              className='data-[state=active]:bg-[#007acc] data-[state=active]:text-white'
+            >
+              <Plus className='h-4 w-4 mr-2' />
+              Create Questions
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="question-bank" className="space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>Question Bank</CardTitle>
+          <TabsContent value='question-bank' className='space-y-6'>
+            <Card className='border-[#c7e5ff] shadow-md'>
+              <CardHeader className='pb-3'>
+                <CardTitle className='text-[#007acc]'>Question Bank</CardTitle>
                 <CardDescription>
                   Browse and select questions from the existing question bank.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="question-type">Question Type</Label>
+                <div className='flex flex-col md:flex-row gap-4 mb-6'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='question-type' className='text-[#007acc]'>
+                      Question Type
+                    </Label>
                     <Select
                       value={questionType}
                       onValueChange={(value) =>
                         setQuestionType(value as "mcq" | "code")
                       }
                     >
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Select type" />
+                      <SelectTrigger className='w-full md:w-[180px] border-[#c7e5ff]'>
+                        <SelectValue placeholder='Select type' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mcq">Multiple Choice</SelectItem>
-                        <SelectItem value="code">Coding</SelectItem>
+                        <SelectItem value='mcq'>Multiple Choice</SelectItem>
+                        <SelectItem value='code'>Coding</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="difficulty-filter">Difficulty</Label>
+                  <div className='space-y-2'>
+                    <Label
+                      htmlFor='difficulty-filter'
+                      className='text-[#007acc]'
+                    >
+                      Difficulty
+                    </Label>
                     <Select
                       value={selectedDifficulty}
                       onValueChange={setSelectedDifficulty}
                     >
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Select difficulty" />
+                      <SelectTrigger className='w-full md:w-[180px] border-[#c7e5ff]'>
+                        <SelectValue placeholder='Select difficulty' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Difficulties</SelectItem>
-                        <SelectItem value="Easy">Easy</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Hard">Hard</SelectItem>
+                        <SelectItem value='all'>All Difficulties</SelectItem>
+                        <SelectItem value='Easy'>Easy</SelectItem>
+                        <SelectItem value='Medium'>Medium</SelectItem>
+                        <SelectItem value='Hard'>Hard</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="language-filter">Language</Label>
+                  <div className='space-y-2'>
+                    <Label htmlFor='language-filter' className='text-[#007acc]'>
+                      Language
+                    </Label>
                     <Select
                       value={selectedLanguage}
                       onValueChange={setSelectedLanguage}
                     >
-                      <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Select language" />
+                      <SelectTrigger className='w-full md:w-[180px] border-[#c7e5ff]'>
+                        <SelectValue placeholder='Select language' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Languages</SelectItem>
-                        <SelectItem value="python">Python</SelectItem>
-                        <SelectItem value="javascript">JavaScript</SelectItem>
-                        <SelectItem value="java">Java</SelectItem>
-                        <SelectItem value="sql">SQL</SelectItem>
+                        <SelectItem value='all'>All Languages</SelectItem>
+                        <SelectItem value='python'>Python</SelectItem>
+                        <SelectItem value='javascript'>JavaScript</SelectItem>
+                        <SelectItem value='java'>Java</SelectItem>
+                        <SelectItem value='sql'>SQL</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="flex items-end">
+                  <div className='flex items-end'>
                     <Button
-                      variant="outline"
-                      size="icon"
+                      variant='outline'
+                      size='icon'
                       onClick={fetchQuestions}
-                      className="h-10 w-10"
+                      className='h-10 w-10 border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]'
                     >
-                      <RefreshCw className="h-4 w-4" />
-                      <span className="sr-only">Refresh questions</span>
+                      <RefreshCw className='h-4 w-4' />
+                      <span className='sr-only'>Refresh questions</span>
                     </Button>
                   </div>
                 </div>
 
                 {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <div className='flex justify-center py-8'>
+                    <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#007acc]'></div>
                   </div>
                 ) : error ? (
-                  <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-md">
+                  <div className='p-4 border border-red-200 bg-red-50 text-red-700 rounded-md'>
                     {error}
                   </div>
                 ) : (
-                  <div className="rounded-md border">
+                  <div className='rounded-md border border-[#c7e5ff]'>
                     <Table>
-                      <TableHeader>
+                      <TableHeader className='bg-[#f0f7ff]'>
                         <TableRow>
-                          <TableHead className="w-[50%]">Question</TableHead>
-                          <TableHead>Difficulty</TableHead>
-                          <TableHead>Language</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
+                          <TableHead className='w-[50%] text-[#007acc]'>
+                            Question
+                          </TableHead>
+                          <TableHead className='text-[#007acc]'>
+                            Difficulty
+                          </TableHead>
+                          <TableHead className='text-[#007acc]'>
+                            Language
+                          </TableHead>
+                          <TableHead className='text-right text-[#007acc]'>
+                            Action
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -835,22 +986,25 @@ export default function AddExamPage() {
                           <TableRow>
                             <TableCell
                               colSpan={4}
-                              className="text-center py-6 text-muted-foreground"
+                              className='text-center py-6 text-muted-foreground'
                             >
                               No questions found for the selected criteria.
                             </TableCell>
                           </TableRow>
                         ) : (
                           displayedQuestions.map((question) => (
-                            <TableRow key={question.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
+                            <TableRow
+                              key={question.id}
+                              className='hover:bg-[#f0f7ff]'
+                            >
+                              <TableCell className='font-medium'>
+                                <div className='flex items-center gap-2'>
                                   {question.type === "mcq" ? (
-                                    <FileQuestion className="h-4 w-4 text-muted-foreground" />
+                                    <FileQuestion className='h-4 w-4 text-[#007acc]' />
                                   ) : (
-                                    <Code className="h-4 w-4 text-muted-foreground" />
+                                    <Code className='h-4 w-4 text-[#007acc]' />
                                   )}
-                                  <span className="line-clamp-1">
+                                  <span className='line-clamp-1'>
                                     {question.question_text || question.title}
                                   </span>
                                 </div>
@@ -861,11 +1015,11 @@ export default function AddExamPage() {
                               <TableCell>
                                 {question.language || "N/A"}
                               </TableCell>
-                              <TableCell className="text-right ">
+                              <TableCell className='text-right'>
                                 <Button
-                                className="bg-[#007acc] hover:bg-blue-700  rounded-md text-white font-semibold"
+                                  className='bg-[#007acc] hover:bg-[#007abc] rounded-md text-white font-semibold'
                                   onClick={() => addQuestionToExam(question)}
-                                  size="sm"
+                                  size='sm'
                                   disabled={
                                     questionType === "mcq"
                                       ? selectedQuestions.some(
@@ -886,20 +1040,20 @@ export default function AddExamPage() {
                     </Table>
 
                     {filteredQuestions.length > 4 && (
-                      <div className="flex justify-center py-3 border-t">
+                      <div className='flex justify-center py-3 border-t border-[#c7e5ff]'>
                         <Button
-                          variant="ghost"
+                          variant='ghost'
                           onClick={() => setShowAllQuestions(!showAllQuestions)}
-                          className="text-sm"
+                          className='text-sm text-[#007acc] hover:bg-[#c7e5ff] hover:text-[#007acc]'
                         >
                           {showAllQuestions ? (
                             <>
-                              <ChevronUp className="mr-2 h-4 w-4" />
+                              <ChevronUp className='mr-2 h-4 w-4' />
                               Show Less
                             </>
                           ) : (
                             <>
-                              <ChevronDown className="mr-2 h-4 w-4" />
+                              <ChevronDown className='mr-2 h-4 w-4' />
                               Show More ({filteredQuestions.length - 4} more)
                             </>
                           )}
@@ -912,37 +1066,43 @@ export default function AddExamPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="selected-questions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Selected Questions</CardTitle>
+          <TabsContent value='selected-questions' className='space-y-6'>
+            <Card className='border-[#c7e5ff] shadow-md'>
+              <CardHeader className='bg-gradient-to-r from-[#f0f7ff] to-[#c7e5ff]'>
+                <CardTitle className='text-[#007acc]'>
+                  Selected Questions
+                </CardTitle>
                 <CardDescription>
                   Questions that will be included in your exam.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className='space-y-6 p-6'>
                 {selectedQuestions.length === 0 &&
                 codingQuestions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className='text-center py-8 text-muted-foreground bg-[#f0f7ff] rounded-md border border-[#c7e5ff]'>
                     No questions selected yet. Add questions from the Question
                     Bank.
                   </div>
                 ) : (
                   <>
                     {selectedQuestions.length > 0 && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">
+                      <div className='space-y-4'>
+                        <h3 className='text-lg font-medium text-[#007acc] flex items-center gap-2'>
+                          <FileQuestion className='h-5 w-5' />
                           Multiple Choice Questions ({selectedQuestions.length})
                         </h3>
-                        <div className="rounded-md border divide-y">
+                        <div className='rounded-md border border-[#c7e5ff] divide-y'>
                           {selectedQuestions.map((question) => (
-                            <div key={question.id} className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                  <div className="font-medium">
+                            <div
+                              key={question.id}
+                              className='p-4 hover:bg-[#f0f7ff]'
+                            >
+                              <div className='flex justify-between items-start'>
+                                <div className='space-y-1'>
+                                  <div className='font-medium text-[#007abc]'>
                                     {question.question_text}
                                   </div>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                                     {getDifficultyBadge(question.difficulty)}
                                     <span>|</span>
                                     <span>
@@ -951,15 +1111,15 @@ export default function AddExamPage() {
                                   </div>
                                 </div>
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
+                                  variant='ghost'
+                                  size='icon'
                                   onClick={() =>
                                     removeSelectedQuestion(question.id, "mcq")
                                   }
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  className='text-destructive hover:text-destructive hover:bg-destructive/10'
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Remove</span>
+                                  <Trash2 className='h-4 w-4' />
+                                  <span className='sr-only'>Remove</span>
                                 </Button>
                               </div>
                             </div>
@@ -969,24 +1129,28 @@ export default function AddExamPage() {
                     )}
 
                     {codingQuestions.length > 0 && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">
+                      <div className='space-y-4'>
+                        <h3 className='text-lg font-medium text-[#007acc] flex items-center gap-2'>
+                          <Code className='h-5 w-5' />
                           Coding Questions ({codingQuestions.length})
                         </h3>
-                        <div className="rounded-md border divide-y">
+                        <div className='rounded-md border border-[#c7e5ff] divide-y'>
                           {codingQuestions.map((question) => (
-                            <div key={question.id} className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                  <div className="font-medium">
+                            <div
+                              key={question.id}
+                              className='p-4 hover:bg-[#f0f7ff]'
+                            >
+                              <div className='flex justify-between items-start'>
+                                <div className='space-y-1'>
+                                  <div className='font-medium text-[#007abc]'>
                                     {question.question_text || question.title}
                                   </div>
                                   {question.description && (
-                                    <div className="text-sm text-muted-foreground line-clamp-2">
+                                    <div className='text-sm text-muted-foreground line-clamp-2'>
                                       {question.description}
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                                     {getDifficultyBadge(question.difficulty)}
                                     <span>|</span>
                                     <span>
@@ -995,15 +1159,15 @@ export default function AddExamPage() {
                                   </div>
                                 </div>
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
+                                  variant='ghost'
+                                  size='icon'
                                   onClick={() =>
                                     removeSelectedQuestion(question.id, "code")
                                   }
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  className='text-destructive hover:text-destructive hover:bg-destructive/10'
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Remove</span>
+                                  <Trash2 className='h-4 w-4' />
+                                  <span className='sr-only'>Remove</span>
                                 </Button>
                               </div>
                             </div>
@@ -1017,29 +1181,42 @@ export default function AddExamPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="create-questions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create Custom Questions</CardTitle>
-                <CardDescription>
+          <TabsContent value='create-questions' className='space-y-6'>
+            <Card className='border-[#c7e5ff] shadow-md'>
+              <CardHeader className='bg-gradient-to-r from-[#007acc] to-[#007abc] text-white rounded-t-lg'>
+                <CardTitle className='flex items-center gap-2'>
+                  <Lightbulb className='h-5 w-5' />
+                  Create Custom Questions
+                </CardTitle>
+                <CardDescription className='text-white/80'>
                   Create new questions to add to your exam.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className='space-y-6 p-6'>
                 <Accordion
-                  type="multiple"
-                  className="w-full"
+                  type='multiple'
+                  className='w-full'
                   defaultValue={["question-0"]}
                 >
                   {questions.map((question, index) => (
                     <AccordionItem
                       key={index}
                       value={`question-${index}`}
-                      className="border rounded-lg px-2 mb-4"
+                      className={`border rounded-lg px-2 mb-4 ${
+                        question.type === "mcq"
+                          ? "border-l-4 border-l-[#007acc]"
+                          : "border-l-4 border-l-green-500"
+                      }`}
                     >
-                      <div className="flex items-center justify-between py-4">
-                        <AccordionTrigger className="hover:no-underline">
-                          <span className="font-medium">
+                      <div className='flex items-center justify-between py-4'>
+                        <AccordionTrigger className='hover:no-underline'>
+                          <span
+                            className={`font-medium ${
+                              question.type === "mcq"
+                                ? "text-[#007acc]"
+                                : "text-green-600"
+                            }`}
+                          >
                             {question.type === "mcq"
                               ? "Multiple Choice Question"
                               : "Coding Question"}{" "}
@@ -1047,44 +1224,46 @@ export default function AddExamPage() {
                           </span>
                         </AccordionTrigger>
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          variant='ghost'
+                          size='icon'
                           onClick={(e) => {
                             e.stopPropagation();
                             removeQuestion(index);
                           }}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className='text-destructive hover:text-destructive hover:bg-destructive/10'
                         >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
+                          <X className='h-4 w-4' />
+                          <span className='sr-only'>Remove</span>
                         </Button>
                       </div>
-                      <AccordionContent className="pb-4 space-y-4">
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Question Type</Label>
+                      <AccordionContent className='pb-4 space-y-4'>
+                        <div className='space-y-4'>
+                          <div className='space-y-2 bg-[#f0f7ff] p-4 rounded-md'>
+                            <Label className='text-[#007acc] font-medium'>
+                              Question Type
+                            </Label>
                             <Select
                               value={question.type}
                               onValueChange={(value) =>
                                 handleTypeChange(index, value as "mcq" | "code")
                               }
                             >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select question type" />
+                              <SelectTrigger className='border-[#c7e5ff]'>
+                                <SelectValue placeholder='Select question type' />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="mcq">
+                                <SelectItem value='mcq'>
                                   Multiple Choice Question
                                 </SelectItem>
-                                <SelectItem value="code">
+                                <SelectItem value='code'>
                                   Coding Question
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>
+                          <div className='space-y-2'>
+                            <Label className='text-[#007acc] font-medium'>
                               {question.type === "mcq"
                                 ? "Question Text"
                                 : "Question Title"}
@@ -1103,15 +1282,18 @@ export default function AddExamPage() {
                               onChange={(e) =>
                                 handleQuestionChange(index, e.target.value)
                               }
+                              className='border-[#c7e5ff]'
                             />
                           </div>
 
                           {question.type === "code" && (
-                            <div className="space-y-2">
-                              <Label>Description</Label>
+                            <div className='space-y-2 bg-[#f0f7ff] p-4 rounded-md'>
+                              <Label className='text-[#007acc] font-medium'>
+                                Description
+                              </Label>
                               <Textarea
-                                placeholder="Enter the question description"
-                                className="min-h-[100px]"
+                                placeholder='Enter the question description'
+                                className='min-h-[100px] border-[#c7e5ff]'
                                 value={question.description || ""}
                                 onChange={(e) =>
                                   handleDescriptionChange(index, e.target.value)
@@ -1120,55 +1302,63 @@ export default function AddExamPage() {
                             </div>
                           )}
 
-                          <div className="space-y-2">
-                            <Label>Language</Label>
-                            <Select
-                              value={question.language}
-                              onValueChange={(value) =>
-                                handleLanguageChange(index, value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select language" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Python">Python</SelectItem>
-                                <SelectItem value="JavaScript">
-                                  JavaScript
-                                </SelectItem>
-                                <SelectItem value="Java">Java</SelectItem>
-                                <SelectItem value="SQL">SQL</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-2'>
+                              <Label className='text-[#007acc] font-medium'>
+                                Language
+                              </Label>
+                              <Select
+                                value={question.language}
+                                onValueChange={(value) =>
+                                  handleLanguageChange(index, value)
+                                }
+                              >
+                                <SelectTrigger className='border-[#c7e5ff]'>
+                                  <SelectValue placeholder='Select language' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value='Python'>Python</SelectItem>
+                                  <SelectItem value='JavaScript'>
+                                    JavaScript
+                                  </SelectItem>
+                                  <SelectItem value='Java'>Java</SelectItem>
+                                  <SelectItem value='SQL'>SQL</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className='space-y-2'>
+                              <Label className='text-[#007acc] font-medium'>
+                                Difficulty
+                              </Label>
+                              <Select
+                                value={question.difficulty}
+                                onValueChange={(value) =>
+                                  handleDifficultyChange(
+                                    index,
+                                    value as "Easy" | "Medium" | "Hard"
+                                  )
+                                }
+                              >
+                                <SelectTrigger className='border-[#c7e5ff]'>
+                                  <SelectValue placeholder='Select difficulty' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value='Easy'>Easy</SelectItem>
+                                  <SelectItem value='Medium'>Medium</SelectItem>
+                                  <SelectItem value='Hard'>Hard</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Difficulty</Label>
-                            <Select
-                              value={question.difficulty}
-                              onValueChange={(value) =>
-                                handleDifficultyChange(
-                                  index,
-                                  value as "Easy" | "Medium" | "Hard"
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select difficulty" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Easy">Easy</SelectItem>
-                                <SelectItem value="Medium">Medium</SelectItem>
-                                <SelectItem value="Hard">Hard</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Points</Label>
+                          <div className='space-y-2'>
+                            <Label className='text-[#007acc] font-medium'>
+                              Points
+                            </Label>
                             <Input
-                              type="number"
-                              placeholder="Enter points"
+                              type='number'
+                              placeholder='Enter points'
                               value={question.points || 1}
                               onChange={(e) => {
                                 const updatedQuestions = [...questions];
@@ -1177,35 +1367,39 @@ export default function AddExamPage() {
                                 );
                                 setQuestions(updatedQuestions);
                               }}
-                              min="0.1"
-                              step="0.1"
+                              min='0.1'
+                              step='0.1'
+                              className='border-[#c7e5ff]'
                             />
                           </div>
 
                           {question.type === "mcq" ? (
-                            <div className="space-y-4">
-                              <Label>Options</Label>
+                            <div className='space-y-4 bg-[#f0f7ff] p-4 rounded-md'>
+                              <Label className='text-[#007acc] font-medium'>
+                                Options
+                              </Label>
                               <RadioGroup
                                 value={question.correct_option || "A"}
                                 onValueChange={(value) =>
                                   handleCorrectAnswerChange(index, value)
                                 }
+                                className='space-y-3'
                               >
                                 {["A", "B", "C", "D"].map((option) => (
                                   <div
                                     key={option}
-                                    className="flex items-center space-x-2 space-y-2 "
+                                    className='flex items-center space-x-2 p-3 bg-white rounded-md border border-[#c7e5ff] hover:border-[#007acc] transition-colors'
                                   >
-                                    <div className="grid gap-1.5">
-                                      <div className="flex items-center space-x-2 ">
+                                    <div className='grid gap-1.5'>
+                                      <div className='flex items-center space-x-2'>
                                         <RadioGroupItem
-                                        className="text-[#007acc]  border-[#007acc]"
+                                          className='text-[#007acc] border-[#007acc]'
                                           value={option}
                                           id={`option-${index}-${option}`}
                                         />
                                         <Label
                                           htmlFor={`option-${index}-${option}`}
-                                          className="font-normal "
+                                          className='font-medium text-[#007abc]'
                                         >
                                           Option {option}
                                         </Label>
@@ -1229,18 +1423,21 @@ export default function AddExamPage() {
                                           e.target.value
                                         )
                                       }
+                                      className='border-[#c7e5ff] flex-1'
                                     />
                                   </div>
                                 ))}
                               </RadioGroup>
                             </div>
                           ) : (
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>Starter Code</Label>
+                            <div className='space-y-4'>
+                              <div className='space-y-2 bg-[#f0f7ff] p-4 rounded-md'>
+                                <Label className='text-[#007acc] font-medium'>
+                                  Starter Code
+                                </Label>
                                 <Textarea
-                                  placeholder="Enter the starter code"
-                                  className="font-mono min-h-[150px]"
+                                  placeholder='Enter the starter code'
+                                  className='font-mono min-h-[150px] border-[#c7e5ff]'
                                   value={question.starter_code || ""}
                                   onChange={(e) =>
                                     handleCodeChange(index, e.target.value)
@@ -1248,58 +1445,84 @@ export default function AddExamPage() {
                                 />
                               </div>
 
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <Label>Test Cases</Label>
+                              <div className='space-y-2'>
+                                <div className='flex items-center justify-between'>
+                                  <Label className='text-[#007acc] font-medium'>
+                                    Test Cases
+                                  </Label>
                                   <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
+                                    type='button'
+                                    variant='outline'
+                                    size='sm'
                                     onClick={() => handleAddTestCase(index)}
+                                    className='border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]'
                                   >
-                                    <Plus className="mr-2 h-4 w-4" />
+                                    <Plus className='mr-2 h-4 w-4' />
                                     Add Test Case
                                   </Button>
                                 </div>
 
                                 {question.test_cases &&
                                 question.test_cases.length > 0 ? (
-                                  <div className="space-y-4">
+                                  <div className='space-y-4'>
                                     {question.test_cases.map(
                                       (testCase, tcIndex) => (
-                                        <Card key={tcIndex}>
-                                          <CardHeader className="py-3">
-                                            <div className="flex items-center justify-between">
-                                              <CardTitle className="text-sm font-medium">
+                                        <Card
+                                          key={tcIndex}
+                                          className='border-[#c7e5ff] bg-[#f0f7ff]'
+                                        >
+                                          <CardHeader className='py-3 bg-[#007acc] text-white rounded-t-md'>
+                                            <div className='flex items-center justify-between'>
+                                              <CardTitle className='text-sm font-medium'>
                                                 Test Case {tcIndex + 1}
                                               </CardTitle>
                                               <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
+                                                type='button'
+                                                variant='ghost'
+                                                size='icon'
                                                 onClick={() =>
                                                   handleRemoveTestCase(
                                                     index,
                                                     tcIndex
                                                   )
                                                 }
-                                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                className='h-8 w-8 text-white hover:bg-white/20'
                                               >
-                                                <X className="h-4 w-4" />
-                                                <span className="sr-only">
+                                                <X className='h-4 w-4' />
+                                                <span className='sr-only'>
                                                   Remove
                                                 </span>
                                               </Button>
                                             </div>
                                           </CardHeader>
-                                          <CardContent className="py-2 space-y-4">
-                                            <div className="space-y-2">
-                                              <Label className="text-sm">
+                                          <CardContent className='py-4 space-y-4 bg-white rounded-b-md'>
+                                            <div className='space-y-2'>
+                                              <Label className='text-sm text-[#007acc]'>
+                                                Function Name
+                                              </Label>
+                                              <Input
+                                                placeholder='Enter function name (e.g., findMax)'
+                                                value={
+                                                  testCase.function_name || ""
+                                                }
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "function_name",
+                                                    e.target.value
+                                                  )
+                                                }
+                                                className='border-[#c7e5ff]'
+                                              />
+                                            </div>
+                                            <div className='space-y-2'>
+                                              <Label className='text-sm text-[#007acc]'>
                                                 Input
                                               </Label>
                                               <Textarea
-                                                placeholder="Input data"
-                                                className="font-mono min-h-[80px]"
+                                                placeholder='Input data'
+                                                className='font-mono min-h-[80px] border-[#c7e5ff]'
                                                 value={testCase.input_data}
                                                 onChange={(e) =>
                                                   handleTestCaseChange(
@@ -1311,13 +1534,13 @@ export default function AddExamPage() {
                                                 }
                                               />
                                             </div>
-                                            <div className="space-y-2">
-                                              <Label className="text-sm">
+                                            <div className='space-y-2'>
+                                              <Label className='text-sm text-[#007acc]'>
                                                 Expected Output
                                               </Label>
                                               <Textarea
-                                                placeholder="Expected output"
-                                                className="font-mono min-h-[80px]"
+                                                placeholder='Expected output'
+                                                className='font-mono min-h-[80px] border-[#c7e5ff]'
                                                 value={testCase.expected_output}
                                                 onChange={(e) =>
                                                   handleTestCaseChange(
@@ -1335,7 +1558,7 @@ export default function AddExamPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-center py-4 border rounded-md text-muted-foreground">
+                                  <div className='text-center py-4 border rounded-md text-muted-foreground border-[#c7e5ff]'>
                                     No test cases added yet.
                                   </div>
                                 )}
@@ -1349,12 +1572,12 @@ export default function AddExamPage() {
                 </Accordion>
 
                 <Button
-                  type="button"
-                  variant="outline"
+                  type='button'
+                  variant='outline'
                   onClick={addQuestion}
-                  className="w-full"
+                  className='w-full border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]'
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className='mr-2 h-4 w-4' />
                   Add Another Question
                 </Button>
               </CardContent>
@@ -1362,21 +1585,21 @@ export default function AddExamPage() {
           </TabsContent>
         </Tabs>
 
-        <Card className="  border-0">
-          <CardContent className="pt-6">
+        <Card className='border-0 shadow-none'>
+          <CardContent className='pt-6'>
             <Button
               onClick={handleSubmit}
-              className="w-full h-12 text-lg bg-[#007acc] hover:bg-blue-700  rounded-md text-white font-semibold"
+              className='w-full h-12 text-lg bg-gradient-to-r from-[#007acc] to-[#007abc] hover:from-[#007abc] hover:to-[#007acc] rounded-md text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg'
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
+                  <div className='animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2'></div>
                   Submitting...
                 </>
               ) : (
                 <>
-                  <Save className="mr-2 h-5 w-5 " />
+                  <Save className='mr-2 h-5 w-5' />
                   Create Exam
                 </>
               )}
@@ -1386,11 +1609,11 @@ export default function AddExamPage() {
 
         {debugInfo && (
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm">Debug Information</CardTitle>
+            <CardHeader className='py-3'>
+              <CardTitle className='text-sm'>Debug Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-xs font-mono bg-muted p-4 rounded-md overflow-auto max-h-[200px]">
+              <pre className='text-xs font-mono bg-muted p-4 rounded-md overflow-auto max-h-[200px]'>
                 {debugInfo}
               </pre>
             </CardContent>

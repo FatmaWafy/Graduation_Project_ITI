@@ -20,6 +20,7 @@ import {
   Eye,
   Trash2,
   Search,
+  MoreHorizontal,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteStudentDialog } from "./delete-student-dialog";
 import type { Student } from "../types";
-import dayjs from "dayjs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface StudentTableProps {
   students: Student[];
@@ -64,94 +73,113 @@ export function StudentTable({
           <Button
             variant='ghost'
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className='hover:bg-[#f0f9ff]'
           >
-            Name
+            Student
             {{
-              asc: <ChevronUp className='ml-2 h-4 w-4' />,
-              desc: <ChevronDown className='ml-2 h-4 w-4' />,
+              asc: <ChevronUp className='ml-2 h-4 w-4 text-[#007acc]' />,
+              desc: <ChevronDown className='ml-2 h-4 w-4 text-[#007acc]' />,
             }[column.getIsSorted() as string] ?? (
-              <ChevronsUpDown className='ml-2 h-4 w-4' />
+              <ChevronsUpDown className='ml-2 h-4 w-4 opacity-50' />
             )}
           </Button>
         );
       },
       cell: ({ row }) => (
-        <div className='font-medium'>{row.original.user.username}</div>
+        <div
+          className='flex items-center gap-3 cursor-pointer'
+          onClick={() => onView(row.original.id)} // نقل الحدث هنا
+        >
+          <Avatar className='h-8 w-8 border border-[#e6f4ff]'>
+            <AvatarImage
+              src={row.original.user.profile_image || ""}
+              alt={row.original.user.username}
+            />
+            <AvatarFallback className='bg-[#f0f9ff] text-[#007acc]'>
+              {row.original.user.username?.charAt(0).toUpperCase() || "S"}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className='font-medium'>{row.original.user.username}</div>
+            <div className='text-xs text-muted-foreground'>
+              {row.original.track_name || "No track"}
+            </div>
+          </div>
+        </div>
       ),
     },
     {
       id: "email",
       header: "Email",
-      cell: ({ row }) => <div>{row.original.user.email}</div>,
+      cell: ({ row }) => (
+        <div className='font-mono text-sm text-muted-foreground'>
+          {row.original.user.email}
+        </div>
+      ),
     },
-
-    // will continue after edit backend (enrollment_date)
-    // {
-    //   id: "enrollment_date",
-    //   header: ({ column }) => (
-    //     <Button
-    //       variant='ghost'
-    //       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    //     >
-    //       Enrollment Date
-    //       {{
-    //         asc: <ChevronUp className='ml-2 h-4 w-4' />,
-    //         desc: <ChevronDown className='ml-2 h-4 w-4' />,
-    //       }[column.getIsSorted() as string] ?? (
-    //         <ChevronsUpDown className='ml-2 h-4 w-4' />
-    //       )}
-    //     </Button>
-    //   ),
-    //   cell: ({ row }) => {
-    //     const rawDate = row.original.enrollment_date;
-    //     if (!rawDate) {
-    //       return <div className='text-red-500'>Invalid Date</div>;
-    //     }
-
-    //     const date = dayjs(rawDate);
-    //     return date.isValid() ? (
-    //       <div>{date.format("DD/MM/YYYY")}</div>
-    //     ) : (
-    //       <div className='text-red-500'>❌ Invalid Date</div>
-    //     );
-    //   },
-    // },
-
+    {
+      id: "university",
+      header: "University",
+      cell: ({ row }) => (
+        <div className='text-sm'>
+          {row.original.university || "Not specified"}
+        </div>
+      ),
+    },
     {
       id: "actions",
       cell: ({ row }) => {
         const student = row.original;
 
         return (
-          <div className='flex items-center justify-end gap-2'>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => onView(student.id)}
-              title='View student details'
-            >
-              <Eye className='h-4 w-4' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => onEdit(student)}
-              title='Edit student'
-            >
-              <Edit className='h-4 w-4' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => {
-                setStudentToDelete(student);
-                setDeleteDialogOpen(true);
-              }}
-              title='Delete student'
-              className='text-destructive hover:text-destructive'
-            >
-              <Trash2 className='h-4 w-4' />
-            </Button>
+          <div className='flex items-center justify-end'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-8 w-8'
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className='h-4 w-4' />
+                  <span className='sr-only'>Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end' className='w-[160px]'>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(student.id);
+                  }}
+                >
+                  <Eye className='mr-2 h-4 w-4' />
+                  View Details
+                </DropdownMenuItem>
+                {/* <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(student);
+                  }}
+                >
+                  <Edit className='mr-2 h-4 w-4' />
+                  Edit Student
+                </DropdownMenuItem> */}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStudentToDelete(student);
+                    setDeleteDialogOpen(true);
+                  }}
+                  className='text-destructive focus:text-destructive'
+                >
+                  <Trash2 className='mr-2 h-4 w-4' />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         );
       },
@@ -171,6 +199,11 @@ export function StudentTable({
       sorting,
       columnFilters,
     },
+    initialState: {
+      pagination: {
+        pageSize: 8,
+      },
+    },
   });
 
   if (isLoading) {
@@ -179,35 +212,34 @@ export function StudentTable({
 
   return (
     <div className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          <Search className='h-4 w-4 text-muted-foreground' />
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='relative'>
+          <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
           <Input
-            placeholder='Filter students...'
-            // value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            // onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
-
+            placeholder='Search students...'
             value={(table.getColumn("name")?.getFilterValue() ?? "") as string}
             onChange={(event) =>
               table.getColumn("name")?.setFilterValue(event.target.value)
             }
-            className='max-w-sm'
+            className='pl-9 w-full sm:max-w-sm bg-white'
           />
         </div>
-        <div className='flex items-center gap-2'>
-          <p className='text-sm text-muted-foreground'>
-            Showing {table.getFilteredRowModel().rows.length} of{" "}
-            {students.length} students
-          </p>
+        <div className='flex items-center text-sm text-muted-foreground'>
+          Showing {table.getFilteredRowModel().rows.length} of {students.length}{" "}
+          students
         </div>
       </div>
-      <div className='rounded-md border'>
+
+      <div className='rounded-md border border-[#e6f4ff] overflow-hidden bg-white'>
         <Table>
-          <TableHeader>
+          <TableHeader className='bg-[#f8fafc]'>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className='hover:bg-[#f0f9ff]/50'>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className='text-[#64748b] font-medium'
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -225,6 +257,7 @@ export function StudentTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className='hover:bg-[#f0f9ff]/50' // أزل cursor-pointer و onClick
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -249,23 +282,32 @@ export function StudentTable({
           </TableBody>
         </Table>
       </div>
-      <div className='flex items-center justify-end space-x-2 py-4'>
-        <Button
-          variant='outline'
-          size='sm'
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant='outline'
-          size='sm'
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
+
+      <div className='flex items-center justify-between py-4'>
+        <div className='text-sm text-muted-foreground'>
+          Page {table.getState().pagination.pageIndex + 1} of{" "}
+          {table.getPageCount()}
+        </div>
+        <div className='flex items-center space-x-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className='border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]'
+          >
+            Previous
+          </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className='border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]'
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       <DeleteStudentDialog
@@ -306,16 +348,22 @@ function StudentTableSkeleton() {
             {Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  <Skeleton className='h-6 w-[150px]' />
+                  <div className='flex items-center gap-3'>
+                    <Skeleton className='h-8 w-8 rounded-full' />
+                    <div>
+                      <Skeleton className='h-5 w-[120px]' />
+                      <Skeleton className='h-3 w-[80px] mt-1' />
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-6 w-[200px]' />
+                  <Skeleton className='h-5 w-[180px]' />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-6 w-[100px]' />
+                  <Skeleton className='h-5 w-[100px]' />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-6 w-[100px]' />
+                  <Skeleton className='h-8 w-8 rounded-full ml-auto' />
                 </TableCell>
               </TableRow>
             ))}

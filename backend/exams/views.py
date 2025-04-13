@@ -818,8 +818,6 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-
 class CheatingLogView(APIView):
     permission_classes = [IsAuthenticated]
 

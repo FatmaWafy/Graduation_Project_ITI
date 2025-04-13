@@ -34,6 +34,7 @@ token_generator = PasswordResetTokenGenerator()
 
 
 class RegisterInstructorAPIView(APIView):
+    
     permission_classes = [AllowAny]
 
     # قائمة البرانشات المعتمدة
@@ -163,181 +164,6 @@ class ResetPasswordAPIView(APIView):
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
 
-# class RegisterStudentAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         if request.user.role != "instructor":
-#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
-
-#         data = request.data.copy()
-#         data["role"] = "student"
-#         password = get_random_string(length=12)
-#         data["password"] = password
-
-#         instructor = Instructor.objects.get(user=request.user)
-
-#         # التحقق من وجود Tracks للمدرب
-#         if instructor.tracks.count() == 0:
-#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # إذا كان للمدرب أكتر من تراك، يجب تحديد التراك
-#         if instructor.tracks.count() > 1:
-#             if "track_name" not in data:
-#                 return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
-
-#             track = instructor.tracks.filter(name=data["track_name"]).first()
-#             if not track:
-#                 return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             track = instructor.tracks.first()
-
-#         if not track:
-#             return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         data["track_name"] = track.name
-#         data["branch"] = instructor.branch.name  # ربط الطالب بالبرانش الخاص بالإنستراكتور
-
-#         serializer = StudentSerializer(
-#             data={
-#                 "user": data,
-#                 "track": data["track_name"],
-#                 "branch": data["branch"],  # التعديل هنا لربط البرانش بالطالب
-#             }
-#         )
-
-#         if serializer.is_valid():
-#             student = serializer.save()
-
-#             email_subject = "Your Student Account Credentials"
-#             email_message = f"""
-#             Hi {student.user.username},
-
-#             Your student account has been created successfully.
-
-#             Track: {student.track.name}
-#             Branch: {student.branch.name}
-#             Email: {student.user.email}
-#             Password: {password}
-
-#             Please change your password after logging in.
-
-#             Best regards,
-#             Your Team
-#             """
-
-#             send_mail(
-#                 subject=email_subject,
-#                 message=email_message,
-#                 from_email=settings.DEFAULT_FROM_EMAIL,
-#                 recipient_list=[student.user.email],
-#                 fail_silently=False,
-#             )
-
-#             refresh = RefreshToken.for_user(student.user)
-#             return Response({
-#                 "message": "Student registered successfully. Login credentials sent via email.",
-#                 "access": str(refresh.access_token),
-#                 "refresh": str(refresh),
-#             }, status=status.HTTP_201_CREATED)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class RegisterStudentAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        if request.user.role != "instructor":
-            return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
-
-        data = request.data.copy()
-        data["role"] = "student"
-        password = get_random_string(length=12)
-        data["password"] = password
-
-        try:
-            instructor = Instructor.objects.get(user=request.user)
-        except Instructor.DoesNotExist:
-            return Response({"error": "Instructor not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # التحقق من وجود Tracks للمدرب
-        if instructor.tracks.count() == 0:
-            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # إذا كان للمدرب أكتر من تراك، يجب تحديد التراك
-        if instructor.tracks.count() > 1:
-            if "track_name" not in data:
-                return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
-
-            track = instructor.tracks.filter(name=data["track_name"]).first()
-            if not track:
-                return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            track = instructor.tracks.first()
-
-        if not track:
-            return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
-
-        data["track_name"] = track.name
-        data["branch"] = instructor.branch.name if instructor.branch else None
-
-        serializer = StudentSerializer(
-            data={
-                "user": data,
-                "track": data["track_name"],
-                "branch": data["branch"],
-            }
-        )
-
-        if serializer.is_valid():
-            student = serializer.save()
-
-            # إرسال الإيميل (مع معالجة الأخطاء)
-            try:
-                email_subject = "Your Student Account Credentials"
-                email_message = f"""
-                Hi {student.user.username},
-
-                Your student account has been created successfully.
-
-                Track: {student.track.name}
-                Branch: {student.branch.name if student.branch else 'No Branch'}
-                Email: {student.user.email}
-                Password: {password}
-
-                Please change your password after logging in.
-
-                Best regards,
-                Your Team
-                """
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[student.user.email],
-                    fail_silently=True,  # تغيير إلى True عشان نتجنب الأخطاء
-                )
-            except Exception as e:
-                print(f"Failed to send email: {str(e)}")  # تسجيل خطأ الإيميل
-
-            # إنشاء الـ token (مع معالجة الأخطاء)
-            try:
-                refresh = RefreshToken.for_user(student.user)
-                return Response({
-                    "message": "Student registered successfully. Login credentials sent via email.",
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh),
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                print(f"Failed to generate token: {str(e)}")
-                return Response({
-                    "message": "Student registered successfully, but token generation failed.",
-                }, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 def get_leetcode_solved_problems(leetcode_username):
 
     if '/u/' in leetcode_username:
@@ -366,7 +192,83 @@ def get_leetcode_solved_problems(leetcode_username):
         print(f"Error fetching LeetCode stats: {response.status_code}")
         return None
 
+class RegisterStudentAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        if request.user.role != "instructor":
+            return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+        data = request.data.copy()
+        password = get_random_string(length=12)
+
+        # التأكد من وجود حقل user في الـ data
+        if "user" not in data:
+            data["user"] = {}
+
+        # إضافة الـ password داخل user
+        data["user"]["password"] = password
+        data["user"]["role"] = "student"  # التأكد من إضافة الـ role داخل user
+
+        try:
+            instructor = Instructor.objects.get(user=request.user)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # أخد الـ branch من الـ instructor
+        if not instructor.branch:
+            return Response({"error": "Instructor has no assigned branch."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # إذا لم يتم إرسال branch في الطلب، نستخدم branch الـ instructor
+        if "branch" not in data:
+            data["branch"] = instructor.branch.id
+
+        serializer = StudentSerializer(data=data)
+
+        if serializer.is_valid():
+            student = serializer.save()
+
+            try:
+                email_subject = "Your Student Account Credentials"
+                email_message = f"""
+                Hi {student.user.username},
+
+                Your student account has been created successfully.
+
+                Track: {student.track.name if student.track else 'No Track Assigned'}
+                Branch: {student.branch.name if student.branch else 'No Branch Assigned'}
+                Email: {student.user.email}
+                Password: {password}
+
+                Please change your password after logging in.
+
+                Best regards,
+                Your Team
+                """
+                send_mail(
+                    subject=email_subject,
+                    message=email_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[student.user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Failed to send email: {str(e)}")
+
+            try:
+                refresh = RefreshToken.for_user(student.user)
+                return Response({
+                    "message": "Student registered successfully. Login credentials sent via email.",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                print(f"Failed to generate token: {str(e)}")
+                return Response({
+                    "message": "Student registered successfully, but token generation failed.",
+                }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -456,6 +358,8 @@ class StudentViewSet(viewsets.ModelViewSet):
             student.user.username = user_data.get(
                 'username', student.user.username)
             student.user.email = user_data.get('email', student.user.email)
+            student.user.phone_number = user_data.get('phone_number', student.user.phone_number)
+            student.user.address = user_data.get('address', student.user.address)
             student.user.save()
 
         for attr, value in data.items():
@@ -463,6 +367,23 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         student.save()
         return Response({"message": "Student updated successfully!", "student": self.get_serializer(student).data}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+            """
+            Delete a specific student based on user ID
+            """
+            user_id = kwargs.get('user_id')
+
+            try:
+                user = User.objects.get(id=user_id)
+                student = Student.objects.get(user=user)
+            except User.DoesNotExist:
+                return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            except Student.DoesNotExist:
+                return Response({"error": "Student not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+            student.delete()
+            return Response({"message": "Student deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'], url_path='external-stats')
     def external_stats(self, request, user_id=None):
@@ -499,7 +420,6 @@ class StudentViewSet(viewsets.ModelViewSet):
             "github_repos": github_repos,
             "leetcode_solved": leetcode_solved
         })
-
 
     @action(detail=False, methods=['get'], url_path='external-stats/by-student-id/(?P<student_id>[^/.]+)')
     def external_stats_by_student_id(self, request, student_id=None):
@@ -549,7 +469,21 @@ class StudentViewSet(viewsets.ModelViewSet):
         combined_data = {**user_data, **student_data}
         return Response(combined_data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['delete'], url_path='delete-by-student-id/(?P<student_id>[^/.]+)')
+    def delete_by_student_id(self, request, student_id=None):
+        """
+        Delete a specific student based on the student ID
+        """
+        if not student_id:
+            return Response({"error": "Student ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        student.delete()
+        return Response({"message": "Student deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
 
 class TrackListAPIView(APIView):
     """
@@ -560,107 +494,6 @@ class TrackListAPIView(APIView):
     def get(self, request):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
-
-
-
-# class RegisterStudentsFromExcelAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         # تأكد أن المستخدم هو المدرب
-#         if request.user.role != "instructor":
-#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
-
-#         # التحقق من وجود ملف
-#         if 'file' not in request.FILES:
-#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         file = request.FILES['file']
-
-#         # محاولة فتح وقراءة ملف CSV
-#         try:
-#             # استخدام مكتبة csv لقراءة البيانات من الملف
-#             file_data = file.read().decode("utf-8").splitlines()
-#             csv_reader = csv.reader(file_data)
-#             next(csv_reader)  # تخطي العنوان
-#         except Exception as e:
-#             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         instructor = Instructor.objects.get(user=request.user)
-
-#         # التحقق من وجود Tracks للمدرب
-#         if instructor.tracks.count() == 0:
-#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # إذا كان المدرب لديه أكثر من تراك، نتأكد من التحديد الصحيح للتراك
-#         if instructor.tracks.count() > 1:
-#             track_names = [track.name for track in instructor.tracks.all()]
-#         else:
-#             track_names = [instructor.tracks.first().name]
-
-#         students_added = 0
-#         for row in csv_reader:  # قراءة البيانات من كل صف
-#             # تحقق من أن الصف يحتوي على 3 عناصر على الأقل (username, email, track_name)
-#             if len(row) < 3:
-#                 continue  # تخطي الصف إذا كان لا يحتوي على البيانات الكافية
-
-#             username, email, track_name = row[0], row[1], row[2]
-
-#             # التحقق من أن التراك الموجود في الملف هو تراك موجود بالفعل
-#             if track_name not in track_names:
-#                 continue  # تجاهل الصف إذا كان التراك غير موجود
-
-#             # توليد كلمة مرور عشوائية
-#             password = ''.join(
-#                 choice(string.ascii_letters + string.digits) for i in range(12))
-
-#             # إنشاء حساب المستخدم الجديد
-#             user_instance = User.objects.create_user(
-#                 email=email,
-#                 username=username,  # يمكن استخدام اسم المستخدم كما هو
-#                 password=password,
-#                 role='student'  # تعيين دور المستخدم كـ "student"
-#             )
-
-#             # إنشاء كائن التراك
-#             track = Track.objects.get(name=track_name)
-
-#             # إنشاء كائن الطالب وربطه بحساب المستخدم والتراك
-#             student = Student.objects.create(
-#                 user=user_instance,  # ربط الطالب بحساب المستخدم الذي تم إنشاؤه
-#                 track=track
-#             )
-
-#             # إرسال بريد إلكتروني للطالب يحتوي على بيانات الدخول
-#             email_subject = "Your Student Account Credentials"
-#             email_message = f"""
-#             Hi {student.user.username},
-
-#             Your student account has been created successfully.
-
-#             Track: {student.track.name}
-#             Email: {student.user.email}
-#             Password: {password}
-
-#             Please change your password after logging in.
-
-#             Best regards,
-#             Your Team
-#             """
-
-#             send_mail(
-#                 subject=email_subject,
-#                 message=email_message,
-#                 from_email=settings.DEFAULT_FROM_EMAIL,
-#                 recipient_list=[student.user.email],
-#                 fail_silently=False,
-#             )
-
-#             students_added += 1
-
-#         return Response({
-#             "message": f"{students_added} students added successfully.",
-#         }, status=status.HTTP_201_CREATED)
 
 class RegisterStudentsFromExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -769,7 +602,6 @@ class RegisterStudentsFromExcelAPIView(APIView):
             "message": f"{students_added} students added successfully.",
         }, status=status.HTTP_201_CREATED)
 
-
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -823,7 +655,6 @@ class UploadUserProfileImage(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
@@ -882,9 +713,14 @@ class InstructorViewSet(viewsets.ModelViewSet):
         combined_data = {**user_data, **instructor_data}
 
         return Response(combined_data, status=status.HTTP_200_OK)
-     
+
 class BranchListCreateView(APIView):
-    def post(self, request, *args, **kwargs):
+    permission_classes = [AllowAny]
+    def get(self, request, *args, **kwargs):
+        branches = Branch.objects.all()
+        serializer = BranchSerializer(branches, many=True)
+        return Response(serializer.data)
+    def post(self, request,args, kwargs):
         # Check if it's a list of objects
         if isinstance(request.data, list):
             serializer = BranchSerializer(data=request.data, many=True)
@@ -895,13 +731,21 @@ class BranchListCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self, request, *args, kwargs):
+        # Update branch based on the given ID (assuming it's passed in kwargs)
+        branch = Branch.objects.get(id=kwargs.get('id'))
+        serializer = BranchSerializer(branch, data=request.data, partial=True)  # partial=True allows partial updates
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class BranchRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
-# CRUD for Course
 class CourseListCreateView(generics.ListCreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
@@ -918,7 +762,7 @@ class CourseListCreateView(generics.ListCreateAPIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return super().create(request, *args, **kwargs)  # Handle single course creation
-            
+
 class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer

@@ -36,8 +36,7 @@ urlpatterns = [
     
     # مسار الـ PATCH لتحديث بيانات الطالب
     path('students/<int:user_id>/update/', StudentViewSet.as_view({'patch': 'update'}), name='student-update'),
-    
-    # مسار الـ GET للحصول على الـ external stats للطالب
+    path('students/delete-by-student-id/<int:student_id>/', StudentViewSet.as_view({'delete': 'delete_by_student_id'}), name='student-delete-by-id'),     # مسار الـ GET للحصول على الـ external stats للطالب
     path('students/<int:user_id>/external-stats/', StudentViewSet.as_view({'get': 'external_stats'}), name='student-external-stats'),
     
     path('instructors/<int:user_id>/', InstructorViewSet.as_view({'get': 'retrieve'}), name='instructor-detail'),
@@ -47,6 +46,6 @@ urlpatterns = [
     # Course URLs
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroyView.as_view(), name='course-retrieve-update-destroy'),
-
+    
     path('', include(router.urls)),
 ]

@@ -32,6 +32,7 @@ interface Student {
   id: number;
   user: User;
   track: number | null;
+  branch: number | null;
 }
 
 interface MCQQuestion {
@@ -60,10 +61,16 @@ interface Exam {
 interface TemporaryExamData {
   exam: number;
   track?: number;
+  branch?: number;
   students: number[];
   start_datetime: string;
   end_datetime: string;
   duration?: number;
+}
+
+interface Branch {
+  id: number;
+  name: string;
 }
 
 export default function SetExamPage() {
@@ -71,6 +78,7 @@ export default function SetExamPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]); // إضافة state للـ branches
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [emailFilter, setEmailFilter] = useState("");
@@ -81,6 +89,7 @@ export default function SetExamPage() {
   const [formData, setFormData] = useState<TemporaryExamData>({
     exam: 0,
     track: undefined,
+    branch: undefined,
     students: [],
     start_datetime: "",
     end_datetime: "",
@@ -88,6 +97,7 @@ export default function SetExamPage() {
   const [loading, setLoading] = useState({
     exams: true,
     tracks: true,
+    branches: true,
     students: true,
     submitting: false,
   });
@@ -99,6 +109,27 @@ export default function SetExamPage() {
     const timezoneOffset = now.getTimezoneOffset() * 60000;
     const localISOTime = new Date(now.getTime() - timezoneOffset).toISOString();
     return localISOTime.slice(0, 16); // Remove seconds and milliseconds
+  };
+
+  // دالة جلب الـ Branches
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/users/branches/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch branches");
+      }
+      const data = await response.json();
+      setBranches(data);
+    } catch (error) {
+      toast.error("Failed to fetch branches");
+    } finally {
+      setLoading((prev) => ({ ...prev, branches: false }));
+    }
   };
 
   // Filter exams based on search term
@@ -177,6 +208,7 @@ export default function SetExamPage() {
     fetchExams();
     fetchTracks();
     fetchStudents();
+    fetchBranches();
   }, []);
 
   // Filter students based on email and track
@@ -197,9 +229,13 @@ export default function SetExamPage() {
       result = result.filter((student) => student.track === formData.track);
     }
 
+    // Apply branch filter if selected
+    if (formData.branch) {
+      result = result.filter((student) => student.branch === formData.branch);
+    }
 
     setFilteredStudents(result);
-  }, [emailFilter, formData.track, allStudents]);
+  }, [emailFilter, formData.track, formData.branch, allStudents]);
 
   const handleExamSelect = (exam: Exam) => {
     setSelectedExam(exam);
@@ -243,7 +279,10 @@ export default function SetExamPage() {
     } else {
       setFormData({
         ...formData,
-        [name]: name === "track" ? parseInt(value) || undefined : value,
+        [name]:
+          name === "track" || name === "branch"
+            ? parseInt(value) || undefined
+            : value,
       });
     }
   };
@@ -326,6 +365,7 @@ export default function SetExamPage() {
         body: JSON.stringify({
           ...formData,
           track: formData.track || undefined,
+          branch: formData.branch || undefined,
         }),
       });
 
@@ -346,7 +386,12 @@ export default function SetExamPage() {
     }
   };
 
-  if (loading.exams || loading.tracks || loading.students) {
+  if (
+    loading.exams ||
+    loading.tracks ||
+    loading.branches ||
+    loading.students
+  ) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -386,8 +431,9 @@ export default function SetExamPage() {
               displayedExams.map((exam) => (
                 <Card
                   key={exam.id}
-                  className={`overflow-hidden flex flex-col cursor-pointer transition-all hover:shadow-md ${selectedExam?.id === exam.id ? "ring-2 ring-[#007acc]" : ""
-                    }`}
+                  className={`overflow-hidden flex flex-col cursor-pointer transition-all hover:shadow-md ${
+                    selectedExam?.id === exam.id ? "ring-2 ring-[#007acc]" : ""
+                  }`}
                   onClick={() => handleExamSelect(exam)}
                 >
                   <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -465,7 +511,7 @@ export default function SetExamPage() {
             <h2 className="text-xl font-semibold mb-4">Exam Configuration</h2>
 
             {/* Exam Information */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Selected Exam
@@ -493,6 +539,25 @@ export default function SetExamPage() {
                   {tracks.map((track) => (
                     <option key={track.id} value={track.id}>
                       {track.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Branch (Optional)
+                </label>
+                <select
+                  name="branch"
+                  className="w-full p-2 border rounded"
+                  onChange={handleInputChange}
+                  value={formData.branch ?? ""}
+                >
+                  <option value="">All Branches</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
                     </option>
                   ))}
                 </select>
@@ -555,10 +620,11 @@ export default function SetExamPage() {
                       <button
                         type="button"
                         onClick={handleSelectAllFiltered}
-                        className={`px-3 py-2 text-sm rounded ${allFilteredSelected()
+                        className={`px-3 py-2 text-sm rounded ${
+                          allFilteredSelected()
                             ? "bg-gray-200 text-white"
                             : "bg-[#007acc] text-white hover:bg-[#007abc]"
-                          }`}
+                        }`}
                         disabled={allFilteredSelected()}
                       >
                         {allFilteredSelected() ? "All Selected" : "Select All"}
@@ -585,10 +651,11 @@ export default function SetExamPage() {
                   filteredStudents.map((student) => (
                     <div
                       key={student.id}
-                      className={`p-3 border-b flex items-center ${formData.students.includes(student.id)
+                      className={`p-3 border-b flex items-center ${
+                        formData.students.includes(student.id)
                           ? "bg-green-50"
                           : "hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       <input
                         type="checkbox"
@@ -607,13 +674,16 @@ export default function SetExamPage() {
                         <div className="text-sm text-gray-600">
                           {student.user.email}
                         </div>
-                        {student.track && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            Track:{" "}
-                            {tracks.find((t) => t.id === student.track)?.name ||
-                              "Unknown"}
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Track:{" "}
+                          {tracks.find((t) => t.id === student.track)?.name ||
+                            "Unknown"}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Branch:{" "}
+                          {branches.find((b) => b.id === student.branch)?.name ||
+                            "Unknown"}
+                        </div>
                       </label>
                     </div>
                   ))
@@ -624,7 +694,7 @@ export default function SetExamPage() {
             <button
               type="submit"
               disabled={loading.submitting}
-              className="px-4 py-2  bg-[#007acc] text-white rounded hover:bg-blue-700 disabled:bg-[#007acc]"
+              className="px-4 py-2 bg-[#007acc] text-white rounded hover:bg-blue-700 disabled:bg-[#007acc]"
             >
               {loading.submitting ? "Scheduling..." : "Schedule Exam"}
             </button>
@@ -633,5 +703,4 @@ export default function SetExamPage() {
       </div>
     </div>
   );
-
 }

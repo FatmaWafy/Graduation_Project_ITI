@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarIcon, Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { useAddStudent, useUpdateStudent } from "../hooks/use-students";
 import type { Student } from "../types";
@@ -82,7 +76,7 @@ export function StudentModal({
     useUpdateStudent();
   const [showPassword, setShowPassword] = useState(false);
 
-  // Initialize form with default values to prevent controlled/uncontrolled warnings
+  // Initialize form with default values
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
@@ -148,11 +142,8 @@ export function StudentModal({
       const userUpdates: Record<string, any> = {};
 
       // Only include password if provided
-      // if (formattedData.password) {
-      //   userUpdates.password = formattedData.password
-      // }
       if (formattedData.password && formattedData.password.length >= 6) {
-        userUpdates.password = formattedData.password; // يتم تحديث الباسورد فقط لو المستخدم أدخله
+        userUpdates.password = formattedData.password;
       }
 
       // Check which fields have changed and only include those
@@ -175,6 +166,7 @@ export function StudentModal({
       if (formattedData.notes !== student.user.notes) {
         userUpdates.notes = formattedData.notes || "";
       }
+
       if (formattedData.username !== student.user.username) {
         userUpdates.username = formattedData.username || "user";
       }
@@ -183,9 +175,6 @@ export function StudentModal({
         userUpdates.track_name = formattedData.track_name || "";
       }
 
-      // if (formattedData.university !== student.university) {
-      //   userUpdates.university = formattedData.university;
-      // }
       // Format enrollment_date for comparison
       const currentEnrollmentDate = student.user.enrollment_date
         ? new Date(student.user.enrollment_date).toISOString().split("T")[0]
@@ -202,15 +191,15 @@ export function StudentModal({
       const updatePayload: Record<string, any> = {
         id: student.id,
         user: {
-          username: formattedData.username, // إذا تم تغيير اسم المستخدم
-          email: formattedData.email, // إذا تم تغيير البريد الإلكتروني
-          phone: formattedData.phone || "", // إذا تم تغيير رقم الهاتف
-          address: formattedData.address || "", // إذا تم تغيير العنوان
-          status: formattedData.status || "active", // إذا تم تغيير الحالة
-          notes: formattedData.notes || "", // إذا تم تغيير الملاحظات
-          enrollment_date: formattedData.enrollment_date || "", // إذا تم تغيير تاريخ التسجيل
+          username: formattedData.username,
+          email: formattedData.email,
+          phone: formattedData.phone || "",
+          address: formattedData.address || "",
+          status: formattedData.status || "active",
+          notes: formattedData.notes || "",
+          enrollment_date: formattedData.enrollment_date || "",
         },
-        track_name: formattedData.track_name, // إذا تم تغيير اسم المسار
+        track_name: formattedData.track_name,
       };
 
       // Only include track_name if it changed
@@ -287,9 +276,9 @@ export function StudentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='sm:max-w-[600px]'>
+      <DialogContent className='sm:max-w-[600px] border-[#e6f4ff] bg-white'>
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className='text-[#007acc]'>
             {isEditMode ? "Edit Student" : "Add New Student"}
           </DialogTitle>
           <DialogDescription>
@@ -299,8 +288,8 @@ export function StudentModal({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-            <div className='grid grid-cols-2 gap-4'>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
                 name='username'
@@ -308,7 +297,11 @@ export function StudentModal({
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder='Enter student username' {...field} />
+                      <Input
+                        placeholder='Enter student username'
+                        {...field}
+                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -321,7 +314,11 @@ export function StudentModal({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder='student@example.com' {...field} />
+                      <Input
+                        placeholder='student@example.com'
+                        {...field}
+                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -329,7 +326,7 @@ export function StudentModal({
               />
             </div>
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
                 name='track_name'
@@ -337,7 +334,11 @@ export function StudentModal({
                   <FormItem>
                     <FormLabel>Track Name</FormLabel>
                     <FormControl>
-                      <Input placeholder='Computer Science' {...field} />
+                      <Input
+                        placeholder='Computer Science'
+                        {...field}
+                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -355,7 +356,7 @@ export function StudentModal({
                       value={field.value || "active"}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className='border-[#e6f4ff] focus:ring-[#007acc]'>
                           <SelectValue placeholder='Select student status' />
                         </SelectTrigger>
                       </FormControl>
@@ -372,42 +373,11 @@ export function StudentModal({
               />
             </div>
 
-            {/* <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                !isEditMode && (
-                  <FormItem>
-                  <FormLabel>{student ? "New Password (leave empty to keep current)" : "Student Password"}</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder={student ? "Leave empty to keep current password" : "Enter student password"}
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-                )
-              )}
-            /> */}
-            
-            {/* <FormField
-              control={form.control}
-              name='password'
-              render={({ field }) =>
-                !isEditMode ? (
+            {!isEditMode && (
+              <FormField
+                control={form.control}
+                name='password'
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>
                       {student
@@ -424,6 +394,7 @@ export function StudentModal({
                               : "Enter student password"
                           }
                           {...field}
+                          className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
                         />
                         <Button
                           type='button'
@@ -442,13 +413,11 @@ export function StudentModal({
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                ) : (
-                  <></> // ده هيرجع React Fragment فارغ لو `isEditMode` كان true
-                )
-              }
-            /> */}
+                )}
+              />
+            )}
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
                 name='phone'
@@ -460,6 +429,7 @@ export function StudentModal({
                         placeholder='(123) 456-7890'
                         {...field}
                         value={field.value || ""}
+                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
                       />
                     </FormControl>
                     <FormMessage />
@@ -468,69 +438,23 @@ export function StudentModal({
               />
               <FormField
                 control={form.control}
-                name='enrollment_date'
+                name='address'
                 render={({ field }) => (
-                  <FormItem  >
-                    <FormLabel   >Enrollment Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl >
-                          <Button
-                            variant={"outline"}
-                            className={` w-full pl-3 text-left font-normal ${
-                              !field.value ? "text-muted-foreground" : ""
-                            }`}
-                          >
-                            {(() => {
-                              if (!field.value) return <span>Pick a date</span>;
-                              try {
-                                const date = new Date(field.value);
-                                if (isNaN(date.getTime()))
-                                  return <span>Pick a date</span>;
-                                return format(date, "PPP");
-                              } catch (e) {
-                                return <span>Pick a date</span>;
-                              }
-                            })()}
-                            <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className='w-auto p-0' align='start'>
-                        <Calendar
-                          mode='single'
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='123 Main St, City, State, Zip'
+                        {...field}
+                        value={field.value || ""}
+                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name='address'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='123 Main St, City, State, Zip'
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
@@ -541,7 +465,7 @@ export function StudentModal({
                   <FormControl>
                     <Textarea
                       placeholder='Additional information about the student'
-                      className='resize-none'
+                      className='resize-none border-[#e6f4ff] focus-visible:ring-[#007acc]'
                       {...field}
                       value={field.value || ""}
                     />
@@ -551,10 +475,19 @@ export function StudentModal({
               )}
             />
             <DialogFooter>
-              <Button type='button' variant='outline' onClick={onClose}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={onClose}
+                className='border-[#e6f4ff]'
+              >
                 Cancel
               </Button>
-              <Button type='submit' disabled={isPending} className="bg-[#007acc] hover:bg-[#007abc]">
+              <Button
+                type='submit'
+                disabled={isPending}
+                className='bg-[#007acc] hover:bg-[#0062a3] text-white'
+              >
                 {isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
                 {student ? "Update Student" : "Add Student"}
               </Button>

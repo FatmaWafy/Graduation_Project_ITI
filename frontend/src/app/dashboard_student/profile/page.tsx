@@ -39,22 +39,27 @@ import { Lock, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 
+interface Track {
+  id: number;
+  name: string;
+}
+
 interface StudentData {
+  address: string;
+  phone_number: string;
   id: number;
   user: {
     id: number;
     username: string;
     email: string;
     role: string;
-    phone?: string;
+    phone_number?: string;
     address?: string;
     enrollment_date?: string;
     status?: string;
-    notes?: string;
     profile_image?: string;
   };
-  // track?: number;
-  track_name?: string;
+  track?: number | null;
   university?: string | null;
   graduation_year?: string | null;
   college?: string | null;
@@ -63,10 +68,14 @@ interface StudentData {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth(); // get the logged-in user data from context
+  const { user } = useAuth();
   const { toast } = useToast();
   const [studentData, setStudentData] = useState<StudentData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState({
+    student: true,
+    tracks: true,
+  });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState({
@@ -74,7 +83,6 @@ export default function ProfilePage() {
     email: "",
     phone: "",
     address: "",
-    bio: "",
     university: "",
     college: "",
     graduation_year: "",
@@ -92,29 +100,41 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
 
-  // Added: Handle profile image URL formatting
-  // useEffect(() => {
-  //   if (studentData?.user?.profile_image) {
-  //     const imageUrl = studentData.user.profile_image.startsWith("http")
-  //       ? studentData.user.profile_image
-  //       : `http://127.0.0.1:8000${studentData.user.profile_image}`;
-  //     setProfileImage(imageUrl);
-  //     console.log("Profile image set to:", imageUrl);
-  //   }
-  // }, [studentData]);
   useEffect(() => {
     if (studentData?.user?.profile_image) {
-      // Ensure we're using the full URL with timestamp to prevent caching
       const imageUrl = studentData.user.profile_image.startsWith("http")
         ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
-        : `http://127.0.0.1:8000${studentData.user.profile_image}?t=${new Date().getTime()}`
-      setProfileImage(imageUrl)
-      console.log("Profile image set to:", imageUrl)
+        : `http://127.0.0.1:8000${
+            studentData.user.profile_image
+          }?t=${new Date().getTime()}`;
+      setProfileImage(imageUrl);
     }
-  }, [studentData])
+  }, [studentData]);
+
+  const fetchTracks = async () => {
+    try {
+      const token = getClientSideToken();
+      const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      setTracks(data);
+    } catch (error) {
+      toast({
+        title: "Failed to fetch tracks",
+        description: "Could not load track information",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading((prev) => ({ ...prev, tracks: false }));
+    }
+  };
 
   const fetchStudentData = async () => {
-    setLoading(true);
+    setLoading((prev) => ({ ...prev, student: true }));
     try {
       const token = getClientSideToken();
       if (!token) {
@@ -147,22 +167,21 @@ export default function ProfilePage() {
       console.error("Error fetching student data:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setLoading(false);
+      setLoading((prev) => ({ ...prev, student: false }));
     }
   };
 
   useEffect(() => {
-    console.log("User data from context:", user);
     fetchStudentData();
+    fetchTracks();
   }, [user]);
 
   const updateFormStateFromStudentData = (data: StudentData) => {
     setFormState({
       name: data.user.username || "",
       email: data.user.email || "",
-      phone: data.user.phone || "",
+      phone: data.user.phone_number || "",
       address: data.user.address || "",
-      bio: data.user.notes || "",
       university: data.university || "",
       college: data.college || "",
       graduation_year: data.graduation_year || "",
@@ -175,26 +194,29 @@ export default function ProfilePage() {
     const { name, value } = e.target;
     setPasswordValues((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordValues.newPassword !== passwordValues.confirmPassword) {
       alert("New passwords don't match!");
       return;
     }
-  
+
     try {
       if (!studentData) {
         alert("Student data not loaded");
         return;
       }
-  
-      const res = await axios.post("http://localhost:8000/users/change-password/", {
-        student_id: studentData.id, // أهم تعديل هنا
-        currentPassword: passwordValues.currentPassword,
-        newPassword: passwordValues.newPassword,
-      });
-  
+
+      const res = await axios.post(
+        "http://localhost:8000/users/change-password/",
+        {
+          student_id: studentData.id,
+          currentPassword: passwordValues.currentPassword,
+          newPassword: passwordValues.newPassword,
+        }
+      );
+
       alert("Password changed successfully!");
       setPasswordValues({
         currentPassword: "",
@@ -205,7 +227,7 @@ export default function ProfilePage() {
       alert(error.response?.data?.error || "Something went wrong");
     }
   };
-  
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -248,17 +270,14 @@ export default function ProfilePage() {
         throw new Error("Authentication token not found");
       }
 
-      console.log("Updating profile for student:", studentData);
-
       const updatePayload = {
         id: studentData.id,
         user: {
           username: formState.name,
           email: formState.email,
           role: "student",
-          phone: formState.phone || "",
+          phone_number: formState.phone || "",
           address: formState.address || "",
-          notes: formState.bio || "",
         },
         university: formState.university || null,
         college: formState.college || null,
@@ -266,8 +285,6 @@ export default function ProfilePage() {
         github_profile: formState.github_profile || null,
         leetcode_profile: formState.leetcode_profile || null,
       };
-
-      console.log("Update payload:", updatePayload);
 
       const decoded = jwtDecode(token) as { user_id?: string };
       const userId = Number(decoded.user_id);
@@ -286,26 +303,19 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Update error response:", errorText);
         throw new Error(`Failed to update profile: ${response.statusText}`);
       }
 
-      // Updated: Image upload with improved handling
       if (imageFile) {
         const formData = new FormData();
         formData.append("profile_image", imageFile);
 
-        console.log(
-          "Uploading profile image for user ID:",
-          studentData.user.id
-        );
         const imageResponse = await fetch(
           `http://127.0.0.1:8000/users/upload-profile-image/${studentData.id}/`,
           {
             method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
-              // Removed Content-Type header to let browser set it automatically
             },
             body: formData,
           }
@@ -313,11 +323,9 @@ export default function ProfilePage() {
 
         if (!imageResponse.ok) {
           const errorText = await imageResponse.text();
-          console.error("Image upload error response:", errorText);
           throw new Error("Failed to upload profile image");
         }
 
-        // Refresh the profile image from the server
         const updatedImageResponse = await fetch(
           `http://127.0.0.1:8000/users/students/${userId}/`,
           {
@@ -335,13 +343,10 @@ export default function ProfilePage() {
             ? updatedData.user.profile_image
             : `http://127.0.0.1:8000${updatedData.user.profile_image}`;
           setProfileImage(newImageUrl);
-          console.log("Updated profile image URL:", newImageUrl);
-        } else {
-          console.error("Failed to refresh profile image after upload");
         }
       }
 
-      await fetchStudentData(); // Refresh student data after updating
+      await fetchStudentData();
 
       toast({
         title: "Profile updated",
@@ -350,7 +355,6 @@ export default function ProfilePage() {
 
       setIsEditing(false);
     } catch (err) {
-      console.error("Error updating profile:", err);
       toast({
         title: "Update failed",
         description:
@@ -362,7 +366,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
+  if (loading.student || loading.tracks) {
     return <Skeleton />;
   }
 
@@ -374,13 +378,17 @@ export default function ProfilePage() {
     return <div>No student data available</div>;
   }
 
+  // Get track name using the same logic as SetExamPage
+  const trackName =
+    tracks.find((t) => t.id === studentData.track)?.name || "Not assigned";
+
   return (
-    <div className='space-y-6'>
-      <div className='flex justify-between items-center'>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Profile</h1>
-          <p className='text-muted-foreground'>
-            Manage your personal information and preferences
+          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
+          <p className="text-muted-foreground">
+            Manage your personal information
           </p>
         </div>
         <Button onClick={() => setIsEditing(!isEditing)}>
@@ -388,31 +396,29 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      <Tabs defaultValue='info'>
+      <Tabs defaultValue="info">
         <TabsList>
-          <TabsTrigger value='info'>Personal Info</TabsTrigger>
-          <TabsTrigger value='academic'>Academic</TabsTrigger>
-          <TabsTrigger value='preferences'>Preferences</TabsTrigger>
-          <TabsTrigger value='account'>Password</TabsTrigger>
+          <TabsTrigger value="info">Personal Info</TabsTrigger>
+          <TabsTrigger value="academic">Academic</TabsTrigger>
+          <TabsTrigger value="account">Password</TabsTrigger>
         </TabsList>
 
-        <TabsContent value='info' className='space-y-4 pt-4'>
+        <TabsContent value="info" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Your personal details</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0'>
-                  <div className='relative'>
-                    <Avatar className='h-24 w-24'>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24">
                       <AvatarImage
                         src={profileImage || studentData.user.profile_image}
                         alt={studentData?.user.username}
                         onError={(e) => {
-                          console.error("Error loading profile image:", e);
-                          e.currentTarget.src = ""; // Clear src to show fallback
+                          e.currentTarget.src = "";
                         }}
                       />
                       <AvatarFallback>
@@ -421,120 +427,103 @@ export default function ProfilePage() {
                     </Avatar>
                     {isEditing && (
                       <div
-                        className='absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer'
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer"
                         onClick={triggerFileInput}
                       >
-                        <Upload className='h-6 w-6 text-white' />
+                        <Upload className="h-6 w-6 text-white" />
                         <input
-                          type='file'
+                          type="file"
                           ref={fileInputRef}
-                          className='hidden'
-                          accept='image/*'
+                          className="hidden"
+                          accept="image/*"
                           onChange={handleImageChange}
                         />
                       </div>
                     )}
                   </div>
-                  <div className='flex-1'>
+                  <div className="flex-1">
                     {isEditing && (
                       <Button
-                      type="button"
-                      variant='outline'
-                      size='sm'
-                      onClick={triggerFileInput}
-                    >
-                      Change Avatar
-                    </Button>
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={triggerFileInput}
+                      >
+                        Change Avatar
+                      </Button>
                     )}
                   </div>
                 </div>
 
-                <div className='grid gap-4 sm:grid-cols-2'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='name'>Full Name</Label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
                     {isEditing ? (
                       <Input
-                        id='name'
-                        name='name'
+                        id="name"
+                        name="name"
                         value={formState.name}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.name}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='email'>Email</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
                     {isEditing ? (
                       <Input
-                        id='email'
-                        name='email'
-                        type='email'
+                        id="email"
+                        name="email"
+                        type="email"
                         value={formState.email}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.email}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='phone'>Phone</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
                     {isEditing ? (
                       <Input
-                        id='phone'
-                        name='phone'
+                        id="phone"
+                        name="phone"
                         value={formState.phone}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.phone || "Not provided"}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='address'>Address</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
                     {isEditing ? (
                       <Input
-                        id='address'
-                        name='address'
+                        id="address"
+                        name="address"
                         value={formState.address}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.address || "Not provided"}
                       </div>
                     )}
                   </div>
                 </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='bio'>Bio</Label>
-                  {isEditing ? (
-                    <Textarea
-                      id='bio'
-                      name='bio'
-                      value={formState.bio}
-                      onChange={handleChange}
-                      rows={4}
-                    />
-                  ) : (
-                    <div className='p-2 border rounded-md bg-muted/20 min-h-[100px]'>
-                      {formState.bio || "No bio provided"}
-                    </div>
-                  )}
-                </div>
               </CardContent>
               {isEditing && (
                 <CardFooter>
-                  <Button type='submit' disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Save Changes
                   </Button>
@@ -549,17 +538,17 @@ export default function ProfilePage() {
               <CardDescription>Your contact details</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className='space-y-4'>
-                <div className='flex items-center gap-3'>
-                  <Mail className='h-5 w-5 text-muted-foreground' />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.email}</span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <Phone className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.phone || "Not provided"}</span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <MapPin className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.address || "Not provided"}</span>
                 </div>
               </div>
@@ -567,7 +556,7 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value='academic' className='space-y-4 pt-4'>
+        <TabsContent value="academic" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Academic Information</CardTitle>
@@ -576,84 +565,82 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='grid gap-4 sm:grid-cols-2'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='university'>University</Label>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="university">University</Label>
                     {isEditing ? (
                       <Input
-                        id='university'
-                        name='university'
+                        id="university"
+                        name="university"
                         value={formState.university || ""}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.university || "Not provided"}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='college'>College</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="college">College</Label>
                     {isEditing ? (
                       <Input
-                        id='college'
-                        name='college'
+                        id="college"
+                        name="college"
                         value={formState.college || ""}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.college || "Not provided"}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='graduation_year'>Graduation Year</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="graduation_year">Graduation Year</Label>
                     {isEditing ? (
                       <Input
-                        id='graduation_year'
-                        name='graduation_year'
+                        id="graduation_year"
+                        name="graduation_year"
                         value={formState.graduation_year || ""}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.graduation_year || "Not provided"}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='track'>Track</Label>
-                    <div className='p-2 border rounded-md bg-muted/20'>
-                      {studentData?.track_name ||
-                        `Track ${studentData?.track}` ||
-                        "Not assigned"}
+                  <div className="space-y-2">
+                    <Label htmlFor="track">Track</Label>
+                    <div className="p-2 border rounded-md bg-muted/20">
+                      {trackName}
                     </div>
                   </div>
                 </div>
 
-                <div className='grid gap-4 sm:grid-cols-2'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='github_profile'>GitHub Profile</Label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="github_profile">GitHub Profile</Label>
                     {isEditing ? (
                       <Input
-                        id='github_profile'
-                        name='github_profile'
+                        id="github_profile"
+                        name="github_profile"
                         value={formState.github_profile || ""}
                         onChange={handleChange}
-                        placeholder='https://github.com/username'
+                        placeholder="https://github.com/username"
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.github_profile ? (
                           <a
                             href={formState.github_profile}
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            className='text-primary hover:underline flex items-center'
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center"
                           >
-                            <Github className='h-4 w-4 mr-2' />
+                            <Github className="h-4 w-4 mr-2" />
                             {formState.github_profile}
                           </a>
                         ) : (
@@ -662,26 +649,26 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='leetcode_profile'>LeetCode Profile</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="leetcode_profile">LeetCode Profile</Label>
                     {isEditing ? (
                       <Input
-                        id='leetcode_profile'
-                        name='leetcode_profile'
+                        id="leetcode_profile"
+                        name="leetcode_profile"
                         value={formState.leetcode_profile || ""}
                         onChange={handleChange}
-                        placeholder='https://leetcode.com/username'
+                        placeholder="https://leetcode.com/username"
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.leetcode_profile ? (
                           <a
                             href={formState.leetcode_profile}
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            className='text-primary hover:underline flex items-center'
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center"
                           >
-                            <Code className='h-4 w-4 mr-2' />
+                            <Code className="h-4 w-4 mr-2" />
                             {formState.leetcode_profile}
                           </a>
                         ) : (
@@ -694,9 +681,9 @@ export default function ProfilePage() {
               </CardContent>
               {isEditing && (
                 <CardFooter>
-                  <Button type='submit' disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Save Changes
                   </Button>
@@ -713,139 +700,78 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className='space-y-4'>
-                <div className='flex items-center gap-3'>
-                  <School className='h-5 w-5 text-muted-foreground' />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <School className="h-5 w-5 text-muted-foreground" />
                   <span>
                     University: {formState.university || "Not provided"}
                   </span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <Building className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <Building className="h-5 w-5 text-muted-foreground" />
                   <span>College: {formState.college || "Not provided"}</span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <Calendar className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
                   <span>
                     Graduation Year:{" "}
                     {formState.graduation_year || "Not provided"}
                   </span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <GraduationCap className='h-5 w-5 text-muted-foreground' />
-                  <span>
-                    Track:{" "}
-                    {studentData?.track_name ||
-                      `Track ${studentData?.track}` ||
-                      "Not assigned"}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                  <span>Track: {trackName}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value='preferences' className='space-y-4 pt-4'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Manage how you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className='space-y-4'>
-                <div className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    id='email-notifications'
-                    className='h-4 w-4 rounded border-gray-300'
-                    defaultChecked
-                  />
-                  <Label htmlFor='email-notifications'>
-                    Email Notifications
-                  </Label>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    id='sms-notifications'
-                    className='h-4 w-4 rounded border-gray-300'
-                    defaultChecked
-                  />
-                  <Label htmlFor='sms-notifications'>SMS Notifications</Label>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    id='assignment-reminders'
-                    className='h-4 w-4 rounded border-gray-300'
-                    defaultChecked
-                  />
-                  <Label htmlFor='assignment-reminders'>
-                    Assignment Reminders
-                  </Label>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    id='grade-updates'
-                    className='h-4 w-4 rounded border-gray-300'
-                    defaultChecked
-                  />
-                  <Label htmlFor='grade-updates'>Grade Updates</Label>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save Preferences</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+        
 
-        <TabsContent value='account' className='space-y-4 pt-4'>
+        <TabsContent value="account" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Password</CardTitle>
               <CardDescription>Change your password</CardDescription>
             </CardHeader>
             <form onSubmit={handlePasswordSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='currentPassword'>Current Password</Label>
-                  <div className='relative'>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative">
                     <Input
-                      id='currentPassword'
-                      name='currentPassword'
+                      id="currentPassword"
+                      name="currentPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.currentPassword}
                       onChange={handlePasswordChange}
                       required
                     />
                     <Button
-                      type='button'
-                      variant='ghost'
-                      size='icon'
-                      className='absolute right-0 top-0 h-full px-3'
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className='h-4 w-4' />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className='h-4 w-4' />
+                        <Eye className="h-4 w-4" />
                       )}
-                      <span className='sr-only'>
+                      <span className="sr-only">
                         Toggle password visibility
                       </span>
                     </Button>
                   </div>
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='newPassword'>New Password</Label>
-                  <div className='relative'>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
                     <Input
-                      id='newPassword'
-                      name='newPassword'
+                      id="newPassword"
+                      name="newPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.newPassword}
                       onChange={handlePasswordChange}
@@ -853,12 +779,12 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='confirmPassword'>Confirm New Password</Label>
-                  <div className='relative'>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
                     <Input
-                      id='confirmPassword'
-                      name='confirmPassword'
+                      id="confirmPassword"
+                      name="confirmPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.confirmPassword}
                       onChange={handlePasswordChange}
@@ -868,7 +794,7 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type='submit'>Change Password</Button>
+                <Button type="submit">Change Password</Button>
               </CardFooter>
             </form>
           </Card>
@@ -880,17 +806,17 @@ export default function ProfilePage() {
                 Manage your account security settings
               </CardDescription>
             </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-2'>
-                  <Lock className='h-4 w-4 text-muted-foreground' />
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
                   <span>Two-factor authentication</span>
                 </div>
                 <Switch />
               </div>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-2'>
-                  <Lock className='h-4 w-4 text-muted-foreground' />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
                   <span>Login notifications</span>
                 </div>
                 <Switch defaultChecked />
@@ -899,55 +825,6 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <div className='space-y-6'>
-      <div>
-        <Skeleton className='h-10 w-64 mb-2' />
-        <Skeleton className='h-4 w-48' />
-      </div>
-
-      <div className='flex space-x-2'>
-        <Skeleton className='h-10 w-24' />
-        <Skeleton className='h-10 w-24' />
-        <Skeleton className='h-10 w-24' />
-      </div>
-
-      <div className='space-y-4'>
-        <Card>
-          <CardHeader>
-            <Skeleton className='h-6 w-48 mb-2' />
-            <Skeleton className='h-4 w-32' />
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='flex items-center space-x-4'>
-              <Skeleton className='h-24 w-24 rounded-full' />
-              <div className='space-y-2'>
-                <Skeleton className='h-4 w-32' />
-                <Skeleton className='h-4 w-48' />
-              </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Skeleton className='h-4 w-24' />
-                <Skeleton className='h-10 w-full' />
-              </div>
-              <div className='space-y-2'>
-                <Skeleton className='h-4 w-24' />
-                <Skeleton className='h-10 w-full' />
-              </div>
-            </div>
-            <div className='space-y-2'>
-              <Skeleton className='h-4 w-24' />
-              <Skeleton className='h-24 w-full' />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
