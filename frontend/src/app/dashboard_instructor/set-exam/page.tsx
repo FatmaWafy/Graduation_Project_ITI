@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { api } from "@/lib/api";
+
 
 interface Track {
   id: number;
@@ -117,7 +119,7 @@ export default function SetExamPage() {
   const fetchExams = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/exam/exams/", {
+      const response = await fetch(api.exams, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -139,7 +141,7 @@ export default function SetExamPage() {
   const fetchTracks = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+      const response = await fetch(api.get_tracks, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -157,7 +159,7 @@ export default function SetExamPage() {
   const fetchStudents = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/users/students/", {
+      const response = await fetch(api.students, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -315,7 +317,7 @@ export default function SetExamPage() {
 
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
+      const response = await fetch(api.temp_exams, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -338,7 +340,11 @@ export default function SetExamPage() {
       toast.success("Exam scheduled successfully!");
       router.push("/dashboard_instructor");
     } catch (error) {
-      toast.error(error.message || "Failed to schedule exam");
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to schedule exam");
+      } else {
+        toast.error("Failed to schedule exam");
+      }
     } finally {
       setLoading((prev) => ({ ...prev, submitting: false }));
     }

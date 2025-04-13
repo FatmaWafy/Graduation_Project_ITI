@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, Eye, EyeOff } from "lucide-react";
+import { api } from "@/lib/api";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export default function SignupPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("http://127.0.0.1:8000/users/register/", {
+      const response = await fetch(api.register, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

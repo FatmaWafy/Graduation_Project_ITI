@@ -1,6 +1,98 @@
 // Types
 
 import { addHours } from "date-fns"
+const origin = process.env.NEXT_PUBLIC_API_ORIGIN;
+
+export const api = {
+  resetPasswordRequest: `${origin}/users/reset-password/`,
+  forgotPassword: `${origin}/users/reset-password-request/`,
+  login: `${origin}/users/login/`,
+  register: `${origin}/users/register/`,
+  mcq_filter: `${origin}/exam/mcq-filter/`,
+  coding_filter: `${origin}/exam/coding-filter/`,
+  mcq_questions: `${origin}/exam/mcq-questions/`,
+  code_questions: `${origin}/exam/code-questions/`,
+  test_cases: `${origin}/exam/test-cases/`,
+  exams: `${origin}/exam/exams/`,
+  get_tracks: `${origin}/users/get-tracks/`,
+  register_students_excel: `${origin}/users/register-students-excel/`,
+  register_student: `${origin}/users/register-student/`,
+  students: `${origin}/users/students/`,
+  temp_exams: `${origin}/exam/temp-exams/`,
+  submit_answer: `${origin}/exam/exam-answers/submit-answer/`,
+  getStudentAnswersUrl: (examInstanceId: number, studentName: string) =>
+    `${origin}/exam/student-exam-answers/get_answers/?exam_instance_id=${examInstanceId}&student_name=${encodeURIComponent(studentName)}`,
+
+  get_all_student_scores: `${origin}/exam/student-exam-answers/get_all_student_scores/`,
+  getStudentExternalStatsUrl: (studentId: number | string) =>
+    `${origin}/users/students/external-stats/by-student-id/${studentId}/`,
+
+  getStudentByIdUrl: (studentId: number | string) =>
+    `${origin}/users/students/by-id/${studentId}/`,
+
+  labs: `${origin}/labs/`,
+  getLabByIdUrl: (labId: string | number) =>
+    `${origin}/labs/${labId}/`,
+
+  getInstructorByIdUrl: (userId: string | number) =>
+    `${origin}/users/instructors/${userId}/`,
+
+  downloadLabByIdUrl: (labId: string | number) =>
+    `${origin}/labs/${labId}/download/`,
+
+  getProfileImageUrl: (profileImagePath: string) =>
+    profileImagePath.startsWith("http")
+      ? `${profileImagePath}?t=${new Date().getTime()}`
+      : `${origin}${profileImagePath}?t=${new Date().getTime()}`,
+
+  change_password: `${origin}/users/change-password/`,
+
+  updateStudentByIdUrl: (userId: string | number) =>
+    `${origin}/users/students/${userId}/update/`,
+
+  uploadProfileImageUrl: (studentId: string | number) =>
+    `${origin}/users/upload-profile-image/${studentId}/`,
+
+  getProfileImageUrlpath: (profileImagePath: string) =>
+    `${origin}${profileImagePath}`,
+
+  getStudentExternalStatsUrll: (userId: string | number) =>
+    `${origin}/users/students/${userId}/external-stats/`,
+
+  get_user_exams_scores: `${origin}/exam/student-exam-answers/get_user_exams_scores/`,
+  getStudentByIdUrlW: (userId: string | number) =>
+    `${origin}/users/students/${userId}/`,
+
+  logs: `${origin}/exam/exams/logs/`,
+
+  getTempExamUrl: (id: string | number) =>
+    `${origin}/exam/temp-exams/${id}/`,
+
+  getTempExamQuestionsUrl: (id: string | number) =>
+    `${origin}/exam/exam/temp-exams/${id}/questions/`,
+
+  getExamByIdUrl: (examId: string | number) =>
+    `${origin}/exam/exams/${examId}`,
+
+  notes : `${origin}/notifications/notes/`,
+
+  markNotificationAsReadUrl: (id: string | number) =>
+    `${origin}/notifications/notes/${id}/`,
+
+  mark_all_read : `${origin}/notifications/mark-all-read/`,
+
+  send_note: `${origin}/notifications/send-note/`,
+  token: `${origin}/api/token/`,
+
+
+
+
+
+
+
+
+};
+
 
 
 export type Assignment = {

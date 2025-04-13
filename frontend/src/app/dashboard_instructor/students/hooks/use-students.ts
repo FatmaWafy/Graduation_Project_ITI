@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { Student, ApiError } from "../types"
+import { api } from "@/lib/api";
+
 
 // API base URL - using your specific endpoint
 const API_URL = "http://localhost:8000/users/students"
@@ -137,7 +139,7 @@ export const useStudentById = (studentId: number) => {
   return useQuery({
     queryKey: ["student", studentId],
     queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:8000/users/students/by-id/${studentId}/`)
+      const res = await fetch(api.getStudentByIdUrl(studentId))
       if (!res.ok) {
         throw new Error("Failed to fetch student")
       }

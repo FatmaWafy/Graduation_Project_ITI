@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { api } from "@/lib/api";
 
 import { useState } from "react"
 import Link from "next/link"
@@ -22,7 +23,7 @@ export default function ForgotPassword() {
     setMessage(null)
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/users/reset-password-request/", {
+      const res = await fetch(api.forgotPassword, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

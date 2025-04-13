@@ -22,6 +22,7 @@ import {
 import { Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { getClientSideToken } from "@/lib/cookies";
+import { api } from "@/lib/api";
 
 interface StudentGrade {
   id: string;
@@ -75,7 +76,7 @@ export default function GradesPage() {
         }
 
         const response = await fetch(
-          "http://127.0.0.1:8000/exam/student-exam-answers/get_all_student_scores/",
+          api.get_all_student_scores,
           {
             method: "GET",
             headers: {

@@ -102,6 +102,8 @@ import { notFound } from "next/navigation"
 import { ExamLogsTable } from "../../../../components/exam-logs-table"
 import { ExamLogsHeader } from "../../../../components/exam-logs-header"
 import { getExamLogs } from "@/lib/api"
+import { api } from "@/lib/api";
+
 
 // Import the ExamLog type from the correct module
 import { ExamLog } from "@/lib/types"

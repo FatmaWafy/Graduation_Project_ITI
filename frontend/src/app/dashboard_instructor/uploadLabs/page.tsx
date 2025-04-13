@@ -559,6 +559,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/components/ui/use-toast"
 import Cookies from "js-cookie"
+import { api } from "@/lib/api";
+
 
 interface Lab {
   id: number
@@ -593,7 +595,7 @@ export default function LabsPage() {
         throw new Error("No authentication token found")
       }
 
-      const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+      const response = await fetch(api.get_tracks, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -627,7 +629,7 @@ export default function LabsPage() {
         throw new Error("No authentication token found")
       }
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(api.labs, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -752,7 +754,7 @@ export default function LabsPage() {
         })
       }, 200)
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(api.labs, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -813,7 +815,7 @@ export default function LabsPage() {
         throw new Error("No authentication token found")
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/labs/${labId}/`, {
+      const response = await fetch(api.getLabByIdUrl(labId), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

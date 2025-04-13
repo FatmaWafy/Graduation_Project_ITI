@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import Cookies from "js-cookie"
+import { api } from "@/lib/api";
+
 
 interface Lab {
   id: number
@@ -46,7 +48,7 @@ export default function StudentLabsPage() {
         throw new Error("No authentication token found")
       }
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(api.labs, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -104,7 +106,7 @@ export default function StudentLabsPage() {
       }
 
       // Use the download endpoint
-      const response = await fetch(`http://127.0.0.1:8000/labs/${lab.id}/download/`, {
+      const response = await fetch(api.downloadLabByIdUrl(lab.id), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

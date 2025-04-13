@@ -267,6 +267,8 @@ import { Badge } from "../components/ui/badge";
 import { useToast } from "../components/ui/use-toast";
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { api } from "@/lib/api";
+
 
 interface Notification {
   id: string;
@@ -293,7 +295,7 @@ export function NotificationsDropdown() {
         return;
       }
 
-      const response = await axios.get('http://127.0.0.1:8000/notifications/notes/', {
+      const response = await axios.get(api.notes, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -358,7 +360,7 @@ export function NotificationsDropdown() {
         return;
       }
 
-      await axios.patch(`http://127.0.0.1:8000/notifications/notes/${id}/`, { read: true }, {
+      await axios.patch(api.markNotificationAsReadUrl(id), { read: true }, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -390,7 +392,7 @@ export function NotificationsDropdown() {
         return;
       }
 
-      await axios.patch('http://127.0.0.1:8000/notifications/mark-all-read/', { read: true }, {
+      await axios.patch(api.mark_all_read, { read: true }, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

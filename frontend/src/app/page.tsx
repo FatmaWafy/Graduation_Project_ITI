@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { api } from "@/lib/api";
 
 import Cookies from "js-cookie"
 import { BookOpen, Eye, EyeOff, LockKeyhole } from "lucide-react"
@@ -27,7 +28,7 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/users/login/", {
+      const res = await fetch(api.login, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

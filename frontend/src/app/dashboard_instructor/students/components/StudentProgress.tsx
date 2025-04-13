@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { Github, Code, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import { api } from "@/lib/api";
+
 
 type ExternalStats = {
   github_repos: number | null
@@ -21,12 +23,13 @@ export default function StudentProgress({ studentId }: { studentId: number }) {
   const [githubCount, setGithubCount] = useState(0)
   const [leetcodeCount, setLeetcodeCount] = useState(0)
 
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [statsRes, profileRes] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/users/students/external-stats/by-student-id/${studentId}/`),
-          fetch(`http://127.0.0.1:8000/users/students/by-id/${studentId}/`)
+          fetch(api.getStudentExternalStatsUrl(studentId)),
+          fetch(api.getStudentByIdUrl(studentId))
         ])
 
         if (!statsRes.ok || !profileRes.ok) throw new Error("Failed to fetch data")

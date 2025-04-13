@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getClientSideToken } from "@/lib/cookies";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/api";
+
 
 interface Answer {
   questionId: string;
@@ -86,9 +88,7 @@ export default function StudentAnswersPage() {
         }
 
         const response = await fetch(
-          `http://127.0.0.1:8000/exam/student-exam-answers/get_answers/?exam_instance_id=${examInstanceId}&student_name=${encodeURIComponent(
-            studentName
-          )}`,
+          api.getStudentAnswersUrl(Number(examInstanceId), studentName),
           {
             headers: {
               Authorization: `Bearer ${token}`,

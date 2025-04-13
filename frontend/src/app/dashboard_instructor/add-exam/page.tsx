@@ -1,5 +1,5 @@
 "use client";
-
+import { api } from "@/lib/api";
 import type React from "react";
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
@@ -138,8 +138,8 @@ export default function AddExamPage() {
 
       const baseUrl =
         questionType === "mcq"
-          ? "http://127.0.0.1:8000/exam/mcq-filter/"
-          : "http://127.0.0.1:8000/exam/coding-filter/";
+          ? api.mcq_filter
+          : api.coding_filter;
 
       let url = baseUrl;
       if (selectedLanguage !== "all") {
@@ -457,7 +457,7 @@ export default function AddExamPage() {
         for (const mcq of newMCQs) {
           try {
             const mcqResponse = await fetch(
-              "http://127.0.0.1:8000/exam/mcq-questions/",
+              api.mcq_questions,
               {
                 method: "POST",
                 headers: {
@@ -502,7 +502,7 @@ export default function AddExamPage() {
 
           try {
             const codingResponse = await fetch(
-              "http://127.0.0.1:8000/exam/code-questions/",
+              api.code_questions,
               {
                 method: "POST",
                 headers: {
@@ -535,7 +535,7 @@ export default function AddExamPage() {
               for (const testCase of originalQuestion.test_cases) {
                 try {
                   const testCaseResponse = await fetch(
-                    "http://127.0.0.1:8000/exam/test-cases/",
+                    api.test_cases,
                     {
                       method: "POST",
                       headers: {
@@ -592,7 +592,7 @@ export default function AddExamPage() {
         ],
       };
 
-      const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
+      const examResponse = await fetch(api.exams, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

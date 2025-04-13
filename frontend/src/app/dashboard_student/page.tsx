@@ -1,6 +1,7 @@
 
 
 "use client"
+import { api } from "@/lib/api";
 
 import { useEffect, useState } from "react";
 import {
@@ -72,7 +73,7 @@ export default function DashboardPage() {
       const userId = decoded.user_id;
 
       const res = await fetch(
-        `http://127.0.0.1:8000/users/students/${userId}/external-stats/`
+        api.getStudentExternalStatsUrll(userId)
       );
       if (!res.ok) throw new Error("Failed to fetch external stats");
 
@@ -90,7 +91,7 @@ export default function DashboardPage() {
       if (!token) throw new Error("Token not found");
 
       const res = await fetch(
-        "http://127.0.0.1:8000/exam/student-exam-answers/get_user_exams_scores/",
+        api.get_user_exams_scores,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         const userId = decoded.user_id;
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`
+          api.getStudentByIdUrlW(userId)
         );
         if (!res.ok) throw new Error("Failed to fetch student data");
 

@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { api } from "@/lib/api";
 
 import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
@@ -38,7 +39,7 @@ export default function AddStudentPage() {
           return
         }
 
-        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+        const response = await fetch(api.get_tracks, {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
 
@@ -91,7 +92,7 @@ export default function AddStudentPage() {
       formData.append("file", csvFile)
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/users/register-students-excel/", {
+        const response = await fetch(api.register_students_excel, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -119,7 +120,7 @@ export default function AddStudentPage() {
     } else {
       // إذا لم يتم رفع ملف CSV، نقوم بإرسال البيانات العادية
       try {
-        const response = await fetch("http://127.0.0.1:8000/users/register-student/", {
+        const response = await fetch(api.register_student, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

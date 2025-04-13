@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { api } from "@/lib/api";
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -35,7 +36,7 @@ export default function ResetPasswordPage() {
     setMessage(null)
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/users/reset-password/", {
+      const response = await fetch(api.resetPasswordRequest, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -7,6 +7,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
 import { jwtDecode } from "jwt-decode";
+import { api } from "@/lib/api";
+
 
 import {
   BookOpen,
@@ -80,7 +82,7 @@ export default function DashboardLayout({
         console.log("User ID from token in Dashboard:", userId);
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`
+          api.getStudentByIdUrlW(userId)
         );
         if (!res.ok) throw new Error("Failed to fetch student data");
 
@@ -173,7 +175,8 @@ export default function DashboardLayout({
                   src={
                     studentData.user.profile_image?.startsWith("http")
                       ? studentData.user.profile_image
-                      : `http://127.0.0.1:8000${studentData.user.profile_image}`
+                      : api.getProfileImageUrlpath(studentData.user.profile_image)
+                      // : `http://127.0.0.1:8000${studentData.user.profile_image}`
                   }
                   alt={studentData.username}
                 />

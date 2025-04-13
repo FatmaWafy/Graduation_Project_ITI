@@ -26,6 +26,8 @@ import {
 
 import { useRouter } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
+import { api } from "@/lib/api";
+
 
 const data = [
   { name: "OOP", score: 65 },
@@ -57,7 +59,7 @@ export default function InstructorDashboard() {
   
           console.log("User ID from token in Dashboard:", userId)
   
-          const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}/`)
+          const res = await fetch(api.getInstructorByIdUrl(userId))
           if (!res.ok) throw new Error("Failed to fetch student data")
   
           const data = await res.json()

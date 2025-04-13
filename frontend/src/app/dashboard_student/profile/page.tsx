@@ -38,6 +38,8 @@ import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { api } from "@/lib/api";
+
 
 interface StudentData {
   id: number;
@@ -92,6 +94,7 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
 
+
   // Added: Handle profile image URL formatting
   // useEffect(() => {
   //   if (studentData?.user?.profile_image) {
@@ -104,10 +107,10 @@ export default function ProfilePage() {
   // }, [studentData]);
   useEffect(() => {
     if (studentData?.user?.profile_image) {
-      // Ensure we're using the full URL with timestamp to prevent caching
-      const imageUrl = studentData.user.profile_image.startsWith("http")
-        ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
-        : `http://127.0.0.1:8000${studentData.user.profile_image}?t=${new Date().getTime()}`
+      // const imageUrl = studentData.user.profile_image.startsWith("http")
+      //   ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
+      //   : `http://127.0.0.1:8000${studentData.user.profile_image}?t=${new Date().getTime()}`
+      const imageUrl = api.getProfileImageUrl(studentData.user.profile_image);
       setProfileImage(imageUrl)
       console.log("Profile image set to:", imageUrl)
     }
@@ -128,7 +131,7 @@ export default function ProfilePage() {
 
       const userId = Number(decoded.user_id);
       const res = await fetch(
-        `http://127.0.0.1:8000/users/students/${userId}/`,
+        api.getStudentByIdUrl(userId),
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -189,7 +192,7 @@ export default function ProfilePage() {
         return;
       }
   
-      const res = await axios.post("http://localhost:8000/users/change-password/", {
+      const res = await axios.post(api.change_password, {
         student_id: studentData.id, // أهم تعديل هنا
         currentPassword: passwordValues.currentPassword,
         newPassword: passwordValues.newPassword,
@@ -273,7 +276,7 @@ export default function ProfilePage() {
       const userId = Number(decoded.user_id);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/users/students/${userId}/update/`,
+        api.updateStudentByIdUrl(userId),
         {
           method: "PATCH",
           headers: {
@@ -300,7 +303,7 @@ export default function ProfilePage() {
           studentData.user.id
         );
         const imageResponse = await fetch(
-          `http://127.0.0.1:8000/users/upload-profile-image/${studentData.id}/`,
+          api.uploadProfileImageUrl(studentData.id),
           {
             method: "POST",
             headers: {
@@ -319,7 +322,7 @@ export default function ProfilePage() {
 
         // Refresh the profile image from the server
         const updatedImageResponse = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`,
+          api.getStudentByIdUrl(userId),
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -333,7 +336,7 @@ export default function ProfilePage() {
             "http"
           )
             ? updatedData.user.profile_image
-            : `http://127.0.0.1:8000${updatedData.user.profile_image}`;
+            : api.getProfileImageUrlpath(updatedData.user.profile_image);
           setProfileImage(newImageUrl);
           console.log("Updated profile image URL:", newImageUrl);
         } else {

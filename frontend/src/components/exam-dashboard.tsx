@@ -18,6 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import StudentMonitor from "./monitoring/student-monitor"
+import { api } from "@/lib/api";
+
 
 // Define proper types for questions
 interface Question {
@@ -54,10 +56,10 @@ export default function ExamDashboard() {
 
         // Fetch data in parallel for better performance
         const [tempExamRes, questionsRes] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/exam/temp-exams/${id}/`, {
+          fetch(api.getTempExamUrl(Array.isArray(id) ? id[0] : id), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`, {
+          fetch(api.getTempExamQuestionsUrl(Array.isArray(id) ? id[0] : id), {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -76,7 +78,8 @@ export default function ExamDashboard() {
         let examDuration = tempExamData.duration;
         if (!examDuration && tempExamData.exam) {
           const examRes = await fetch(
-            `http://127.0.0.1:8000/exam/exams/${tempExamData.exam}`,
+            // `http://127.0.0.1:8000/exam/exams/${tempExamData.exam}`
+            api.getExamByIdUrl(tempExamData.exam),
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -206,7 +209,7 @@ export default function ExamDashboard() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/exam/exam-answers/submit-answer/`,
+        api.submit_answer,
         {
           method: "POST",
           headers: {

@@ -18,6 +18,8 @@ import { Label } from "../ui/label"
 import Cookies from 'js-cookie';
 import "react-toastify/dist/ReactToastify.css";
 import { jwtDecode } from "jwt-decode";
+import { api } from "@/lib/api";
+
 
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = document.cookie
@@ -106,7 +108,7 @@ export function SendNotificationForm() {
           return;
         }
 
-        const response = await fetch("http://127.0.0.1:8000/users/students", {
+        const response = await fetch(api.students, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,  // إضافة التوكن في الهيدر هنا
@@ -128,7 +130,7 @@ export function SendNotificationForm() {
 
     const fetchTracks = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/");
+        const response = await fetch(api.get_tracks);
         const data = await response.json();
         console.log("tracks data:", data);
         // إذا كانت البيانات تأتي مع الـ "id" و "name"، نقوم بتخزين الـ "name"
@@ -164,7 +166,7 @@ export function SendNotificationForm() {
   
     if (!userId) throw new Error("User ID not found in token.");
   
-    const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`);
+    const res = await fetch(api.getInstructorByIdUrl(userId));
     const data = await res.json();
     console.log("Data from student API:", data);
   
