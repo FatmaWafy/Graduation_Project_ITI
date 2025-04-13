@@ -27,11 +27,7 @@ import  string
 import os
 from rest_framework import generics 
 
-
-
-
 token_generator = PasswordResetTokenGenerator()
-
 
 class RegisterInstructorAPIView(APIView):
     
@@ -95,7 +91,6 @@ class LoginAPIView(APIView):
             "role": user.role
         }, status=status.HTTP_200_OK)
 
-
 class ResetPasswordRequestAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -134,7 +129,6 @@ class ResetPasswordRequestAPIView(APIView):
         )
 
         return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
-
 
 class ResetPasswordAPIView(APIView):
     permission_classes = [AllowAny]
@@ -200,73 +194,75 @@ class RegisterStudentAPIView(APIView):
             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
 
         data = request.data.copy()
+        data["role"] = "student"
         password = get_random_string(length=12)
+        data["password"] = password
 
-        # التأكد من وجود حقل user في الـ data
-        if "user" not in data:
-            data["user"] = {}
+        instructor = Instructor.objects.get(user=request.user)
 
-        # إضافة الـ password داخل user
-        data["user"]["password"] = password
-        data["user"]["role"] = "student"  # التأكد من إضافة الـ role داخل user
+        # التحقق من وجود Tracks للمدرب
+        if instructor.tracks.count() == 0:
+            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            instructor = Instructor.objects.get(user=request.user)
-        except Instructor.DoesNotExist:
-            return Response({"error": "Instructor not found."}, status=status.HTTP_404_NOT_FOUND)
+        # إذا كان للمدرب أكتر من تراك، يجب تحديد التراك
+        if instructor.tracks.count() > 1:
+            if "track_name" not in data:
+                return Response({"error": "You must specify a track for the student."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # أخد الـ branch من الـ instructor
-        if not instructor.branch:
-            return Response({"error": "Instructor has no assigned branch."}, status=status.HTTP_400_BAD_REQUEST)
+            track = instructor.tracks.filter(name=data["track_name"]).first()
+            if not track:
+                return Response({"error": "Invalid track selection."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            track = instructor.tracks.first()
 
-        # إذا لم يتم إرسال branch في الطلب، نستخدم branch الـ instructor
-        if "branch" not in data:
-            data["branch"] = instructor.branch.id
+        if not track:
+            return Response({"error": "No valid track found for this instructor."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = StudentSerializer(data=data)
+        data["track_name"] = track.name
+        data["branch"] = instructor.branch.name  # ربط الطالب بالبرانش الخاص بالإنستراكتور
+
+        serializer = StudentSerializer(
+            data={
+                "user": data,
+                "track": data["track_name"],
+                "branch": data["branch"],  # التعديل هنا لربط البرانش بالطالب
+            }
+        )
 
         if serializer.is_valid():
             student = serializer.save()
 
-            try:
-                email_subject = "Your Student Account Credentials"
-                email_message = f"""
-                Hi {student.user.username},
+            email_subject = "Your Student Account Credentials"
+            email_message = f"""
+            Hi {student.user.username},
 
-                Your student account has been created successfully.
+            Your student account has been created successfully.
 
-                Track: {student.track.name if student.track else 'No Track Assigned'}
-                Branch: {student.branch.name if student.branch else 'No Branch Assigned'}
-                Email: {student.user.email}
-                Password: {password}
+            Track: {student.track.name}
+            Branch: {student.branch.name}
+            Email: {student.user.email}
+            Password: {password}
 
-                Please change your password after logging in.
+            Please change your password after logging in.
 
-                Best regards,
-                Your Team
-                """
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[student.user.email],
-                    fail_silently=True,
-                )
-            except Exception as e:
-                print(f"Failed to send email: {str(e)}")
+            Best regards,
+            Your Team
+            """
 
-            try:
-                refresh = RefreshToken.for_user(student.user)
-                return Response({
-                    "message": "Student registered successfully. Login credentials sent via email.",
-                    "access": str(refresh.access_token),
-                    "refresh": str(refresh),
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                print(f"Failed to generate token: {str(e)}")
-                return Response({
-                    "message": "Student registered successfully, but token generation failed.",
-                }, status=status.HTTP_201_CREATED)
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.user.email],
+                fail_silently=False,
+            )
+
+            refresh = RefreshToken.for_user(student.user)
+            return Response({
+                "message": "Student registered successfully. Login credentials sent via email.",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -510,94 +506,82 @@ class RegisterStudentsFromExcelAPIView(APIView):
         try:
             file_data = file.read().decode("utf-8").splitlines()
             csv_reader = csv.reader(file_data)
-            header = next(csv_reader, None)  # اقرأ الرأس
-            print("CSV Header:", header)  # طباعة الرأس
-            print("CSV Rows:", [row for row in csv_reader])  # طباعة الصفوف
-            csv_reader = csv.reader(file_data)  # إعادة القراءة من البداية
-            next(csv_reader)  # تخطي الرأس
+            next(csv_reader)  # Skip header
         except Exception as e:
-            print(f"Error reading CSV: {str(e)}")
             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            instructor = Instructor.objects.get(user=request.user)
-        except Instructor.DoesNotExist:
-            return Response({"error": "Instructor not found."}, status=status.HTTP_404_NOT_FOUND)
+        instructor = Instructor.objects.get(user=request.user)
 
         if instructor.tracks.count() == 0:
             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
 
         track_names = [track.name for track in instructor.tracks.all()]
-        print("Available Track Names:", track_names)  # طباعة الـ tracks
 
         students_added = 0
         for row in csv_reader:
-            print("Processing Row:", row)  # طباعة كل صف
-            if len(row) < 3:
-                print("Skipping row: Insufficient columns")
+            if len(row) < 8:
                 continue
 
             username, email, track_name = row[0], row[1], row[2]
-            print(f"Username: {username}, Email: {email}, Track: {track_name}")
+            university = row[3]
+            graduation_year = int(row[4]) if row[4].isdigit() else None
+            college = row[5]
+            leetcode_profile = row[6]
+            github_profile = row[7]
 
             if track_name not in track_names:
-                print(f"Skipping row: Track '{track_name}' not found")
                 continue
 
-            password = ''.join(
-                choice(string.ascii_letters + string.digits) for i in range(12))
+            password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
 
-            try:
-                user_instance = User.objects.create_user(
-                    email=email,
-                    username=username,
-                    password=password,
-                    role='student'
-                )
-            except Exception as e:
-                print(f"Error creating user: {str(e)}")
-                continue
+            user_instance = User.objects.create_user(
+                email=email,
+                username=username,
+                password=password,
+                role='student'
+            )
 
-            try:
-                track = Track.objects.get(name=track_name)
-                student = Student.objects.create(
-                    user=user_instance,
-                    track=track
-                )
-            except Exception as e:
-                print(f"Error creating student: {str(e)}")
-                user_instance.delete()
-                continue
+            track = Track.objects.get(name=track_name)
 
-            try:
-                email_subject = "Your Student Account Credentials"
-                email_message = f"""
-                Hi {student.user.username},
+            student = Student.objects.create(
+                user=user_instance,
+                track=track,
+                university=university,
+                graduation_year=graduation_year,
+                college=college,
+                leetcode_profile=leetcode_profile,
+                github_profile=github_profile
+            )
 
-                Your student account has been created successfully.
+    # إرسال البريد الإلكتروني (زي ما هو)
 
-                Track: {student.track.name}
-                Email: {student.user.email}
-                Password: {password}
 
-                Please change your password after logging in.
+            email_subject = "Your Student Account Credentials"
+            email_message = f"""
+            Hi {student.user.username},
 
-                Best regards,
-                Your Team
-                """
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[student.user.email],
-                    fail_silently=True,
-                )
-            except Exception as e:
-                print(f"Error sending email: {str(e)}")
+            Your student account has been created successfully.
+
+            Track: {student.track.name}
+            Email: {student.user.email}
+            Password: {password}
+
+            Please change your password after logging in.
+
+            Best regards,
+            Your Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[student.user.email],
+                fail_silently=False,
+            )
 
             students_added += 1
 
-        print(f"Total Students Added: {students_added}")
         return Response({
             "message": f"{students_added} students added successfully.",
         }, status=status.HTTP_201_CREATED)

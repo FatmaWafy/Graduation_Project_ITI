@@ -40,6 +40,7 @@ export default function StudentDetailPage() {
   const studentId = Number.parseInt(params.id as string);
 
   const { data: student, isLoading, error } = useStudentById(studentId);
+  console.log("Student data:", student);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) {
@@ -127,13 +128,23 @@ export default function StudentDetailPage() {
           <CardHeader className='pb-2'>
             <div className='flex flex-col items-center text-center'>
               <Avatar className='h-24 w-24 border-4 border-[#f0f9ff]'>
-                <AvatarImage
-                  src={student.user.profile_image || ""}
-                  alt={displayName}
-                />
-                <AvatarFallback className='bg-[#f0f9ff] text-[#007acc] text-2xl'>
-                  {displayName.charAt(0).toUpperCase()}
-                </AvatarFallback>
+                {student.user.profile_image ? (
+                  <AvatarImage
+                    src={student.user.profile_image}
+                    alt={displayName}
+                    onError={(e) => {
+                      console.error(
+                        "Error loading profile image:",
+                        student.user.profile_image
+                      );
+                      e.currentTarget.src = "/default-avatar.png"; // صورة افتراضية لو الصورة فشلت
+                    }}
+                  />
+                ) : (
+                  <AvatarFallback className='bg-[#f0f9ff] text-[#007acc] text-2xl'>
+                    {displayName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                )}
               </Avatar>
               <div className='mt-4'>
                 <CardTitle className='text-2xl text-[#007acc]'>
