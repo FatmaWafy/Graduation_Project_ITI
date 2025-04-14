@@ -30,7 +30,6 @@ from rest_framework import generics
 token_generator = PasswordResetTokenGenerator()
 
 class RegisterInstructorAPIView(APIView):
-    
     permission_classes = [AllowAny]
 
     # قائمة البرانشات المعتمدة
@@ -67,7 +66,6 @@ class RegisterInstructorAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 

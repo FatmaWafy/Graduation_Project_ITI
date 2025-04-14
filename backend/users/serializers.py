@@ -24,31 +24,33 @@ class RegisterSerializer(serializers.ModelSerializer):
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track_name = serializers.CharField(write_only=True, required=True)
-    branch = serializers.CharField(write_only=True, required=True)  # إضافة حقل البرانش
+    branch = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = Instructor
         fields = "__all__"
 
     def create(self, validated_data):
-        user_data = validated_data.pop("user")
-        track_name = validated_data.pop("track_name")
-        branch_name = validated_data.pop("branch")
+        try:
+            user_data = validated_data.pop("user")
+            track_name = validated_data.pop("track_name")
+            branch_name = validated_data.pop("branch")
 
-        user_data["role"] = "instructor"
-        user = User.objects.create_user(**user_data)
+            user_data["role"] = "instructor"
+            user = User.objects.create_user(**user_data)
 
-        track, created = Track.objects.get_or_create(name=track_name)
+            track, created = Track.objects.get_or_create(name=track_name)
+            branch, created = Branch.objects.get_or_create(name=branch_name)
 
-        branch, created = Branch.objects.get_or_create(name=branch_name)
+            instructor = Instructor.objects.create(user=user, branch=branch, **validated_data)
+            
+            track.instructor = instructor
+            track.save()
 
-        instructor = Instructor.objects.create(user=user, branch=branch, **validated_data)
-        
-        track.instructor = instructor
-        track.save()
-
-        return instructor
-
+            return instructor
+        except Exception as e:
+            print(f"Error in InstructorSerializer.create: {str(e)}")
+            raise serializers.ValidationError(f"Failed to create instructor: {str(e)}")
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all(), required=False, allow_null=True)

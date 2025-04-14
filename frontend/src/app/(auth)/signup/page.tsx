@@ -80,17 +80,9 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    const { name, email, password, confirmPassword, track_name, branch_name } =
-      formData;
+    const { name, email, password, confirmPassword, track_name, branch_name } = formData;
 
-    if (
-      !name ||
-      !email ||
-      !password ||
-      !confirmPassword ||
-      !track_name ||
-      !branch_name
-    ) {
+    if (!name || !email || !password || !confirmPassword || !track_name || !branch_name) {
       setError("All fields are required");
       return;
     }
@@ -103,21 +95,29 @@ export default function SignupPage() {
       return;
     }
 
+    const payload = {
+      username: name,
+      email,
+      password,
+      track_name,
+      branch: branch_name,
+    };
+
+
+    console.log("Sending payload:", payload); // Debug the payload
+
     try {
       setIsSubmitting(true);
       const response = await fetch("http://127.0.0.1:8000/users/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: name,
-          email,
-          password,
-          track_name,
-          branch_name,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error("Failed to create account");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create account");
+      }
 
       router.push("/");
     } catch (err) {
@@ -126,7 +126,6 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-100 p-4'>
       <Card className='w-full max-w-md p-6 shadow-lg bg-white rounded-xl'>
