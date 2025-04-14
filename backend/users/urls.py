@@ -50,6 +50,5 @@ urlpatterns = [
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
         path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
-    # path('users/upload-instructor-profile-image/<int:user_id>/', UploadInstructorProfileImage.as_view(), name='upload-instructor-profile-image'),
     path('', include(router.urls)),
 ]
