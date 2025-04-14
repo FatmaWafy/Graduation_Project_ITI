@@ -591,53 +591,53 @@ class UploadUserProfileImage(APIView):
 
     def post(self, request, user_id):
         try:
-            # First try to find the student by ID
-            student = get_object_or_404(Student, id=user_id)
-            user = student.user
-        except:
-            # If not found, try to find the user directly
-            user = get_object_or_404(User, id=user_id)
-        
+            # Try to find the student
+            student = Student.objects.filter(id=user_id).first()
+            if student:
+                user = student.user
+            else:
+                # If not a student, try instructor
+                instructor = Instructor.objects.filter(id=user_id).first()
+                if instructor:
+                    user = instructor.user
+                else:
+                    return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         # Check if there's a file in the request
         if 'profile_image' not in request.FILES:
             return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Log the received file for debugging
+
         image_file = request.FILES['profile_image']
         print(f"Received file: {image_file.name}, size: {image_file.size}, content type: {image_file.content_type}")
-        
-        # If user already has a profile image, delete the old one
+
+        # Delete old image if exists
         if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
             try:
                 os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
                 print(f"Deleted old profile image: {user.profile_image}")
             except Exception as e:
                 print(f"Error deleting old profile image: {e}")
-        
-        # Update the user's profile image
+
+        # Update the profile image
         serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             user_instance = serializer.save()
-            
-            # Construct the full URL for the profile image
+
+            # Create image URL
             if user_instance.profile_image:
-                # Get the base URL from the request
                 host = request.get_host()
                 protocol = 'https' if request.is_secure() else 'http'
-                base_url = f"{protocol}://{host}"
-                
-                # Construct the full image URL
-                image_url = f"{base_url}{settings.MEDIA_URL}{user_instance.profile_image.name}"
-                
+                image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
+
                 return Response({
                     "message": "Profile image uploaded successfully",
                     "profile_image": image_url
                 }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    "message": "Profile image could not be saved",
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+            return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordAPIView(APIView):
@@ -805,56 +805,56 @@ class InstructorProfileView(APIView):
             "instructor": InstructorSerializer(instructor).data
         }, status=status.HTTP_200_OK)
 
-class UploadInstructorProfileImage(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+# class UploadInstructorProfileImage(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, user_id):
-        try:
-            # First try to find the instructor by ID
-            instructor = get_object_or_404(Instructor, id=user_id)
-            user = instructor.user
-        except:
-            # If not found, try to find the user directly
-            user = get_object_or_404(User, id=user_id)
+#     def post(self, request, user_id):
+#         try:
+#             # First try to find the instructor by ID
+#             instructor = get_object_or_404(Instructor, id=user_id)
+#             user = instructor.user
+#         except:
+#             # If not found, try to find the user directly
+#             user = get_object_or_404(User, id=user_id)
         
-        # Check if there's a file in the request
-        if 'profile_image' not in request.FILES:
-            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+#         # Check if there's a file in the request
+#         if 'profile_image' not in request.FILES:
+#             return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Log the received file for debugging
-        image_file = request.FILES['profile_image']
-        print(f"Received file: {image_file.name}, size: {image_file.size}, content type: {image_file.content_type}")
+#         # Log the received file for debugging
+#         image_file = request.FILES['profile_image']
+#         print(f"Received file: {image_file.name}, size: {image_file.size}, content type: {image_file.content_type}")
         
-        # If user already has a profile image, delete the old one
-        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
-            try:
-                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
-                print(f"Deleted old profile image: {user.profile_image}")
-            except Exception as e:
-                print(f"Error deleting old profile image: {e}")
+#         # If user already has a profile image, delete the old one
+#         if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
+#             try:
+#                 os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
+#                 print(f"Deleted old profile image: {user.profile_image}")
+#             except Exception as e:
+#                 print(f"Error deleting old profile image: {e}")
         
-        # Update the user's profile image
-        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            user_instance = serializer.save()
+#         # Update the user's profile image
+#         serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             user_instance = serializer.save()
             
-            # Construct the full URL for the profile image
-            if user_instance.profile_image:
-                # Get the base URL from the request
-                host = request.get_host()
-                protocol = 'https' if request.is_secure() else 'http'
-                base_url = f"{protocol}://{host}"
+#             # Construct the full URL for the profile image
+#             if user_instance.profile_image:
+#                 # Get the base URL from the request
+#                 host = request.get_host()
+#                 protocol = 'https' if request.is_secure() else 'http'
+#                 base_url = f"{protocol}://{host}"
                 
-                # Construct the full image URL
-                image_url = f"{base_url}{settings.MEDIA_URL}{user_instance.profile_image.name}"
+#                 # Construct the full image URL
+#                 image_url = f"{base_url}{settings.MEDIA_URL}{user_instance.profile_image.name}"
                 
-                return Response({
-                    "message": "Profile image uploaded successfully",
-                    "profile_image": image_url
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    "message": "Profile image could not be saved",
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                 return Response({
+#                     "message": "Profile image uploaded successfully",
+#                     "profile_image": image_url
+#                 }, status=status.HTTP_200_OK)
+#             else:
+#                 return Response({
+#                     "message": "Profile image could not be saved",
+#                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
