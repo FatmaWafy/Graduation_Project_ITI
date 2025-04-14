@@ -71,6 +71,7 @@ export default function InstructorDashboard() {
   
       fetchStudentData()
     }, [])
+
   const router = useRouter();
   return (
     <div className="flex   ">
@@ -160,20 +161,20 @@ export default function InstructorDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-4 my-6">
+        {/* <div className="flex flex-wrap gap-4 my-6">
           <button
             onClick={() => router.push("/dashboard_instructor/add-exam")}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-300"
+            className="px-6 py-3 bg-[#007acc] hover:bg-[#007abc] text-white rounded-lg transition duration-300"
           >
             Create Exam
           </button>
           <button
             onClick={() => router.push("/dashboard_instructor/set-exam")}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-300"
+            className="px-6 py-3 bg-[#007acc] hover:bg-[#007abc] text-white rounded-lg transition duration-300"
           >
             Schedule Exam
           </button>
-        </div>
+        </div> */}
       </main>
     </div>
   );
