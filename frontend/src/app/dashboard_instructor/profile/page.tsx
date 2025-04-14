@@ -68,11 +68,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (instructorData?.user?.profile_image) {
+      setProfileImage(null);
+
       const imageUrl = instructorData.user.profile_image.startsWith("http")
-        ? `${instructorData.user.profile_image}?t=${new Date().getTime()}`
+        ? `${instructorData.user.profile_image}?t=${Date.now()}`
         : `http://127.0.0.1:8000${
             instructorData.user.profile_image
-          }?t=${new Date().getTime()}`;
+          }?t=${Date.now()}`;
       setProfileImage(imageUrl);
     }
   }, [instructorData]);
@@ -256,7 +258,7 @@ export default function ProfilePage() {
         }
 
         const updatedImageResponse = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}/`,
+          `http://127.0.0.1:8000/users/students/${userId}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -308,11 +310,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='flex justify-between items-center'>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Profile</h1>
-          <p className='text-muted-foreground'>
+          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
+          <p className="text-muted-foreground">
             Manage your personal information
           </p>
         </div>
@@ -321,23 +323,23 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      <Tabs defaultValue='info'>
+      <Tabs defaultValue="info">
         <TabsList>
-          <TabsTrigger value='info'>Personal Info</TabsTrigger>
-          <TabsTrigger value='account'>Password</TabsTrigger>
+          <TabsTrigger value="info">Personal Info</TabsTrigger>
+          <TabsTrigger value="account">Password</TabsTrigger>
         </TabsList>
 
-        <TabsContent value='info' className='space-y-4 pt-4'>
+        <TabsContent value="info" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Your personal details</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0'>
-                  <div className='relative'>
-                    <Avatar className='h-24 w-24'>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24">
                       <AvatarImage
                         src={profileImage || instructorData.user.profile_image}
                         alt={instructorData?.user.username}
@@ -351,26 +353,26 @@ export default function ProfilePage() {
                     </Avatar>
                     {isEditing && (
                       <div
-                        className='absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer'
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer"
                         onClick={triggerFileInput}
                       >
-                        <Upload className='h-6 w-6 text-white' />
+                        <Upload className="h-6 w-6 text-white" />
                         <input
-                          type='file'
+                          type="file"
                           ref={fileInputRef}
-                          className='hidden'
-                          accept='image/*'
+                          className="hidden"
+                          accept="image/*"
                           onChange={handleImageChange}
                         />
                       </div>
                     )}
                   </div>
-                  <div className='flex-1'>
+                  <div className="flex-1">
                     {isEditing && (
                       <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={triggerFileInput}
                       >
                         Change Avatar
@@ -379,64 +381,64 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className='grid gap-4 sm:grid-cols-2'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='name'>Full Name</Label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
                     {isEditing ? (
                       <Input
-                        id='name'
-                        name='name'
+                        id="name"
+                        name="name"
                         value={formState.name}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.name}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='email'>Email</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
                     {isEditing ? (
                       <Input
-                        id='email'
-                        name='email'
-                        type='email'
+                        id="email"
+                        name="email"
+                        type="email"
                         value={formState.email}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.email}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='phone'>Phone</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
                     {isEditing ? (
                       <Input
-                        id='phone'
-                        name='phone'
+                        id="phone"
+                        name="phone"
                         value={formState.phone}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.phone || "Not provided"}
                       </div>
                     )}
                   </div>
-                  <div className='space-y-2'>
-                    <Label htmlFor='address'>Address</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
                     {isEditing ? (
                       <Input
-                        id='address'
-                        name='address'
+                        id="address"
+                        name="address"
                         value={formState.address}
                         onChange={handleChange}
                       />
                     ) : (
-                      <div className='p-2 border rounded-md bg-muted/20'>
+                      <div className="p-2 border rounded-md bg-muted/20">
                         {formState.address || "Not provided"}
                       </div>
                     )}
@@ -445,9 +447,9 @@ export default function ProfilePage() {
               </CardContent>
               {isEditing && (
                 <CardFooter>
-                  <Button type='submit' disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Save Changes
                   </Button>
@@ -462,17 +464,17 @@ export default function ProfilePage() {
               <CardDescription>Your contact details</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className='space-y-4'>
-                <div className='flex items-center gap-3'>
-                  <Mail className='h-5 w-5 text-muted-foreground' />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.email}</span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <Phone className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.phone || "Not provided"}</span>
                 </div>
-                <div className='flex items-center gap-3'>
-                  <MapPin className='h-5 w-5 text-muted-foreground' />
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
                   <span>{formState.address || "Not provided"}</span>
                 </div>
               </div>
@@ -480,49 +482,49 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value='account' className='space-y-4 pt-4'>
+        <TabsContent value="account" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Password</CardTitle>
               <CardDescription>Change your password</CardDescription>
             </CardHeader>
             <form onSubmit={handlePasswordSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='currentPassword'>Current Password</Label>
-                  <div className='relative'>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative">
                     <Input
-                      id='currentPassword'
-                      name='currentPassword'
+                      id="currentPassword"
+                      name="currentPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.currentPassword}
                       onChange={handlePasswordChange}
                       required
                     />
                     <Button
-                      type='button'
-                      variant='ghost'
-                      size='icon'
-                      className='absolute right-0 top-0 h-full px-3'
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className='h-4 w-4' />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className='h-4 w-4' />
+                        <Eye className="h-4 w-4" />
                       )}
-                      <span className='sr-only'>
+                      <span className="sr-only">
                         Toggle password visibility
                       </span>
                     </Button>
                   </div>
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='newPassword'>New Password</Label>
-                  <div className='relative'>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
                     <Input
-                      id='newPassword'
-                      name='newPassword'
+                      id="newPassword"
+                      name="newPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.newPassword}
                       onChange={handlePasswordChange}
@@ -530,12 +532,12 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='confirmPassword'>Confirm New Password</Label>
-                  <div className='relative'>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
                     <Input
-                      id='confirmPassword'
-                      name='confirmPassword'
+                      id="confirmPassword"
+                      name="confirmPassword"
                       type={showPassword ? "text" : "password"}
                       value={passwordValues.confirmPassword}
                       onChange={handlePasswordChange}
@@ -545,7 +547,7 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type='submit'>Change Password</Button>
+                <Button type="submit">Change Password</Button>
               </CardFooter>
             </form>
           </Card>

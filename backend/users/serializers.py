@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Branch, Course, Instructor, Student , Track
-from PIL import Image
+from PIL import Image # type: ignore
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 

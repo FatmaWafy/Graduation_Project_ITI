@@ -1,7 +1,7 @@
 from django.urls import path, include
 from .views import  (
     CourseListCreateView, CourseRetrieveUpdateDestroyView, 
-    BranchListCreateView, BranchRetrieveUpdateDestroyView,
+    BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView,
     RegisterInstructorAPIView,
     LoginAPIView,
     RegisterStudentAPIView,
@@ -46,6 +46,9 @@ urlpatterns = [
     # Course URLs
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroyView.as_view(), name='course-retrieve-update-destroy'),
-    
+        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
+        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
     path('', include(router.urls)),
 ]
