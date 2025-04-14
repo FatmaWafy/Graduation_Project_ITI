@@ -106,6 +106,7 @@ class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     track = models.ForeignKey(Track, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")  
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="students") 
+    inrollment_date = models.DateField(blank=True, null=True)
 
     university = models.CharField(max_length=100, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
