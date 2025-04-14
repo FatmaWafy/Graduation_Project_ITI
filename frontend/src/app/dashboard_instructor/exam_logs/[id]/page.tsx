@@ -1,112 +1,10 @@
-// 'use client'
-// import { Suspense, useEffect, useState } from "react"
-// import { notFound } from "next/navigation"
-// import { ExamLogsTable } from "../../../../components/exam-logs-table"
-// import { ExamLogsHeader } from "../../../../components/exam-logs-header"
-// import { getExamLogs } from "@/lib/api"
-
-// // Import the ExamLog type from the correct module
-// import { ExamLog } from "@/lib/types"
-
-// interface ExamLogsPageProps {
-//   params: {
-//     id: string
-//   }
-// }
-
-// const getAuthToken = () => {
-//   if (typeof window !== 'undefined') {
-//     const token = document.cookie
-//       .split('; ')
-//       .find(row => row.startsWith('token='))
-//       ?.split('=')[1]
-//     return token || ''
-//   }
-//   return ''
-// }
-
-// export default function ExamLogsPage({ params }: ExamLogsPageProps) {
-//   const { id } = params
-
-//   if (!id || isNaN(Number(id))) {
-//     notFound()
-//   }
-
-//   return (
-//     <div className="container mx-auto py-8 px-4">
-//       <ExamLogsHeader examId={id} />
-//       <Suspense fallback={<ExamLogsTableSkeleton />}>
-//         <ExamLogsContent examId={id} />
-//       </Suspense>
-//     </div>
-//   )
-// }
-
-// function ExamLogsContent({ examId }: { examId: string }) {
-//   const [token, setToken] = useState<string | null>(null)
-//   const [logs, setLogs] = useState<ExamLog[]>([])
-
-//   useEffect(() => {
-//     // استخراج التوكن عند تحميل الصفحة في العميل
-//     const token = getAuthToken()
-//     setToken(token)
-
-//     if (token) {
-//       const fetchLogs = async () => {
-//         const logs = await getExamLogs(examId, token)
-//         setLogs(logs)
-//       }
-//       fetchLogs()
-//     }
-//   }, [examId])
-
-//   if (!token) {
-//     return (
-//       <div className="mt-8 text-center p-8 bg-muted rounded-lg">
-//         <h3 className="text-xl font-medium">No token found</h3>
-//         <p className="text-muted-foreground mt-2">Please log in to view the logs.</p>
-//       </div>
-//     )
-//   }
-
-//   if (!logs || logs.length === 0) {
-//     return (
-//       <div className="mt-8 text-center p-8 bg-muted rounded-lg">
-//         <h3 className="text-xl font-medium">No logs found</h3>
-//         <p className="text-muted-foreground mt-2">There are no logs available for this exam.</p>
-//       </div>
-//     )
-//   }
-
-//   return <ExamLogsTable logs={logs} />
-// }
-
-// function ExamLogsTableSkeleton() {
-//   return (
-//     <div className="mt-8 space-y-3">
-//       <div className="h-10 bg-muted rounded animate-pulse" />
-//       <div className="space-y-2">
-//         {Array.from({ length: 5 }).map((_, i) => (
-//           <div key={i} className="h-16 bg-muted rounded animate-pulse" />
-//         ))}
-//       </div>
-//     </div>
-//   )
-// }
-
-
-
 'use client'
-import { Suspense, useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { notFound } from "next/navigation"
-import { ExamLogsTable } from "../../../../components/exam-logs-table"
 import { ExamLogsHeader } from "../../../../components/exam-logs-header"
-import { getExamLogs } from "@/lib/api"
-
-// Import the ExamLog type from the correct module
+import { ExamLogsTable } from "../../../../components/exam-logs-table"
 import { ExamLog } from "@/lib/types"
 
-// Change the function signature to use React.use
 interface ExamLogsPageProps {
   params: Promise<{ id: string }>
 }
@@ -126,7 +24,6 @@ export default function ExamLogsPage({ params }: ExamLogsPageProps) {
   const [examId, setExamId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Unwrap the Promise to get the `id` value
     params.then(param => {
       const { id } = param
       if (!id || isNaN(Number(id))) {
@@ -137,9 +34,7 @@ export default function ExamLogsPage({ params }: ExamLogsPageProps) {
     })
   }, [params])
 
-  if (!examId) {
-    return <div>Loading...</div>
-  }
+  if (!examId) return <div>Loading...</div>
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -153,18 +48,36 @@ export default function ExamLogsPage({ params }: ExamLogsPageProps) {
 
 function ExamLogsContent({ examId }: { examId: string }) {
   const [token, setToken] = useState<string | null>(null)
-  const [logs, setLogs] = useState<ExamLog[]>([])
+  const [logs, setLogs] = useState<ExamLog[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
- 
     const token = getAuthToken()
     setToken(token)
 
     if (token) {
       const fetchLogs = async () => {
-        const logs = await getExamLogs(examId, token)
-        setLogs(logs)
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/exam/exams/logs/${examId}/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: 'no-store',
+          })
+
+          if (!res.ok) {
+            const text = await res.text()
+            throw new Error(text)
+          }
+
+          const data = await res.json()
+          setLogs(data)
+        } catch (err: any) {
+          console.error("Fetch logs error:", err.message)
+          setError("Failed to fetch logs.")
+        }
       }
+
       fetchLogs()
     }
   }, [examId])
@@ -178,7 +91,20 @@ function ExamLogsContent({ examId }: { examId: string }) {
     )
   }
 
-  if (!logs || logs.length === 0) {
+  if (error) {
+    return (
+      <div className="mt-8 text-center p-8 bg-destructive/10 rounded-lg">
+        <h3 className="text-xl font-medium text-destructive">Error loading logs</h3>
+        <p className="text-muted-foreground mt-2">{error}</p>
+      </div>
+    )
+  }
+
+  if (!logs) {
+    return <div className="mt-8 text-center text-muted-foreground">Loading logs...</div>
+  }
+
+  if (logs.length === 0) {
     return (
       <div className="mt-8 text-center p-8 bg-muted rounded-lg">
         <h3 className="text-xl font-medium">No logs found</h3>
