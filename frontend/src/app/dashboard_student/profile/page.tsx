@@ -104,9 +104,8 @@ export default function ProfilePage() {
     if (studentData?.user?.profile_image) {
       const imageUrl = studentData.user.profile_image.startsWith("http")
         ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
-        : `http://127.0.0.1:8000${
-            studentData.user.profile_image
-          }?t=${new Date().getTime()}`;
+        : `http://127.0.0.1:8000${studentData.user.profile_image
+        }?t=${new Date().getTime()}`;
       setProfileImage(imageUrl);
     }
   }, [studentData]);
@@ -517,6 +516,37 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="github_profile">GitHub Profile</Label>
+                    {isEditing ? (
+                      <Input
+                        id="github_profile"
+                        name="github_profile"
+                        value={formState.github_profile}
+                        onChange={handleChange}
+                      />
+                    ) : (
+                      <div className="p-2 border rounded-md bg-muted/20">
+                        {formState.github_profile || "Not provided"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="leetcode_profile">LeetCode Profile</Label>
+                    {isEditing ? (
+                      <Input
+                        id="leetcode_profile"
+                        name="leetcode_profile"
+                        value={formState.leetcode_profile}
+                        onChange={handleChange}
+                      />
+                    ) : (
+                      <div className="p-2 border rounded-md bg-muted/20">
+                        {formState.leetcode_profile || "Not provided"}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </CardContent>
               {isEditing && (
@@ -727,7 +757,7 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        
+
 
         <TabsContent value="account" className="space-y-4 pt-4">
           <Card>
