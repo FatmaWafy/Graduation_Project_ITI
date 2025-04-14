@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type ColumnDef,
   flexRender,
@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getClientSideToken } from "@/lib/cookies";
 
 interface StudentTableProps {
   students: Student[];
@@ -52,7 +53,14 @@ interface StudentTableProps {
   onEdit: (student: Student) => void;
   onView: (studentId: number) => void;
 }
-
+interface Track {
+  id: number;
+  name: string;
+}
+interface Branch {
+  id: number;
+  name: string;
+}
 export function StudentTable({
   students,
   isLoading,
@@ -63,7 +71,52 @@ export function StudentTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
 
+useEffect(() => {
+  async function fetchBranches() {
+    try {
+      const token = getClientSideToken();
+      const response = await fetch("http://127.0.0.1:8000/users/get-branches/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch branches");
+      }
+      const data = await response.json();
+      setBranches(data);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    }
+  }
+  fetchBranches();
+}, []);
+  useEffect(() => {
+    async function fetchTracks() {
+      try {
+        const token = getClientSideToken();
+        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch tracks");
+        }
+        const data = await response.json();
+        setTracks(data);
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+      }
+    }
+    fetchTracks();
+  }, []);
+  
   const columns: ColumnDef<Student>[] = [
     {
       id: "name",
@@ -101,9 +154,6 @@ export function StudentTable({
           </Avatar>
           <div>
             <div className='font-medium'>{row.original.user.username}</div>
-            <div className='text-xs text-muted-foreground'>
-              {row.original.track_name || "No track"}
-            </div>
           </div>
         </div>
       ),
@@ -118,11 +168,28 @@ export function StudentTable({
       ),
     },
     {
-      id: "university",
-      header: "University",
+      id: "track",
+      accessorFn: (row) =>
+        tracks.find((t) => t.id === row.track)?.name || row.track_name || "Not assigned",
+      header: "Track",
       cell: ({ row }) => (
-        <div className='text-sm'>
-          {row.original.university || "Not specified"}
+        <div className="text-sm">
+          {row.original.track
+            ? tracks.find((t) => t.id === row.original.track)?.name || "Not assigned"
+            : row.original.track_name || "Not assigned"}
+        </div>
+      ),
+    },
+    {
+      id: "branch",
+      accessorFn: (row) =>
+        branches.find((b) => b.id === row.branch)?.name || "Not assigned",
+      header: "Branch",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          {row.original.branch
+            ? branches.find((b) => b.id === row.branch)?.name || "Not assigned"
+            : "Not assigned"}
         </div>
       ),
     },

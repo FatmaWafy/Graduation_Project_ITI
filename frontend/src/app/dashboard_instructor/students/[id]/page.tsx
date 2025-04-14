@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -33,15 +33,81 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StudentModal } from "../components/student-modal";
 import { useStudentById } from "../hooks/use-students";
 import StudentProgress from "../components/StudentProgress";
+import { getClientSideToken } from "@/lib/cookies";
+
+interface Track {
+  id: number;
+  name: string;
+}
+
+interface Branch {
+  id: number;
+  name: string;
+}
 
 export default function StudentDetailPage() {
-  const BASE_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
   const router = useRouter();
   const params = useParams();
   const studentId = Number.parseInt(params.id as string);
-
   const { data: student, isLoading, error } = useStudentById(studentId);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
+  // Fetch tracks from API
+  useEffect(() => {
+    async function fetchTracks() {
+      try {
+        const token = getClientSideToken();
+        const response = await fetch(
+          "http://127.0.0.1:8000/users/get-tracks/",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch tracks");
+        }
+        const data = await response.json();
+        setTracks(data);
+      } catch (error) {
+        console.error("Error fetching tracks:", error);
+      }
+    }
+    fetchTracks();
+  }, []);
+
+  // Fetch branches from API
+  useEffect(() => {
+    async function fetchBranches() {
+      try {
+        const token = getClientSideToken();
+        const response = await fetch(
+          "http://127.0.0.1:8000/users/get-branches/",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch branches");
+        }
+        const data = await response.json();
+        setBranches(data);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      }
+    }
+    fetchBranches();
+  }, []);
+
+  // Console log to debug student data
+  console.log("Student data in details:", student);
 
   if (isLoading) {
     return (
@@ -109,6 +175,10 @@ export default function StudentDetailPage() {
   // Use the username from the user object
   const displayName = student.user.username || "Student";
   const status = student.user.status || student.status || "active";
+  const trackName =
+    tracks.find((t) => t.id === student.track)?.name || "Not assigned";
+  const branchName =
+    branches.find((b) => b.id === student.branch)?.name || "Not assigned";
 
   return (
     <div className='container mx-auto py-6 space-y-6'>
@@ -159,7 +229,7 @@ export default function StudentDetailPage() {
                 <div>
                   <p className='font-medium'>Username</p>
                   <p className='text-sm text-muted-foreground'>
-                    {student.user.username}
+                    {student.user.username || "Not provided"}
                   </p>
                 </div>
               </div>
@@ -168,81 +238,65 @@ export default function StudentDetailPage() {
                 <div>
                   <p className='font-medium'>Email</p>
                   <p className='text-sm text-muted-foreground'>
-                    {student.user.email}
+                    {student.user.email || "Not provided"}
                   </p>
                 </div>
               </div>
-              {student.track_name && (
-                <div className='flex items-start'>
-                  <BookOpen className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>Track</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.track_name}
-                    </p>
-                  </div>
+              <div className='flex items-start'>
+                <BookOpen className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>Track</p>
+                  <p className='text-sm text-muted-foreground'>{trackName}</p>
                 </div>
-              )}
-              {student.university && (
-                <div className='flex items-start'>
-                  <School className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>University</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.university}
-                    </p>
-                  </div>
+              </div>
+              <div className='flex items-start'>
+                <BookOpen className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>Branch</p>
+                  <p className='text-sm text-muted-foreground'>{branchName}</p>
                 </div>
-              )}
-              {student.graduation_year && (
-                <div className='flex items-start'>
-                  <GraduationCap className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>Graduation Year</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.graduation_year}
-                    </p>
-                  </div>
+              </div>
+              <div className='flex items-start'>
+                <School className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>University</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {student.university || "Not provided"}
+                  </p>
                 </div>
-              )}
-              {student.user.phone && (
-                <div className='flex items-start'>
-                  <Phone className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>Phone</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.user.phone}
-                    </p>
-                  </div>
+              </div>
+              <div className='flex items-start'>
+                <GraduationCap className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>Graduation Year</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {student.graduation_year || "Not provided"}
+                  </p>
                 </div>
-              )}
-              {student.user.address && (
-                <div className='flex items-start'>
-                  <MapPin className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>Address</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.user.address}
-                    </p>
-                  </div>
+              </div>
+              <div className='flex items-start'>
+                <Phone className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>Phone</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {student.user.phone || "Not provided"}
+                  </p>
                 </div>
-              )}
-              {(student.user.notes || student.notes) && (
-                <div className='flex items-start'>
-                  <FileText className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>Notes</p>
-                    <p className='text-sm text-muted-foreground'>
-                      {student.user.notes || student.notes}
-                    </p>
-                  </div>
+              </div>
+              <div className='flex items-start'>
+                <MapPin className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>Address</p>
+                  <p className='text-sm text-muted-foreground'>
+                    {student.user.address || "Not provided"}
+                  </p>
                 </div>
-              )}
-              {student.github_profile && (
-                <div className='flex items-start'>
-                  <Github className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>GitHub</p>
+              </div>
+              <div className='flex items-start'>
+                <Github className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>GitHub</p>
+                  {student.github_profile ? (
                     <a
                       href={student.github_profile}
                       target='_blank'
@@ -254,14 +308,18 @@ export default function StudentDetailPage() {
                         ""
                       )}
                     </a>
-                  </div>
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>
+                      Not provided
+                    </p>
+                  )}
                 </div>
-              )}
-              {student.leetcode_profile && (
-                <div className='flex items-start'>
-                  <Code className='mr-3 h-5 w-5 text-[#007acc]' />
-                  <div>
-                    <p className='font-medium'>LeetCode</p>
+              </div>
+              <div className='flex items-start'>
+                <Code className='mr-3 h-5 w-5 text-[#007acc]' />
+                <div>
+                  <p className='font-medium'>LeetCode</p>
+                  {student.leetcode_profile ? (
                     <a
                       href={`https://leetcode.com/${student.leetcode_profile}`}
                       target='_blank'
@@ -270,9 +328,13 @@ export default function StudentDetailPage() {
                     >
                       {student.leetcode_profile}
                     </a>
-                  </div>
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>
+                      Not provided
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>
