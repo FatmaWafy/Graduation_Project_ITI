@@ -28,10 +28,10 @@ import { useRouter } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
 
 const data = [
-  { name: "OOP", score: 65 },
-  { name: "SFSD", score: 80 },
-  { name: "ALSDS", score: 78 },
-  { name: "BD", score: 30 },
+  { name: "Linux", score: 65 },
+  { name: "Postgres", score: 80 },
+  { name: "Django", score: 78 },
+  { name: "OS", score: 30 },
 ];
 
 export default function InstructorDashboard() {

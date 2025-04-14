@@ -79,7 +79,7 @@ export default function ExamLogsIndexPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <FileText className="h-8 w-8" />
-            Exam Logs
+            Exam cheating Logs
           </h1>
           <p className="text-muted-foreground mt-1">Select an exam to view its logs</p>
         </div>

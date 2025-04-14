@@ -45,10 +45,10 @@ export type Course = {
 export async function getCourses(): Promise<Course[]> {
   // Replace with actual API call in a real application
   return Promise.resolve([
-    { id: "1", title: "Math 101", description: "Introduction to Mathematics", progress: 60 },
-    { id: "2", title: "History 101", description: "World History", progress: 80 },
-    { id: "3", title: "English 101", description: "English Literature", progress: 75 },
-    { id: "4", title: "Computer Science 101", description: "Introduction to Programming", progress: 85 },
+    { id: "1", title: "Postgres", description: "Introduction to Mathematics", progress: 60 },
+    { id: "2", title: "Linux", description: "World History", progress: 80 },
+    { id: "3", title: "Django", description: "English Literature", progress: 75 },
+    { id: "4", title: "OS", description: "Introduction to Programming", progress: 85 },
   ])
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
