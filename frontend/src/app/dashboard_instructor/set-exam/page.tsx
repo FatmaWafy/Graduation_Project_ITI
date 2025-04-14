@@ -386,12 +386,7 @@ export default function SetExamPage() {
     }
   };
 
-  if (
-    loading.exams ||
-    loading.tracks ||
-    loading.branches ||
-    loading.students
-  ) {
+  if (loading.exams || loading.tracks || loading.branches || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -436,9 +431,9 @@ export default function SetExamPage() {
                   }`}
                   onClick={() => handleExamSelect(exam)}
                 >
-                  <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {/* <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
                     <FileText className="h-16 w-16 text-gray-400" />
-                  </div>
+                  </div> */}
                   <CardHeader>
                     <CardTitle>{exam.title}</CardTitle>
                     <CardDescription>
@@ -681,8 +676,8 @@ export default function SetExamPage() {
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Branch:{" "}
-                          {branches.find((b) => b.id === student.branch)?.name ||
-                            "Unknown"}
+                          {branches.find((b) => b.id === student.branch)
+                            ?.name || "Unknown"}
                         </div>
                       </label>
                     </div>

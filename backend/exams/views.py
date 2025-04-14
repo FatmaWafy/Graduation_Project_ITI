@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action
 from st_notifications.models import Note
 from users.models import Student, User
-from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase
+from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase,Branch
 from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.utils.timezone import now
 import jwt
@@ -597,6 +597,7 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                         answers = answer.get_answers()
                         student_data = {
                             "student": answer.student.username,
+                            "branch": answer.student.student.branch.name if hasattr(answer.student, 'student') and hasattr(answer.student.student, 'branch') else None,
                             "track": answer.student.student.track.name if hasattr(answer.student, 'student') and hasattr(answer.student.student, 'track') else None,
                             "score": answer.score,
                             "total_points": total_points,

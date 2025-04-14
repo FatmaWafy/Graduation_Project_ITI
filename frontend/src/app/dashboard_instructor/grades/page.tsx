@@ -31,6 +31,7 @@ interface StudentGrade {
   score: number;
   totalPoints: number;
   track?: string;
+  branch?: string;
   examInstanceId: string;
 }
 
@@ -43,10 +44,16 @@ interface ApiResponse {
     total_points: number;
     student: string;
     track?: string;
+    branch?: string;
     score: number;
     mcq_answers: Record<string, any>;
     coding_answers: Record<string, any>;
   }[];
+}
+
+interface Branch {
+  id: number;
+  name: string;
 }
 
 export default function GradesPage() {
@@ -58,8 +65,10 @@ export default function GradesPage() {
   const [examFilter, setExamFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [trackFilter, setTrackFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState("");
   const [tracks, setTracks] = useState<string[]>([]);
   const [exams, setExams] = useState<string[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -74,6 +83,7 @@ export default function GradesPage() {
           return;
         }
 
+        // Fetch grades data
         const response = await fetch(
           "http://127.0.0.1:8000/exam/student-exam-answers/get_all_student_scores/",
           {
@@ -85,7 +95,19 @@ export default function GradesPage() {
           }
         );
 
-        if (response.status === 401) {
+        // Fetch branches data
+        const branchesResponse = await fetch(
+          "http://127.0.0.1:8000/users/branches/",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.status === 401 || branchesResponse.status === 401) {
           router.push("/");
           return;
         }
@@ -94,7 +116,15 @@ export default function GradesPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        if (!branchesResponse.ok) {
+          throw new Error(
+            `Failed to fetch branches: ${branchesResponse.status}`
+          );
+        }
+
         const data: ApiResponse[] = await response.json();
+        const branchesData: Branch[] = await branchesResponse.json();
+
         const transformedData: StudentGrade[] = [];
         const uniqueTracks = new Set<string>();
         const uniqueExams = new Set<string>();
@@ -109,11 +139,16 @@ export default function GradesPage() {
               score: studentScore.score,
               totalPoints: studentScore.total_points,
               track: studentScore.track,
+              branch: studentScore.branch,
               examInstanceId: examInstance.exam_instance_id.toString(),
             });
 
             if (studentScore.track) {
               uniqueTracks.add(studentScore.track);
+            }
+            if (studentScore.branch) {
+              // Assuming branch is the name, adjust if it's ID
+              // If it's ID, you might want to map it to the branch name
             }
             uniqueExams.add(examInstance.exam_title);
           });
@@ -123,13 +158,12 @@ export default function GradesPage() {
         setFilteredGrades(transformedData);
         setTracks(Array.from(uniqueTracks));
         setExams(Array.from(uniqueExams));
+        setBranches(branchesData);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching student grades:", error);
+        console.error("Error fetching data:", error);
         setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load student grades"
+          error instanceof Error ? error.message : "Failed to load data"
         );
         setLoading(false);
       }
@@ -162,22 +196,27 @@ export default function GradesPage() {
         result = result.filter((grade) => grade.track === trackFilter);
       }
 
+      if (branchFilter && branchFilter !== "all") {
+        result = result.filter((grade) => grade.branch === branchFilter);
+      }
+
       setFilteredGrades(result);
     };
 
     applyFilters();
-  }, [nameFilter, examFilter, dateFilter, trackFilter, grades]);
+  }, [nameFilter, examFilter, dateFilter, trackFilter, branchFilter, grades]);
 
   const resetFilters = () => {
     setNameFilter("");
     setExamFilter("");
     setDateFilter("");
     setTrackFilter("");
+    setBranchFilter("");
   };
 
   if (loading) {
     return (
-      <div className='flex justify-center items-center h-64'>
+      <div className="flex justify-center items-center h-64">
         Loading student grades...
       </div>
     );
@@ -185,46 +224,46 @@ export default function GradesPage() {
 
   if (error) {
     return (
-      <div className='flex justify-center items-center h-64 text-red-500'>
+      <div className="flex justify-center items-center h-64 text-red-500">
         {error}
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='bg-white p-6 rounded-lg shadow-sm border'>
-        <h2 className='text-xl font-semibold mb-4 flex items-center'>
-          <Filter className='mr-2 h-5 w-5' />
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <Filter className="mr-2 h-5 w-5" />
           Filters
         </h2>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          <div className='space-y-2'>
-            <label htmlFor='name-filter' className='text-sm font-medium'>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="name-filter" className="text-sm font-medium">
               Student Name
             </label>
-            <div className='relative'>
-              <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                id='name-filter'
-                placeholder='Search by name...'
-                className='pl-8'
+                id="name-filter"
+                placeholder="Search by name..."
+                className="pl-8"
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
               />
             </div>
           </div>
 
-          <div className='space-y-2'>
-            <label htmlFor='exam-filter' className='text-sm font-medium'>
+          <div className="space-y-2">
+            <label htmlFor="exam-filter" className="text-sm font-medium">
               Exam Title
             </label>
             <Select value={examFilter} onValueChange={setExamFilter}>
               <SelectTrigger>
-                <SelectValue placeholder='All Exams' />
+                <SelectValue placeholder="All Exams" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Exams</SelectItem>
+                <SelectItem value="all">All Exams</SelectItem>
                 {exams.map((exam) => (
                   <SelectItem key={exam} value={exam}>
                     {exam}
@@ -234,28 +273,28 @@ export default function GradesPage() {
             </Select>
           </div>
 
-          <div className='space-y-2'>
-            <label htmlFor='date-filter' className='text-sm font-medium'>
+          <div className="space-y-2">
+            <label htmlFor="date-filter" className="text-sm font-medium">
               Exam Date
             </label>
             <Input
-              id='date-filter'
-              type='date'
+              id="date-filter"
+              type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             />
           </div>
 
-          <div className='space-y-2'>
-            <label htmlFor='track-filter' className='text-sm font-medium'>
+          <div className="space-y-2">
+            <label htmlFor="track-filter" className="text-sm font-medium">
               Track
             </label>
             <Select value={trackFilter} onValueChange={setTrackFilter}>
               <SelectTrigger>
-                <SelectValue placeholder='All Tracks' />
+                <SelectValue placeholder="All Tracks" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>All Tracks</SelectItem>
+                <SelectItem value="all">All Tracks</SelectItem>
                 {tracks.map((track) => (
                   <SelectItem key={track} value={track}>
                     {track}
@@ -265,25 +304,44 @@ export default function GradesPage() {
             </Select>
           </div>
 
-          <div className='flex items-end'>
-            <Button variant='outline' onClick={resetFilters}>
+          <div className="space-y-2">
+            <label htmlFor="branch-filter" className="text-sm font-medium">
+              Branch
+            </label>
+            <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Branches</SelectItem>
+                {branches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.name}>
+                    {branch.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-end">
+            <Button variant="outline" onClick={resetFilters}>
               Reset Filters
             </Button>
           </div>
         </div>
       </div>
 
-      <div className='bg-white rounded-lg shadow-sm border overflow-hidden'>
-        <div className='p-4 border-b'>
-          <h2 className='text-xl font-semibold'>
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-semibold">
             Student Grades
-            <span className='ml-2 text-sm font-normal text-muted-foreground'>
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
               ({filteredGrades.length} results)
             </span>
           </h2>
         </div>
 
-        <div className='overflow-x-auto'>
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -291,27 +349,33 @@ export default function GradesPage() {
                 <TableHead>Exam Title</TableHead>
                 <TableHead>Exam Date</TableHead>
                 <TableHead>Track</TableHead>
+                <TableHead>Branch</TableHead>
                 <TableHead>Score</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredGrades.length > 0 ? (
                 filteredGrades.map((grade) => (
                   <TableRow key={grade.id}>
-                    <TableCell className='font-medium'>{grade.name}</TableCell>
+                    <TableCell className="font-medium">{grade.name}</TableCell>
                     <TableCell>{grade.examTitle}</TableCell>
                     <TableCell>
                       {new Date(grade.examDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell>{grade.track || "-"}</TableCell>
+                    <TableCell>{grade.branch || "-"}</TableCell>
+                    <TableCell className="font-medium">
+                      {grade.score}/{grade.totalPoints}
+                    </TableCell>
                     <TableCell>
                       <Link
-                        href={`/dashboard_instructor/student-answers/${
+                        href={`/dashboard_instructor/grades/${
                           grade.examInstanceId
                         }?student=${encodeURIComponent(grade.name)}`}
-                        className='text-primary hover:underline font-medium'
+                        className="text-primary hover:underline"
                       >
-                        {grade.score}/{grade.totalPoints}
+                        Show Answers
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -319,8 +383,8 @@ export default function GradesPage() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
-                    className='text-center py-8 text-muted-foreground'
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
                   >
                     No results found. Try adjusting your filters.
                   </TableCell>

@@ -146,8 +146,13 @@ export default function ExamsPage() {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-red-500">{error}</p>
+      <div className="col-span-full flex flex-col items-center justify-center py-12 space-y-4">
+        <FileText className="h-12 w-12 text-muted-foreground" />
+        <p className="text-muted-foreground text-lg">No exams found</p>
+        <p className="text-muted-foreground text-sm">
+          There are no Exams available for this Account.. Please try again
+          later.
+        </p>
       </div>
     );
   }

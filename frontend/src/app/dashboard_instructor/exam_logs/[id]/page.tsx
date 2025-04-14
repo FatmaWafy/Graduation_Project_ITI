@@ -1,40 +1,40 @@
-'use client'
-import { useEffect, useState, Suspense } from "react"
-import { notFound } from "next/navigation"
-import { ExamLogsHeader } from "../../../../components/exam-logs-header"
-import { ExamLogsTable } from "../../../../components/exam-logs-table"
-import { ExamLog } from "@/lib/types"
+"use client";
+import { useEffect, useState, Suspense } from "react";
+import { notFound } from "next/navigation";
+import { ExamLogsHeader } from "../../../../components/exam-logs-header";
+import { ExamLogsTable } from "../../../../components/exam-logs-table";
+import { ExamLog } from "@/lib/types";
 
 interface ExamLogsPageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('token='))
-      ?.split('=')[1]
-    return token || ''
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+    return token || "";
   }
-  return ''
-}
+  return "";
+};
 
 export default function ExamLogsPage({ params }: ExamLogsPageProps) {
-  const [examId, setExamId] = useState<string | null>(null)
+  const [examId, setExamId] = useState<string | null>(null);
 
   useEffect(() => {
-    params.then(param => {
-      const { id } = param
+    params.then((param) => {
+      const { id } = param;
       if (!id || isNaN(Number(id))) {
-        notFound()
+        notFound();
       } else {
-        setExamId(id)
+        setExamId(id);
       }
-    })
-  }, [params])
+    });
+  }, [params]);
 
-  if (!examId) return <div>Loading...</div>
+  if (!examId) return <div>Loading...</div>;
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -43,77 +43,96 @@ export default function ExamLogsPage({ params }: ExamLogsPageProps) {
         <ExamLogsContent examId={examId} />
       </Suspense>
     </div>
-  )
+  );
 }
 
 function ExamLogsContent({ examId }: { examId: string }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [logs, setLogs] = useState<ExamLog[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null);
+  const [logs, setLogs] = useState<ExamLog[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getAuthToken()
-    setToken(token)
+    const token = getAuthToken();
+    setToken(token);
 
     if (token) {
       const fetchLogs = async () => {
         try {
-          const res = await fetch(`http://127.0.0.1:8000/exam/exams/logs/${examId}/`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            cache: 'no-store',
-          })
+          const res = await fetch(
+            `http://127.0.0.1:8000/exam/exams/logs/${examId}/`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              cache: "no-store",
+            }
+          );
 
-          if (!res.ok) {
-            const text = await res.text()
-            throw new Error(text)
+          // If status is 404, treat it as "no logs" rather than an error
+          if (res.status === 404) {
+            setLogs([]);
+            return;
           }
 
-          const data = await res.json()
-          setLogs(data)
-        } catch (err: any) {
-          console.error("Fetch logs error:", err.message)
-          setError("Failed to fetch logs.")
-        }
-      }
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text);
+          }
 
-      fetchLogs()
+          const data = await res.json();
+          setLogs(data);
+        } catch (err: any) {
+          console.error("Fetch logs error:", err.message);
+          setError("Failed to fetch logs.");
+        }
+      };
+
+      fetchLogs();
     }
-  }, [examId])
+  }, [examId]);
 
   if (!token) {
     return (
       <div className="mt-8 text-center p-8 bg-muted rounded-lg">
         <h3 className="text-xl font-medium">No token found</h3>
-        <p className="text-muted-foreground mt-2">Please log in to view the logs.</p>
+        <p className="text-muted-foreground mt-2">
+          Please log in to view the logs.
+        </p>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <div className="mt-8 text-center p-8 bg-destructive/10 rounded-lg">
-        <h3 className="text-xl font-medium text-destructive">Error loading logs</h3>
+        <h3 className="text-xl font-medium text-destructive">
+          Error loading logs
+        </h3>
         <p className="text-muted-foreground mt-2">{error}</p>
       </div>
-    )
+    );
   }
 
   if (!logs) {
-    return <div className="mt-8 text-center text-muted-foreground">Loading logs...</div>
+    return (
+      <div className="mt-8 text-center text-muted-foreground">
+        Loading logs...
+      </div>
+    );
   }
 
-  if (logs.length === 0) {
+  if (error || (logs && logs.length === 0)) {
     return (
       <div className="mt-8 text-center p-8 bg-muted rounded-lg">
         <h3 className="text-xl font-medium">No logs found</h3>
-        <p className="text-muted-foreground mt-2">There are no logs available for this exam.</p>
+        <p className="text-muted-foreground mt-2">
+          There are no logs available for this exam.
+        </p>
       </div>
-    )
+    );
   }
 
-  return <ExamLogsTable logs={logs} />
+  return <ExamLogsTable logs={logs} />;
 }
 
 function ExamLogsTableSkeleton() {
@@ -126,5 +145,5 @@ function ExamLogsTableSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
