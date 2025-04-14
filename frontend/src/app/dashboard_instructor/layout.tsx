@@ -47,12 +47,12 @@ export default function InstructorLayout({
   }
 
   return (
-    <div className='flex  bg-white transition-all duration-300'>
+    <div className='flex   transition-all duration-300'>
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-16"
-        } bg-gray-300 text-black p-4 shadow-lg flex flex-col inset-y-0 z-50 transition-all duration-300`}
+        }  border-r p-4   flex flex-col inset-y-0 z-50 transition-all duration-300`}
       >
         <div className='flex justify-between items-center mb-6'>
           {sidebarOpen && (
@@ -60,7 +60,7 @@ export default function InstructorLayout({
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className='text-white focus:outline-none flex items-center'
+            className='text-[#007acc] focus:outline-none flex items-center'
           >
             <ChevronLeft
               className={`h-6 w-6 transition-transform ${

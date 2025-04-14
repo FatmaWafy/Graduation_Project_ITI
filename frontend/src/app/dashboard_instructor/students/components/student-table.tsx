@@ -75,28 +75,33 @@ export function StudentTable({
   const [branches, setBranches] = useState<Branch[]>([]);
 
 
-  
-useEffect(() => {
-  async function fetchBranches() {
-    try {
-      const token = getClientSideToken();
-      const response = await fetch("http://127.0.0.1:8000/users/branches/", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch branches");
+  useEffect(() => {
+    async function fetchBranches() {
+      try {
+        const token = getClientSideToken();
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+        const response = await fetch("http://127.0.0.1:8000/users/branches/", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch branches");
+        }
+        const data = await response.json();
+        setBranches(data);
+        console.log("Fetched branches:", data); // Debug
+      } catch (error) {
+        console.error("Error fetching branches:", error);
       }
-      const data = await response.json();
-      setBranches(data);
-    } catch (error) {
-      console.error("Error fetching branches:", error);
     }
-  }
-  fetchBranches();
-}, []);
+    fetchBranches();
+  }, []);
+
   useEffect(() => {
     async function fetchTracks() {
       try {
@@ -184,16 +189,22 @@ useEffect(() => {
     },
     {
       id: "branch",
-      accessorFn: (row) =>
-        branches.find((b) => b.id === row.branch)?.name || "Not assigned",
+      accessorFn: (row) => {
+        const branchName = branches.find((b) => b.id === row.branch)?.name || "Not assigned";
+        console.log("Row branch ID:", row.branch, "Branch name:", branchName); // Debug
+        return branchName;
+      },
       header: "Branch",
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.branch
-            ? branches.find((b) => b.id === row.branch)?.name || "Not assigned"
-            : "Not assigned"}
-        </div>
-      ),
+      cell: ({ row }) => {
+        console.log("Cell branch ID:", row.original.branch); // Debug
+        return (
+          <div className="text-sm">
+            {row.original.branch
+              ? branches.find((b) => b.id === row.original.branch)?.name || "Not assigned"
+              : "Not assigned"}
+          </div>
+        );
+      },
     },
     {
       id: "actions",

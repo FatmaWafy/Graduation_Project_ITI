@@ -73,7 +73,7 @@ export default function InstructorDashboard() {
     }, [])
   const router = useRouter();
   return (
-    <div className="flex   bg-gray-100">
+    <div className="flex   ">
 
       <main className="flex-1 p-6  ">
         {/* Header */}
