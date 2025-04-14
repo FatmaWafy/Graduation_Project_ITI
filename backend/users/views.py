@@ -514,6 +514,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
 
         track_names = [track.name for track in instructor.tracks.all()]
+        branch = instructor.branch
 
         students_added = 0
         for row in csv_reader:
@@ -544,6 +545,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
             student = Student.objects.create(
                 user=user_instance,
                 track=track,
+                branch=branch,
                 university=university,
                 graduation_year=graduation_year,
                 college=college,
@@ -749,7 +751,6 @@ class CourseRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
-
 
 class InstructorProfileView(APIView):
     """
