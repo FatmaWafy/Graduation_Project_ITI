@@ -180,11 +180,7 @@ export default function StudentLabsPage() {
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="all">All Labs</TabsTrigger>
-          {uniqueTracks.map((track) => (
-            <TabsTrigger key={track} value={track}>
-              {track}
-            </TabsTrigger>
-          ))}
+          
         </TabsList>
 
         <TabsContent value={activeTab}>

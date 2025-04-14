@@ -35,12 +35,12 @@ import { useStudentById } from "../hooks/use-students";
 import StudentProgress from "../components/StudentProgress";
 
 export default function StudentDetailPage() {
+  const BASE_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
   const router = useRouter();
   const params = useParams();
   const studentId = Number.parseInt(params.id as string);
 
   const { data: student, isLoading, error } = useStudentById(studentId);
-  console.log("Student data:", student);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (isLoading) {
@@ -128,23 +128,13 @@ export default function StudentDetailPage() {
           <CardHeader className='pb-2'>
             <div className='flex flex-col items-center text-center'>
               <Avatar className='h-24 w-24 border-4 border-[#f0f9ff]'>
-                {student.user.profile_image ? (
-                  <AvatarImage
-                    src={student.user.profile_image}
-                    alt={displayName}
-                    onError={(e) => {
-                      console.error(
-                        "Error loading profile image:",
-                        student.user.profile_image
-                      );
-                      e.currentTarget.src = "/default-avatar.png"; // صورة افتراضية لو الصورة فشلت
-                    }}
-                  />
-                ) : (
-                  <AvatarFallback className='bg-[#f0f9ff] text-[#007acc] text-2xl'>
-                    {displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                )}
+                <AvatarImage
+                  src={student.user.profile_image || ""}
+                  alt={displayName}
+                />
+                <AvatarFallback className='bg-[#f0f9ff] text-[#007acc] text-2xl'>
+                  {displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className='mt-4'>
                 <CardTitle className='text-2xl text-[#007acc]'>

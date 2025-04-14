@@ -484,7 +484,7 @@ export default function ExamDashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Exam Completed</AlertDialogTitle>
             <AlertDialogDescription>
-              Your score: {score}%
+              Your score: {score} Points
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
