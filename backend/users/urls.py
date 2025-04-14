@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import  (
-    CourseListCreateView, CourseRetrieveUpdateDestroyView, 
+    ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
     BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView,
     RegisterInstructorAPIView,
     LoginAPIView,
@@ -50,5 +50,7 @@ urlpatterns = [
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
         path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
+        path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
+
     path('', include(router.urls)),
 ]
