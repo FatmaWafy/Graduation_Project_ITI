@@ -24,6 +24,8 @@ import { Upload, Mail, Phone, MapPin, Lock, Eye, EyeOff } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@radix-ui/react-switch";
+// import PasswordChangeSection from "@/components/password";
 
 interface InstructorData {
   address: string;
@@ -86,7 +88,6 @@ export default function ProfilePage() {
       if (!token) {
         throw new Error("Authentication token not found");
       }
-
       const decoded = jwtDecode(token) as { user_id?: string };
       if (!decoded.user_id) {
         throw new Error("User ID not found in token");
@@ -125,7 +126,6 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchInstructorData();
   }, [user]);
-
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordValues((prev) => ({ ...prev, [name]: value }));
@@ -133,6 +133,7 @@ export default function ProfilePage() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (passwordValues.newPassword !== passwordValues.confirmPassword) {
       alert("New passwords don't match!");
       return;
@@ -140,14 +141,19 @@ export default function ProfilePage() {
 
     try {
       if (!instructorData) {
-        alert("Instructor data not loaded");
+        alert("Student data not loaded");
         return;
       }
-
+      console.log(
+        "Instructor ID:",
+        instructorData.id,
+        "Current Password:",
+        passwordValues.currentPassword
+      );
       const res = await axios.post(
-        "http://localhost:8000/users/change-password/",
+        "http://localhost:8000/users/instructor/change-password/",
         {
-          instructor_id: instructorData.id,
+          instructor_id: instructorData.id, // أهم تعديل هنا
           currentPassword: passwordValues.currentPassword,
           newPassword: passwordValues.newPassword,
         }
@@ -550,6 +556,31 @@ export default function ProfilePage() {
                 <Button type="submit">Change Password</Button>
               </CardFooter>
             </form>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Security</CardTitle>
+              <CardDescription>
+                Manage your account security settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <span>Two-factor authentication</span>
+                </div>
+                <Switch />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <span>Login notifications</span>
+                </div>
+                <Switch defaultChecked />
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

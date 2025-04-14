@@ -803,3 +803,30 @@ class InstructorProfileView(APIView):
             "message": "Instructor updated successfully!", 
             "instructor": InstructorSerializer(instructor).data
         }, status=status.HTTP_200_OK)
+class ChangeInstructorPasswordAPIView(APIView):
+    permission_classes = [AllowAny]  # Change to IsAuthenticated later if needed
+
+    def post(self, request):
+        instructor_id = request.data.get("instructor_id")
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+
+        try:
+            instructor = Instructor.objects.get(id=instructor_id)
+            user = instructor.user
+
+            if not user.check_password(current_password):
+                return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if len(new_password) < 8:
+                return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
