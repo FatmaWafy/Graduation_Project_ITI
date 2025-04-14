@@ -54,6 +54,33 @@ export default function StudentDetailPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
 
+  useEffect(() => {
+    async function fetchBranches() {
+      try {
+        const token = getClientSideToken();
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+        const response = await fetch("http://127.0.0.1:8000/users/branches/", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch branches");
+        }
+        const data = await response.json();
+        setBranches(data);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      } finally {
+      }
+    }
+    fetchBranches();
+  }, []);
+
   // Fetch tracks from API
   useEffect(() => {
     async function fetchTracks() {
@@ -80,31 +107,7 @@ export default function StudentDetailPage() {
     fetchTracks();
   }, []);
 
-  // Fetch branches from API
-  useEffect(() => {
-    async function fetchBranches() {
-      try {
-        const token = getClientSideToken();
-        const response = await fetch(
-          "http://127.0.0.1:8000/users/get-branches/",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch branches");
-        }
-        const data = await response.json();
-        setBranches(data);
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-      }
-    }
-    fetchBranches();
-  }, []);
+ 
 
   // Console log to debug student data
   console.log("Student data in details:", student);
@@ -177,8 +180,10 @@ export default function StudentDetailPage() {
   const status = student.user.status || student.status || "active";
   const trackName =
     tracks.find((t) => t.id === student.track)?.name || "Not assigned";
+    
   const branchName =
     branches.find((b) => b.id === student.branch)?.name || "Not assigned";
+    console.log("Student branch ID:", student.branch); // Debug
 
   return (
     <div className='container mx-auto py-6 space-y-6'>
