@@ -324,7 +324,7 @@ export default function ProfilePage() {
             Manage your personal information
           </p>
         </div>
-        <Button onClick={() => setIsEditing(!isEditing)}>
+        <Button className="bg-[#007acc] hover:bg-[#007abc]" onClick={() => setIsEditing(!isEditing)}>
           {isEditing ? "Cancel" : "Edit Profile"}
         </Button>
       </div>
@@ -453,7 +453,7 @@ export default function ProfilePage() {
               </CardContent>
               {isEditing && (
                 <CardFooter>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button className="bg-[#007acc] hover:bg-[#007abc]" type="submit" disabled={isSubmitting}>
                     {isSubmitting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
@@ -553,7 +553,7 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit">Change Password</Button>
+                <Button className="bg-[#007acc] hover:bg-[#007abc]" type="submit">Change Password</Button>
               </CardFooter>
             </form>
           </Card>
