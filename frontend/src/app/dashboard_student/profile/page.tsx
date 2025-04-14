@@ -516,7 +516,7 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="github_profile">GitHub Profile</Label>
                     {isEditing ? (
                       <Input
@@ -545,7 +545,7 @@ export default function ProfilePage() {
                         {formState.leetcode_profile || "Not provided"}
                       </div>
                     )}
-                  </div>
+                  </div> */}
 
                 </div>
               </CardContent>

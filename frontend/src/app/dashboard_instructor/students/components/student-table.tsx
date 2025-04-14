@@ -74,11 +74,13 @@ export function StudentTable({
   const [tracks, setTracks] = useState<Track[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
 
+
+  
 useEffect(() => {
   async function fetchBranches() {
     try {
       const token = getClientSideToken();
-      const response = await fetch("http://127.0.0.1:8000/users/get-branches/", {
+      const response = await fetch("http://127.0.0.1:8000/users/branches/", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
