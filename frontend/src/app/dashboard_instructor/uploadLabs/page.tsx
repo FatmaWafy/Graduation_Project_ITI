@@ -16,6 +16,27 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/components/ui/use-toast"
 import Cookies from "js-cookie"
+import { sendNotification } from "../../../lib/actions/notification-actions" // Adjust the path as needed
+import { jwtDecode } from "jwt-decode"
+
+
+export async function getUserIdFromToken(): Promise<number | null> {
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1]
+  console.log("Token from cookie:", token)
+
+  if (!token) return null
+
+  try {
+    const decoded: any = jwtDecode(token)
+    return decoded.user_id || decoded.id
+  } catch (e) {
+    console.error("Invalid token:", e)
+    return null
+  }
+}
 
 interface Lab {
   id: number
@@ -162,9 +183,110 @@ export default function LabsPage() {
   }
 
   // Replace the handleSubmit function with this improved version
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+
+  //   if (!file || !track) {
+  //     toast({
+  //       title: "Missing information",
+  //       description: "Please select a file and track",
+  //       variant: "destructive",
+  //     })
+  //     return
+  //   }
+
+  //   setIsUploading(true)
+  //   setUploadProgress(0)
+  //   setUploadSuccess(false)
+  //   setUploadError(null)
+
+  //   // Create a FormData object to send the file
+  //   const formData = new FormData()
+  //   formData.append("file", file)
+  //   formData.append("track", track)
+  //   formData.append("name", file.name)
+  //   // Update the description in the FormData to use the track name
+  //   // In the handleSubmit function, modify the description line:
+  //   const selectedTrack = tracks.find((t) => t.id.toString() === track)
+  //   formData.append("description", `Lab material for ${selectedTrack ? selectedTrack.name : track}`)
+
+  //   try {
+  //     const token = Cookies.get("token")
+  //     if (!token) {
+  //       throw new Error("No authentication token found")
+  //     }
+
+  //     // Log the token for debugging (remove in production)
+  //     console.log("Using token for upload:", token.substring(0, 15) + "...")
+
+  //     // Simulate upload progress
+  //     const progressInterval = setInterval(() => {
+  //       setUploadProgress((prev) => {
+  //         if (prev >= 95) {
+  //           clearInterval(progressInterval)
+  //           return prev
+  //         }
+  //         return prev + 5
+  //       })
+  //     }, 200)
+
+  //     const response = await fetch("http://127.0.0.1:8000/labs/", {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: formData,
+  //     })
+
+  //     clearInterval(progressInterval)
+
+  //     if (!response.ok) {
+  //       // Improved error handling
+  //       let errorMessage = "Upload failed"
+  //       try {
+  //         const errorData = await response.json()
+  //         console.error("Server error response:", errorData)
+  //         errorMessage = errorData.detail || errorData.error || JSON.stringify(errorData)
+  //       } catch (parseError) {
+  //         // If the response isn't JSON
+  //         const errorText = await response.text()
+  //         console.error("Server error text:", errorText)
+  //         errorMessage = errorText || `HTTP error: ${response.status}`
+  //       }
+  //       throw new Error(errorMessage)
+  //     }
+
+  //     const responseData = await response.json()
+  //     console.log("Upload response:", responseData)
+
+  //     setUploadProgress(100)
+  //     setUploadSuccess(true)
+
+  //     toast({
+  //       title: "Upload successful",
+  //       description: "The lab has been uploaded and sent to students",
+  //     })
+
+  //     // Refresh the labs list
+  //     fetchLabs()
+
+  //     // Reset form after successful upload
+  //     setTimeout(() => {
+  //       setFile(null)
+  //       setUploadProgress(0)
+  //       setIsUploading(false)
+  //     }, 1000)
+  //   } catch (error) {
+  //     console.error("Upload error:", error)
+  //     setUploadError(error instanceof Error ? error.message : String(error))
+  //     setIsUploading(false)
+  //   }
+  // }
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+  
     if (!file || !track) {
       toast({
         title: "Missing information",
@@ -173,32 +295,26 @@ export default function LabsPage() {
       })
       return
     }
-
+  
     setIsUploading(true)
     setUploadProgress(0)
     setUploadSuccess(false)
     setUploadError(null)
-
-    // Create a FormData object to send the file
+  
     const formData = new FormData()
     formData.append("file", file)
     formData.append("track", track)
     formData.append("name", file.name)
-    // Update the description in the FormData to use the track name
-    // In the handleSubmit function, modify the description line:
+  
     const selectedTrack = tracks.find((t) => t.id.toString() === track)
     formData.append("description", `Lab material for ${selectedTrack ? selectedTrack.name : track}`)
-
+  
     try {
       const token = Cookies.get("token")
-      if (!token) {
-        throw new Error("No authentication token found")
-      }
-
-      // Log the token for debugging (remove in production)
+      if (!token) throw new Error("No authentication token found")
+  
       console.log("Using token for upload:", token.substring(0, 15) + "...")
-
-      // Simulate upload progress
+  
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 95) {
@@ -208,7 +324,7 @@ export default function LabsPage() {
           return prev + 5
         })
       }, 200)
-
+  
       const response = await fetch("http://127.0.0.1:8000/labs/", {
         method: "POST",
         headers: {
@@ -216,52 +332,80 @@ export default function LabsPage() {
         },
         body: formData,
       })
-
+  
       clearInterval(progressInterval)
-
+  
       if (!response.ok) {
-        // Improved error handling
         let errorMessage = "Upload failed"
         try {
           const errorData = await response.json()
           console.error("Server error response:", errorData)
           errorMessage = errorData.detail || errorData.error || JSON.stringify(errorData)
         } catch (parseError) {
-          // If the response isn't JSON
           const errorText = await response.text()
           console.error("Server error text:", errorText)
           errorMessage = errorText || `HTTP error: ${response.status}`
         }
         throw new Error(errorMessage)
       }
-
+  
       const responseData = await response.json()
       console.log("Upload response:", responseData)
-
+  
       setUploadProgress(100)
       setUploadSuccess(true)
-
+  
+      // toast({
+      //   title: "Upload successful",
+      //   description: "The lab has been uploaded and sent to students",
+      // })
+  
+      async function fetchInstructorId(): Promise<number> {
+        const userId = await getUserIdFromToken();
+        console.log("User ID from token:", userId);
+  
+        if (!userId) throw new Error("User ID not found in token.");
+  
+        const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`);
+        if (!res.ok) throw new Error("Failed to fetch instructor ID");
+  
+        const data = await res.json();
+        console.log("Data from instructor API:", data);
+  
+        return data.id;
+      }
+  
+      const instructorId = await fetchInstructorId();
+  
+      // ✅ Send notification with the correct instructor ID
+      await sendNotification({
+        instructor_id: instructorId,
+        track_id: responseData.track,
+        message: `New lab "${responseData.name}" has been uploaded.`,
+      });
+  
+      setUploadProgress(100);
+      setUploadSuccess(true);
+  
       toast({
         title: "Upload successful",
         description: "The lab has been uploaded and sent to students",
-      })
-
-      // Refresh the labs list
-      fetchLabs()
-
-      // Reset form after successful upload
+      });
+  
+      fetchLabs();
+  
       setTimeout(() => {
-        setFile(null)
-        setUploadProgress(0)
-        setIsUploading(false)
-      }, 1000)
+        setFile(null);
+        setUploadProgress(0);
+        setIsUploading(false);
+      }, 1000);
     } catch (error) {
-      console.error("Upload error:", error)
-      setUploadError(error instanceof Error ? error.message : String(error))
-      setIsUploading(false)
+      console.error("Upload error:", error);
+      setUploadError(error instanceof Error ? error.message : String(error));
+      setIsUploading(false);
     }
-  }
-
+  };
+  
   // Replace the handleDeleteLab function with this improved version
   const handleDeleteLab = async (labId: number) => {
     try {

@@ -257,6 +257,8 @@ export async function getExams(token: string, userId: string): Promise<Exam[]> {
 }
 
 
+
+
 // Helper function to calculate duration in minutes
 function calculateDurationInMinutes(start: string, end: string): number {
   const startDate = new Date(start);

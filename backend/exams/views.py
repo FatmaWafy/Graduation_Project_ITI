@@ -20,6 +20,8 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from django.conf import settings
 import logging
+from django.utils import timezone
+
 
 logger = logging.getLogger(__name__)
 
@@ -818,10 +820,14 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
 class CheatingLogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # حذف السجلات القديمة التي مر عليها أكثر من يومين
+        self.delete_old_logs()
+
         # Fetch all the cheating logs
         logs = CheatingLog.objects.all()
         serializer = CheatingLogSerializer(logs, many=True)
@@ -832,8 +838,22 @@ class CheatingLogView(APIView):
         serializer = CheatingLogSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
+            # بعد إضافة السجل الجديد ننفذ الحذف التلقائي
+            self.delete_old_logs()
             return Response({"status": "logged"})
         return Response(serializer.errors, status=400)
+    
+    def delete_old_logs(self):
+        """
+        حذف السجلات التي مضى عليها أكثر من يومين.
+        """
+        expiration_time = timezone.now() - timedelta(days=2)
+        old_logs = CheatingLog.objects.filter(timestamp__lt=expiration_time)
+        
+        if old_logs.exists():
+            deleted_count, _ = old_logs.delete()
+            print(f"{deleted_count} logs were deleted.")  
+
 from rest_framework.decorators import api_view, permission_classes
 
 @api_view(['GET'])
