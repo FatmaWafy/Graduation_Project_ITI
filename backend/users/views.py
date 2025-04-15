@@ -26,6 +26,7 @@ from random import choice
 import  string
 import os
 from rest_framework import generics 
+from datetime import datetime, timezone
 
 token_generator = PasswordResetTokenGenerator()
 
@@ -156,33 +157,7 @@ class ResetPasswordAPIView(APIView):
 
         return Response({"message": "Password has been reset successfully"}, status=status.HTTP_200_OK)
 
-def get_leetcode_solved_problems(leetcode_username):
 
-    if '/u/' in leetcode_username:
-        leetcode_username = leetcode_username.split('/u/')[-1]
-
-    elif leetcode_username.startswith('https://leetcode.com/u/'):
-        leetcode_username = leetcode_username.split('/u/')[-1]
-
-    # التحقق إذا كانت قيمة الـ username صحيحة
-    if not leetcode_username or len(leetcode_username) < 3:
-        print("Invalid username, please check the username format.")
-        return None
-
-    print(f"Fetching data for LeetCode username: {leetcode_username}")
-
-    url = f"https://leetcode-stats-api.herokuapp.com/{leetcode_username}"
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        leetcode_data = response.json()
-        # print(f"LeetCode API Response: {leetcode_data}")
-        leetcode_solved = leetcode_data.get("totalSolved")
-
-        return leetcode_solved
-    else:
-        print(f"Error fetching LeetCode stats: {response.status_code}")
-        return None
 
 class RegisterStudentAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -263,6 +238,67 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+def get_leetcode_stats_and_recent(leetcode_username, days=3):
+    # إزالة أي رابط زائد
+    leetcode_username = leetcode_username.strip("/").split("/")[-1]
+
+    # 1. عدد المسائل المحلولة من API الخارجي
+    total_solved = None
+    stats_url = f"https://leetcode-stats-api.herokuapp.com/{leetcode_username}"
+    stats_response = requests.get(stats_url)
+    if stats_response.status_code == 200:
+        stats_data = stats_response.json()
+        total_solved = stats_data.get("totalSolved")
+
+    # 2. آخر السبميشنز (من LeetCode GraphQL)
+    recent_submissions = []
+    graphql_url = "https://leetcode.com/graphql"
+    query = """
+    query recentSubmissions($username: String!) {
+        recentSubmissionList(username: $username, limit: 20) {
+            title
+            status
+            timestamp
+        }
+    }
+    """
+    variables = {"username": leetcode_username}
+    
+    # Adding headers for the request
+    headers = {
+        "Content-Type": "application/json",
+        "Referer": f"https://leetcode.com/{leetcode_username}/",
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    graphql_response = requests.post(graphql_url, json={"query": query, "variables": variables}, headers=headers)
+    
+    if graphql_response.status_code == 200:
+        data = graphql_response.json()
+        submissions = data.get("data", {}).get("recentSubmissionList", [])
+        now = datetime.now(timezone.utc)
+
+        for sub in submissions:
+            sub_time = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc)
+            # print("Submission time:", sub_time)
+
+            # Add submission to the list
+            recent_submissions.append({
+                "title": sub["title"],
+                "status": sub["status"],
+                "timestamp": sub_time.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        # Debug output for response and timestamps
+        # print(f"now: {now}, sub_time: {sub_time}")
+    else:
+        print("Error with GraphQL request:", graphql_response.text)
+
+    return {
+        "total_solved": total_solved,
+        "recent_submissions": recent_submissions
+    }
+
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -427,6 +463,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         github_repos = None
         leetcode_solved = None
+        leetcode_recent = []
 
         # -------- GitHub --------
         if student.github_profile:
@@ -440,12 +477,18 @@ class StudentViewSet(viewsets.ModelViewSet):
         # -------- LeetCode --------
         if student.leetcode_profile:
             leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
-            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+            leetcode_data = get_leetcode_stats_and_recent(leetcode_username, days=3)
+
+            leetcode_solved = leetcode_data["total_solved"]
+            leetcode_recent = leetcode_data["recent_submissions"]
 
         return Response({
             "github_repos": github_repos,
-            "leetcode_solved": leetcode_solved
+            "leetcode_solved": leetcode_solved,
+            "leetcode_recent_submissions": leetcode_recent
         })
+
+
 
     @action(detail=False, methods=['get'], url_path='by-id/(?P<student_id>[^/.]+)')
     def get_by_student_id(self, request, student_id=None):
