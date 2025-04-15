@@ -80,9 +80,17 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    const { name, email, password, confirmPassword, track_name, branch_name } = formData;
+    const { name, email, password, confirmPassword, track_name, branch_name } =
+      formData;
 
-    if (!name || !email || !password || !confirmPassword || !track_name || !branch_name) {
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !track_name ||
+      !branch_name
+    ) {
       setError("All fields are required");
       return;
     }
@@ -102,7 +110,6 @@ export default function SignupPage() {
       track_name,
       branch: branch_name,
     };
-
 
     console.log("Sending payload:", payload); // Debug the payload
 
@@ -127,57 +134,57 @@ export default function SignupPage() {
     }
   };
   return (
-    <div className='flex min-h-screen items-center justify-center bg-gray-100 p-4'>
-      <Card className='w-full max-w-md p-6 shadow-lg bg-white rounded-xl'>
-        <CardHeader className='text-center'>
-          <div className='flex justify-center mb-2'>
-            <BookOpen className='h-10 w-10 text-green-500' />
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <Card className="w-full max-w-md p-6 shadow-lg bg-white rounded-xl">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-2">
+            <BookOpen className="h-10 w-10 text-green-500" />
           </div>
-          <CardTitle className='text-2xl font-bold'>
+          <CardTitle className="text-2xl font-bold">
             Create an Account
           </CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className='space-y-4'>
+          <CardContent className="space-y-4">
             {error && (
-              <div className='bg-red-100 text-red-600 p-2 rounded-md text-sm'>
+              <div className="bg-red-100 text-red-600 p-2 rounded-md text-sm">
                 {error}
               </div>
             )}
             <div>
-              <Label htmlFor='name'>Full Name</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input
-                id='name'
-                name='name'
-                placeholder='Your Name'
+                id="name"
+                name="name"
+                placeholder="Your Name"
                 value={formData.name}
                 onChange={handleChange}
                 required
               />
             </div>
             <div>
-              <Label htmlFor='email'>Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id='email'
-                name='email'
-                type='email'
-                placeholder='instructor@example.com'
+                id="email"
+                name="email"
+                type="email"
+                placeholder="instructor@example.com"
                 value={formData.email}
                 onChange={handleChange}
                 required
               />
             </div>
             <div>
-              <Label htmlFor='track_name'>Select Track</Label>
+              <Label htmlFor="track_name">Select Track</Label>
               <select
-                id='track_name'
-                name='track_name'
+                id="track_name"
+                name="track_name"
                 value={formData.track_name}
                 onChange={handleChange}
                 required
-                className='w-full p-2 border rounded-md'
+                className="w-full p-2 border rounded-md"
               >
-                <option value='' disabled>
+                <option value="" disabled>
                   Select your track
                 </option>
                 {tracks.map((track) => (
@@ -189,16 +196,16 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <Label htmlFor='branch_name'>Select Branch</Label>
+              <Label htmlFor="branch_name">Select Branch</Label>
               <select
-                id='branch_name'
-                name='branch_name'
+                id="branch_name"
+                name="branch_name"
                 value={formData.branch_name}
                 onChange={handleChange}
                 required
-                className='w-full p-2 border rounded-md'
+                className="w-full p-2 border rounded-md"
               >
-                <option value='' disabled>
+                <option value="" disabled>
                   Select your branch
                 </option>
                 {branches.map((branch, idx) => (
@@ -209,39 +216,39 @@ export default function SignupPage() {
               </select>
             </div>
             <div>
-              <Label htmlFor='password'>Password</Label>
-              <div className='relative'>
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
                 <Input
-                  id='password'
-                  name='password'
+                  id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}
                   required
                 />
                 <Button
-                  type='button'
-                  variant='ghost'
-                  size='icon'
-                  className='absolute right-2 top-2'
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-2"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className='h-5 w-5' />
+                    <EyeOff className="h-5 w-5" />
                   ) : (
-                    <Eye className='h-5 w-5' />
+                    <Eye className="h-5 w-5" />
                   )}
                 </Button>
               </div>
-              <p className='text-xs text-gray-500'>
+              <p className="text-xs text-gray-500">
                 Password must be at least 8 characters long
               </p>
             </div>
             <div>
-              <Label htmlFor='confirmPassword'>Confirm Password</Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
-                id='confirmPassword'
-                name='confirmPassword'
+                id="confirmPassword"
+                name="confirmPassword"
                 type={showPassword ? "text" : "password"}
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -249,17 +256,17 @@ export default function SignupPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className='flex flex-col space-y-4'>
+          <CardFooter className="flex flex-col space-y-4">
             <Button
-              type='submit'
-              className='w-full bg-green-500 hover:bg-green-600 text-white'
+              type="submit"
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Creating Account..." : "Create Account"}
             </Button>
-            <div className='text-center text-sm'>
+            <div className="text-center text-sm">
               Already have an account?{" "}
-              <Link href='/' className='text-green-500 hover:underline'>
+              <Link href="/" className="text-green-500 hover:underline">
                 Sign in
               </Link>
             </div>

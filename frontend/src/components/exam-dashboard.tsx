@@ -496,7 +496,7 @@ export default function ExamDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}
+      {/* {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} */}
     </div>
   );
 }

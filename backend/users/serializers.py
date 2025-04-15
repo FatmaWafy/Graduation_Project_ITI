@@ -21,6 +21,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track_name = serializers.CharField(write_only=True, required=True)
@@ -39,18 +40,18 @@ class InstructorSerializer(serializers.ModelSerializer):
             user_data["role"] = "instructor"
             user = User.objects.create_user(**user_data)
 
-            track, created = Track.objects.get_or_create(name=track_name)
-            branch, created = Branch.objects.get_or_create(name=branch_name)
-
+            branch, _ = Branch.objects.get_or_create(name=branch_name)
             instructor = Instructor.objects.create(user=user, branch=branch, **validated_data)
-            
-            track.instructor = instructor
-            track.save()
+
+            track, _ = Track.objects.get_or_create(name=track_name)
+            track.instructors.add(instructor)  # ✅ Add the instructor to the M2M relation
 
             return instructor
+
         except Exception as e:
             print(f"Error in InstructorSerializer.create: {str(e)}")
             raise serializers.ValidationError(f"Failed to create instructor: {str(e)}")
+
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all(), required=False, allow_null=True)
@@ -134,3 +135,10 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
                     "Only JPEG, PNG, and GIF images are supported.")
 
         return value
+    
+class TrackSerializer(serializers.ModelSerializer):
+    instructors = InstructorSerializer(many=True)  
+
+    class Meta:
+        model = Track
+        fields = "__all__"

@@ -1,5 +1,6 @@
+from venv import logger
 from django.db import models
-from users.models import Track
+from users.models import Track, Instructor
 from users.models import Student , Branch, Course
 from django.utils.translation import gettext_lazy as _
 import json
@@ -21,7 +22,7 @@ class Exam(models.Model): ### plus course name
         return self.title
     
 # Temporary Exam Instance Model
-class TemporaryExamInstance(models.Model): ### plus branch name
+class TemporaryExamInstance(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="instances")
     track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)  
     students = models.ManyToManyField(Student, blank=True) 
@@ -77,8 +78,6 @@ class MCQQuestion(models.Model):
     )
     source = models.CharField(max_length=100)
     points = models.FloatField(default=1.0)
-
-
 
 
 
@@ -196,10 +195,6 @@ class StudentExamAnswer(models.Model):
 
         except Exception as e:
             return {"error": str(e)}
-
-
-
-
 class CodingQuestion(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
