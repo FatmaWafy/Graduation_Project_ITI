@@ -49,10 +49,10 @@ class TempExamViewSet(viewsets.ModelViewSet):
         """
         Assigns an exam to students and sends an email and notification.
         """
-        exam_id = request.data.get('exam_id')  # ID of the exam to assign
-        student_ids = request.data.get('students', [])  # List of student IDs
-        duration = request.data.get('duration', 60)  # Default 60 mins
-        instructor_id = request.data.get('instructor')  # Get instructor ID from request
+        exam_id = request.data.get('exam_id')
+        student_ids = request.data.get('students', [])
+        duration = request.data.get('duration', 60)
+        instructor_id = request.data.get('instructor_id')  # ✅ FIXED
 
         # Validate exam exists
         try:
@@ -67,12 +67,12 @@ class TempExamViewSet(viewsets.ModelViewSet):
             return Response({"error": "Instructor not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Get the instructor's associated tracks
-        instructor_tracks = instructor.track_set.all()
+        instructor_tracks = instructor.tracks.all()  # ✅ using related_name from Track model
 
         # Filter students based on the tracks assigned to the instructor
         students_in_tracks = Student.objects.filter(track__in=instructor_tracks)
 
-        # If you have specific student IDs, filter the students further
+        # Further filter based on provided student IDs
         if student_ids:
             students_in_tracks = students_in_tracks.filter(id__in=student_ids)
 
@@ -81,21 +81,20 @@ class TempExamViewSet(viewsets.ModelViewSet):
 
         for student in students_in_tracks:
             try:
-                # Create temporary exam instance
+                # Create the temporary exam instance (without assigning students yet)
                 temp_exam = TemporaryExamInstance.objects.create(
                     exam=exam,
-                    students=None,  # Initially leave the students empty
                     branch=student.branch,
                     start_datetime=datetime.now(),
                     end_datetime=datetime.now() + timedelta(minutes=duration),
-                    instructor=instructor  # Assign the instructor
+                    instructor_id=instructor
                 )
 
-                # Rest of your existing code remains the same...
+                # Add the student to the M2M field
                 temp_exam.students.add(student)
                 assigned_students.append(student.id)
 
-                # Email and notification code remains the same...
+                # TODO: send email and/or notification to student here
 
             except Exception as e:
                 failed_students.append(student.id)

@@ -405,7 +405,7 @@ export default function SetExamPage() {
         ...formData,
         track: formData.track || undefined,
         branch: formData.branch || undefined,
-        created_by: user?.instructor_id, // This will be the instructor ID (5), not the user ID (14)
+        instructor: user?.instructor_id, // This will be the instructor ID (5), not the user ID (14)
       };
 
       console.log("Submitting exam data with instructor ID:", submitData);
