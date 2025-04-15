@@ -429,6 +429,7 @@ export default function CodingQuestion({
                         }}
                       />
                     </div>
+
                     <div>
                       <h3 className="text-lg text-foreground mt-2">
                         Expected Output

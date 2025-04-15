@@ -25,6 +25,7 @@ class ExamSerializer(serializers.ModelSerializer):
 class TempExamSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     total_questions = serializers.SerializerMethodField()
+    instructor = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
 
 
     class Meta:
