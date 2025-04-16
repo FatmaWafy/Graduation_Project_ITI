@@ -1,5 +1,5 @@
 from rest_framework.decorators import action
-from .serializers import UserProfileImageSerializer
+from .serializers import TrackSerializer, UserProfileImageSerializer
 from .models import Student, Instructor
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
@@ -45,21 +45,36 @@ class RegisterInstructorAPIView(APIView):
         data = request.data.copy()
         data["role"] = "instructor"
 
+        # Check if the email is already used
         if User.objects.filter(email=data["email"]).exists():
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check if branch is provided and valid
         if "branch" not in data:
             return Response({"error": "Branch is required."}, status=status.HTTP_400_BAD_REQUEST)
         
         if data["branch"] not in self.valid_branches:
             return Response({"error": f"The branch '{data['branch']}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Initialize the serializer with the necessary data
         serializer = InstructorSerializer(
             data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]})
 
+        # Validate the serializer and save the data
         if serializer.is_valid():
+            # Create the instructor
             instructor = serializer.save()
+
+            # Handle track assignment
+            track_name = data.get("track_name")
+            track, created = Track.objects.get_or_create(name=track_name)
+            track.instructors.add(instructor)  # Add the instructor to the track
+
+            track.save()  # Save the track with the updated instructor list
+
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(instructor.user)
+
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
@@ -67,6 +82,7 @@ class RegisterInstructorAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -741,6 +757,94 @@ class InstructorViewSet(viewsets.ModelViewSet):
 
         return Response(combined_data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def instructor_data(self, request):
+        """
+        Get instructor's tracks and branches
+        """
+        if not request.user.is_authenticated:
+            return Response({'error': 'User not authenticated.'}, status=401)
+        
+        # Ensure that the user has an associated Instructor
+        try:
+            instructor = request.user.instructor
+        except Instructor.DoesNotExist:
+            return Response({'error': 'Instructor not found for this user.'}, status=404)
+
+        # Get the tracks associated with the instructor
+        tracks = instructor.tracks.all()
+
+        # Get the branches related to the instructor through the branch relation
+        branches = Branch.objects.filter(instructors=instructor).distinct()
+
+        # Serialize the data
+        track_data = TrackSerializer(tracks, many=True).data
+        branch_data = BranchSerializer(branches, many=True).data
+        
+
+        return Response({
+            'tracks': track_data,
+            'branches': branch_data,
+            "instructor_id": instructor.id,
+        })
+
+    @action(detail=False, methods=['get'])
+    def instructor_students(self, request):
+        """
+        Get students belonging to instructor's tracks
+        """
+        if not request.user.is_authenticated:
+            return Response({'error': 'User not authenticated.'}, status=401)
+
+        # Ensure that the user has an associated Instructor
+        try:
+            instructor = request.user.instructor
+        except Instructor.DoesNotExist:
+            return Response({'error': 'Instructor not found for this user.'}, status=404)
+
+        # Get the tracks associated with the instructor
+        tracks = instructor.tracks.all()
+
+        # Get the students related to the instructor's tracks
+        students = Student.objects.filter(track__in=tracks)
+
+        # Serialize the data
+        student_data = []
+        for student in students:
+            student_data.append({
+                'id': student.id,
+                'user': {
+                    'username': student.user.username,
+                    'email': student.user.email,
+                    'role': student.user.role
+                },
+                'track': student.track.id if student.track else None,
+                'branch': student.branch.id if student.branch else None
+            })
+
+        return Response(student_data)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific instructor based on the user ID in the URL
+        """
+        user_id = kwargs.get('user_id')
+
+        try:
+            user = User.objects.get(id=user_id)
+            instructor = Instructor.objects.get(user=user)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        user_data = RegisterSerializer(user).data
+        instructor_data = InstructorSerializer(instructor).data
+
+        combined_data = {**user_data, **instructor_data}
+
+        return Response(combined_data, status=status.HTTP_200_OK)
 class BranchListCreateView(APIView):
     permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):

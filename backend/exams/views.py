@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from st_notifications.models import Note
-from users.models import Student, User
+from users.models import Course, Instructor, Student, User
 from .models import CheatingLog, CodingQuestion, CodingTestCase, Exam, MCQQuestion, TemporaryExamInstance, StudentExamAnswer,CodingTestCase,Branch
 from .serializers import CheatingLogSerializer, CodingQuestionSerializer, CodingTestCaseSerializer, ExamSerializer, MCQQuestionSerializer, TempExamSerializer
 from django.utils.timezone import now
@@ -20,6 +20,7 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from django.conf import settings
 import logging
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -39,43 +40,77 @@ class ExamDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class TempExamViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = TemporaryExamInstance.objects.all()
     serializer_class = TempExamSerializer
 
     @action(detail=False, methods=['post'])
     def assign_exam(self, request):
-        """ Assigns an exam to students and sends an email """
+        """
+        Assigns an exam to students and sends an email and notification.
+        """
         exam_id = request.data.get('exam_id')
-        student_emails = request.data.get('students', [])  # List of student emails
-        duration = request.data.get('duration', 60)  # Default 60 mins
+        student_ids = request.data.get('students', [])
+        duration = request.data.get('duration', 60)
+        instructor_id = request.data.get('instructor_id')  # ✅ FIXED
 
+        # Validate exam exists
         try:
             exam = Exam.objects.get(id=exam_id)
         except Exam.DoesNotExist:
-            return Response({"error": "Exam not found"}, status=400)
+            return Response({"error": "Exam not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate instructor exists
+        try:
+            instructor = Instructor.objects.get(id=instructor_id)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the instructor's associated tracks
+        instructor_tracks = instructor.tracks.all()  # ✅ using related_name from Track model
+
+        # Filter students based on the tracks assigned to the instructor
+        students_in_tracks = Student.objects.filter(track__in=instructor_tracks)
+
+        # Further filter based on provided student IDs
+        if student_ids:
+            students_in_tracks = students_in_tracks.filter(id__in=student_ids)
 
         assigned_students = []
-        for email in student_emails:
-            student = Student.objects.filter(email=email).first()
-            if student:
+        failed_students = []
+
+        for student in students_in_tracks:
+            try:
+                # Create the temporary exam instance (without assigning students yet)
                 temp_exam = TemporaryExamInstance.objects.create(
                     exam=exam,
-                    student=student,
-                    start_time=now(),
-                    end_time=now() + timedelta(minutes=duration)
-                )
-                assigned_students.append(temp_exam.student.email)
-
-                # Send email
-                send_mail(
-                    subject=f"Your Exam: {exam.title}",
-                    message=f"Hello {student.name},\nYou have been assigned the exam '{exam.title}'.\nStart Time: {temp_exam.start_time}\nEnd Time: {temp_exam.end_time}",
-                    from_email="admin@example.com",
-                    recipient_list=[student.email],
-                    fail_silently=True
+                    branch=student.branch,
+                    start_datetime=datetime.now(),
+                    end_datetime=datetime.now() + timedelta(minutes=duration),
+                    instructor_id=instructor
                 )
 
-        return Response({"message": "Exam assigned", "students": assigned_students})
+                # Add the student to the M2M field
+                temp_exam.students.add(student)
+                assigned_students.append(student.id)
+
+                # TODO: send email and/or notification to student here
+
+            except Exception as e:
+                failed_students.append(student.id)
+                logger.error(f"Error assigning exam to student ID {student.id}: {str(e)}")
+
+        response_data = {
+            "message": "Exam assignment completed",
+            "assigned_students": assigned_students,
+            "total_assigned": len(assigned_students),
+            "failed_students": failed_students
+        }
+
+        if failed_students:
+            response_data["warning"] = f"Failed to process {len(failed_students)} students"
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def get_questions(self, request, pk=None):
@@ -106,103 +141,105 @@ class TempExamViewSet(viewsets.ModelViewSet):
         
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "TempExam not found"}, status=404)
+
+
 class ExamViewSet(viewsets.ModelViewSet):
     queryset = TemporaryExamInstance.objects.all()
     serializer_class = TempExamSerializer
 
-    @action(detail=False, methods=['post'])
-    def assign_exam(self, request):
-        """
-        Assigns an exam to students and sends an email and notification.
-        """
-        exam_id = request.data.get('exam_id')  # ID of the exam to assign
-        student_ids = request.data.get('students', [])  # List of student IDs
-        duration = request.data.get('duration', 60)  # Default 60 mins
+    # @action(detail=False, methods=['post'])
+    # def assign_exam(self, request):
+    #     """
+    #     Assigns an exam to students and sends an email and notification.
+    #     """
+    #     exam_id = request.data.get('exam_id')  # ID of the exam to assign
+    #     student_ids = request.data.get('students', [])  # List of student IDs
+    #     duration = request.data.get('duration', 60)  # Default 60 mins
 
-        # Validate exam exists
-        try:
-            exam = Exam.objects.get(id=exam_id)
-        except Exam.DoesNotExist:
-            return Response({"error": "Exam not found"}, status=status.HTTP_400_BAD_REQUEST)
+    #     # Validate exam exists
+    #     try:
+    #         exam = Exam.objects.get(id=exam_id)
+    #     except Exam.DoesNotExist:
+    #         return Response({"error": "Exam not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        assigned_students = []
-        failed_students = []
+    #     assigned_students = []
+    #     failed_students = []
 
-        for student_id in student_ids:
-            try:
-                # Fetch student via student ID
-                student = Student.objects.get(id=student_id)
+    #     for student_id in student_ids:
+    #         try:
+    #             # Fetch student via student ID
+    #             student = Student.objects.get(id=student_id)
 
-                # Create temporary exam instance
-                temp_exam = TemporaryExamInstance.objects.create(
-                    exam=exam,
-                    students=None,  # Initially leave the students empty
-                    branch=student.branch,  # Assuming the branch is stored in the student model
-                    start_datetime=datetime.now(),
-                    end_datetime=datetime.now() + timedelta(minutes=duration)
-                )
+    #             # Create temporary exam instance
+    #             temp_exam = TemporaryExamInstance.objects.create(
+    #                 exam=exam,
+    #                 students=None,  # Initially leave the students empty
+    #                 branch=student.branch,  # Assuming the branch is stored in the student model
+    #                 start_datetime=datetime.now(),
+    #                 end_datetime=datetime.now() + timedelta(minutes=duration)
+    #             )
 
-                # Add student to the many-to-many relationship
-                temp_exam.students.add(student)  # Use .add() instead of direct assignment
+    #             # Add student to the many-to-many relationship
+    #             temp_exam.students.add(student)  # Use .add() instead of direct assignment
 
-                assigned_students.append(student.id)
+    #             assigned_students.append(student.id)
 
-                # Prepare email content
-                email_subject = f"Your Exam: {exam.title}"
-                email_message = f"""
-                Dear {student.user.get_full_name() or student.user.username},
+    #             # Prepare email content
+    #             email_subject = f"Your Exam: {exam.title}"
+    #             email_message = f"""
+    #             Dear {student.user.get_full_name() or student.user.username},
 
-                You have been assigned the exam: {exam.title}
+    #             You have been assigned the exam: {exam.title}
 
-                Exam Duration: {duration} minutes
-                Available From: {temp_exam.start_datetime}
-                Available Until: {temp_exam.end_datetime}
+    #             Exam Duration: {duration} minutes
+    #             Available From: {temp_exam.start_datetime}
+    #             Available Until: {temp_exam.end_datetime}
 
-                Please log in to your account to take the exam.
+    #             Please log in to your account to take the exam.
 
-                Best regards,
-                {request.user.get_full_name() or 'Your Instructor'}
-                """
+    #             Best regards,
+    #             {request.user.get_full_name() or 'Your Instructor'}
+    #             """
 
-                # Send email
-                try:
-                    send_mail(
-                        subject=email_subject,
-                        message=email_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[student.user.email],
-                        fail_silently=False
-                    )
-                except Exception as e:
-                    failed_students.append(student.id)
-                    logger.error(f"Failed to send exam email to {student.user.email}: {str(e)}")
+    #             # Send email
+    #             try:
+    #                 send_mail(
+    #                     subject=email_subject,
+    #                     message=email_message,
+    #                     from_email=settings.DEFAULT_FROM_EMAIL,
+    #                     recipient_list=[student.user.email],
+    #                     fail_silently=False
+    #                 )
+    #             except Exception as e:
+    #                 failed_students.append(student.id)
+    #                 logger.error(f"Failed to send exam email to {student.user.email}: {str(e)}")
 
-                # Create a notification/note for the student
-                message = f"You have been assigned the exam: {exam.title}. Please check your account for further details."
-                Note.objects.create(
-                    instructor=request.user.instructor,  # Assuming the instructor is logged in
-                    student=student,
-                    message=message
-                )
+    #             # Create a notification/note for the student
+    #             message = f"You have been assigned the exam: {exam.title}. Please check your account for further details."
+    #             Note.objects.create(
+    #                 instructor=request.user.instructor,  # Assuming the instructor is logged in
+    #                 student=student,
+    #                 message=message
+    #             )
 
-            except Student.DoesNotExist:
-                failed_students.append(student_id)
-                logger.warning(f"Student with ID {student_id} not found")
-            except Exception as e:
-                failed_students.append(student_id)
-                logger.error(f"Error assigning exam to student ID {student_id}: {str(e)}")
+    #         except Student.DoesNotExist:
+    #             failed_students.append(student_id)
+    #             logger.warning(f"Student with ID {student_id} not found")
+    #         except Exception as e:
+    #             failed_students.append(student_id)
+    #             logger.error(f"Error assigning exam to student ID {student_id}: {str(e)}")
 
-        response_data = {
-            "message": "Exam assignment completed",
-            "assigned_students": assigned_students,
-            "total_assigned": len(assigned_students),
-            "failed_students": failed_students
-        }
+    #     response_data = {
+    #         "message": "Exam assignment completed",
+    #         "assigned_students": assigned_students,
+    #         "total_assigned": len(assigned_students),
+    #         "failed_students": failed_students
+    #     }
 
-        if failed_students:
-            response_data["warning"] = f"Failed to process {len(failed_students)} students"
+    #     if failed_students:
+    #         response_data["warning"] = f"Failed to process {len(failed_students)} students"
 
-        return Response(response_data, status=status.HTTP_200_OK)
+    #     return Response(response_data, status=status.HTTP_200_OK)
 
 
     
@@ -547,8 +584,19 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def get_all_student_scores(self, request):
-        """Get all students' scores for all exams"""
+        """Get all students' scores for all exams (filtered by instructor's tracks/branches)"""
         try:
+            # Get the current instructor profile
+            try:
+                instructor_profile = request.user.instructor
+            except AttributeError:
+                return Response({"error": "User is not an instructor"}, 
+                            status=status.HTTP_403_FORBIDDEN)
+
+            # Get the tracks and branches this instructor is associated with
+            instructor_tracks = instructor_profile.tracks.all()  # From ManyToMany relationship
+            instructor_branch = instructor_profile.branch  # From ForeignKey (could be None)
+            
             # Get all exam instances that have student answers
             exam_instance_ids = StudentExamAnswer.objects.values_list(
                 'exam_instance_id', flat=True
@@ -564,10 +612,25 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                     exam_title = exam_instance.exam.title
                     start_datetime = exam_instance.start_datetime
                     
-                    # Get all student answers for this exam instance
+                    # Base query for student answers
                     exam_instance_answers = StudentExamAnswer.objects.filter(
                         exam_instance_id=exam_instance_id
                     )
+                    
+                    # Apply filtering based on instructor's tracks and branch
+                    if instructor_tracks.exists() or instructor_branch:
+                        # Create Q objects for filtering
+                        track_filter = Q(student__student__track__in=instructor_tracks) if instructor_tracks.exists() else Q()
+                        branch_filter = Q(student__student__branch=instructor_branch) if instructor_branch else Q()
+                        
+                        # Apply filters with OR condition (student can be in either matching track OR branch)
+                        exam_instance_answers = exam_instance_answers.filter(
+                            track_filter | branch_filter
+                        )
+                    
+                    # If no answers after filtering, skip this exam instance
+                    if not exam_instance_answers.exists():
+                        continue
                     
                     # Calculate total possible points for the exam
                     mcq_total = MCQQuestion.objects.filter(
@@ -594,17 +657,23 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                     # Format student scores
                     students_scores = []
                     for answer in exam_instance_answers:
-                        answers = answer.get_answers()
-                        student_data = {
-                            "student": answer.student.username,
-                            "branch": answer.student.student.branch.name if hasattr(answer.student, 'student') and hasattr(answer.student.student, 'branch') else None,
-                            "track": answer.student.student.track.name if hasattr(answer.student, 'student') and hasattr(answer.student.student, 'track') else None,
-                            "score": answer.score,
-                            "total_points": total_points,
-                            "mcq_answers": answers.get("mcq_answers", {}),
-                            "coding_answers": answers.get("coding_answers", {})
-                        }
-                        students_scores.append(student_data)
+                        try:
+                            student_profile = answer.student.student
+                            answers = answer.get_answers()
+                            
+                            student_data = {
+                                "student": answer.student.username,
+                                "track": student_profile.track.name if student_profile.track else None,
+                                "branch": student_profile.branch.name if student_profile.branch else None,
+                                "score": answer.score,
+                                "total_points": total_points,
+                                "mcq_answers": answers.get("mcq_answers", {}),
+                                "coding_answers": answers.get("coding_answers", {})
+                            }
+                            students_scores.append(student_data)
+                        except AttributeError:
+                            # Skip if student profile is missing
+                            continue
                     
                     # Add exam instance data to results
                     result.append({
@@ -621,12 +690,10 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
             return Response(result, status=status.HTTP_200_OK)
             
         except Exception as e:
-            import traceback
-            print(f"Error in get_all_student_scores: {str(e)}")
-            print(traceback.format_exc())
+            logger.error(f"Error in get_all_student_scores: {str(e)}", exc_info=True)
             return Response({"error": f"An error occurred: {str(e)}"}, 
-                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     @action(detail=False, methods=['get'])
     def get_user_exams_scores(self, request):
         """Get all exams and scores for the current user"""
@@ -819,6 +886,22 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class CheatingLogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Fetch all the cheating logs
+        logs = CheatingLog.objects.all()
+        serializer = CheatingLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        # Handle POST request to log cheating
+        serializer = CheatingLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response({"status": "logged"})
+        return Response(serializer.errors, status=400)
 class CheatingLogView(APIView):
     permission_classes = [IsAuthenticated]
 
