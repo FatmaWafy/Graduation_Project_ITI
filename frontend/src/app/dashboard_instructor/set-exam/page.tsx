@@ -1,3 +1,5 @@
+// "use client";
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -6,6 +8,7 @@ import { Clock, BookOpen, FileText } from "lucide-react";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { jwtDecode } from "jwt-decode";
 import {
   Card,
   CardContent,
@@ -16,7 +19,26 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { sendNotification } from "../../../lib/actions/notification-actions" // Adjust the path as needed
 
+
+export async function getUserIdFromToken(): Promise<number | null> {
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1]
+  console.log("Token from cookie:", token)
+
+  if (!token) return null
+
+  try {
+    const decoded: any = jwtDecode(token)
+    return decoded.user_id || decoded.id
+  } catch (e) {
+    console.error("Invalid token:", e)
+    return null
+  }
+}
 interface Track {
   id: number;
   name: string;
@@ -33,6 +55,26 @@ interface Student {
   user: User;
   track: number | null;
   branch: number | null;
+}
+
+interface InstructorData {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  profile_image: string;
+  phone_number: string;
+  address: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+    profile_image: string;
+    phone_number: string;
+    address: string;
+  };
+  experience_years: number | null;
 }
 
 interface MCQQuestion {
@@ -77,14 +119,14 @@ export default function SetExamPage() {
   const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]); // إضافة state للـ branches
+  const [instructorTracks, setInstructorTracks] = useState<Track[]>([]);
+  const [instructorBranches, setInstructorBranches] = useState<Branch[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [emailFilter, setEmailFilter] = useState("");
   const [examSearch, setExamSearch] = useState("");
   const [showAllExams, setShowAllExams] = useState(false);
-  const [branchFilter, setBranchFilter] = useState("");
+  const [user, setUser] = useState<{ instructor_id?: number } | null>(null);
 
   const [formData, setFormData] = useState<TemporaryExamData>({
     exam: 0,
@@ -105,30 +147,69 @@ export default function SetExamPage() {
   // Get current datetime in correct format for input
   const getCurrentDatetimeLocal = () => {
     const now = new Date();
-    // Adjust for timezone offset to get local time
     const timezoneOffset = now.getTimezoneOffset() * 60000;
     const localISOTime = new Date(now.getTime() - timezoneOffset).toISOString();
-    return localISOTime.slice(0, 16); // Remove seconds and milliseconds
+    return localISOTime.slice(0, 16);
   };
 
-  // دالة جلب الـ Branches
-  const fetchBranches = async () => {
+  // Fetch instructor user data
+  const fetchUserData = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/users/branches/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const token = Cookies.get("token");
+      if (!token) throw new Error("Token not found");
+
+      const decoded: any = jwtDecode(token);
+      const userId = decoded.user_id;
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/users/instructors/${userId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch instructor data");
+
+      const data: InstructorData = await response.json();
+
+      // Set the instructor_id to the top-level id from the response
+      setUser({
+        instructor_id: data.id,
       });
+
+      console.log("Instructor ID set:", data.id);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      toast.error("Failed to fetch user data");
+    }
+  };
+
+  // Fetch instructor's tracks and branches
+  const fetchInstructorData = async () => {
+    try {
+      const token = Cookies.get("token");
+      const response = await fetch(
+        "http://127.0.0.1:8000/users/instructors/instructor_data/",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!response.ok) {
-        throw new Error("Failed to fetch branches");
+        throw new Error("Failed to fetch instructor data");
       }
       const data = await response.json();
-      setBranches(data);
+      console.log("Instructor Data:", data);
+      setInstructorTracks(data?.tracks || []);
+      setInstructorBranches(data?.branches || []);
     } catch (error) {
-      toast.error("Failed to fetch branches");
+      toast.error("Failed to fetch instructor data");
     } finally {
-      setLoading((prev) => ({ ...prev, branches: false }));
+      setLoading((prev) => ({ ...prev, tracks: false, branches: false }));
     }
   };
 
@@ -155,7 +236,6 @@ export default function SetExamPage() {
         },
       });
       const data = await response.json();
-      // Add preparation progress (random for demo, replace with actual data if available)
       const examsWithProgress = data.map((exam: Exam) => ({
         ...exam,
         preparationProgress: Math.floor(Math.random() * 100),
@@ -168,32 +248,17 @@ export default function SetExamPage() {
     }
   };
 
-  const fetchTracks = async () => {
-    try {
-      const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      setTracks(data);
-    } catch (error) {
-      toast.error("Failed to fetch tracks");
-    } finally {
-      setLoading((prev) => ({ ...prev, tracks: false }));
-    }
-  };
-
   const fetchStudents = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/users/students/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/users/instructors/instructor_students/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await response.json();
       setAllStudents(data);
       setFilteredStudents(data);
@@ -206,12 +271,12 @@ export default function SetExamPage() {
 
   useEffect(() => {
     fetchExams();
-    fetchTracks();
+    fetchInstructorData();
     fetchStudents();
-    fetchBranches();
+    fetchUserData();
   }, []);
 
-  // Filter students based on email and track
+  // Filter students based on email, track, and branch
   useEffect(() => {
     let result = allStudents.filter(
       (student) => student.user.role === "student"
@@ -332,66 +397,106 @@ export default function SetExamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     // Validation
     if (!formData.start_datetime) {
       toast.error("Please select start time");
       return;
     }
-
-    // Check if selected datetime is in the past
+  
     const selectedDateTime = new Date(formData.start_datetime);
     const now = new Date();
     if (selectedDateTime < now) {
       toast.error("Cannot schedule exam in the past");
       return;
     }
-
+  
     if (formData.students.length === 0) {
       toast.error("Please select at least one student");
       return;
     }
-
+  
     setLoading((prev) => ({ ...prev, submitting: true }));
-
+  
     try {
       const token = Cookies.get("token");
+  
+      // Get instructor ID from token
+      async function fetchInstructorId(): Promise<number> {
+        const userId = await getUserIdFromToken();
+        console.log("User ID from token:", userId);
+  
+        if (!userId) throw new Error("User ID not found in token.");
+  
+        const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`);
+        if (!res.ok) throw new Error("Failed to fetch instructor ID");
+  
+        const data = await res.json();
+        console.log("Data from instructor API:", data);
+  
+        return data.id;
+      }
+  
+      const instructorId = await fetchInstructorId();
+  
+      const submitData = {
+        ...formData,
+        track: formData.track || undefined,
+        branch: formData.branch || undefined,
+        instructor: instructorId,
+      };
+  
+      console.log("Submitting exam data with instructor ID:", submitData);
+  
       const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...formData,
-          track: formData.track || undefined,
-          branch: formData.branch || undefined,
-        }),
+        body: JSON.stringify(submitData),
       });
-
+  
       const responseData = await response.json();
-
+  
       if (!response.ok) {
-        throw new Error(
-          responseData.message || "Failed to create temporary exam"
-        );
+        throw new Error(responseData.message || "Failed to create temporary exam");
       }
-
+  
       toast.success("Exam scheduled successfully!");
+  
+      const examName = responseData.name || `Exam ${responseData.exam}`;  // If name is not available, fallback to exam ID or track name
+      const examStartDate = new Date(responseData.start_datetime).toLocaleString(); // Formatting the start date
+      const message = `A new exam "${examName}" has been scheduled for you at ${examStartDate}.`;
+  
+      // Loop over students to send notification
+      for (const studentId of formData.students) {
+        try {
+          await sendNotification({
+            student_id: studentId,
+            instructor_id: instructorId,
+            message: message,
+          });
+        } catch (error) {
+          console.error(`Failed to send notification to student ${studentId}`, error);
+        }
+      }
+  
       router.push("/dashboard_instructor");
+  
     } catch (error) {
-      toast.error(error.message || "Failed to schedule exam");
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to schedule exam");
+      } else {
+        toast.error("Failed to schedule exam");
+      }
     } finally {
       setLoading((prev) => ({ ...prev, submitting: false }));
     }
   };
+  
 
-  if (
-    loading.exams ||
-    loading.tracks ||
-    loading.branches ||
-    loading.students
-  ) {
+  if (loading.exams || loading.tracks || loading.branches || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -436,9 +541,6 @@ export default function SetExamPage() {
                   }`}
                   onClick={() => handleExamSelect(exam)}
                 >
-                  <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <FileText className="h-16 w-16 text-gray-400" />
-                  </div>
                   <CardHeader>
                     <CardTitle>{exam.title}</CardTitle>
                     <CardDescription>
@@ -536,7 +638,7 @@ export default function SetExamPage() {
                   value={formData.track ?? ""}
                 >
                   <option value="">All Tracks</option>
-                  {tracks.map((track) => (
+                  {instructorTracks.map((track) => (
                     <option key={track.id} value={track.id}>
                       {track.name}
                     </option>
@@ -555,7 +657,7 @@ export default function SetExamPage() {
                   value={formData.branch ?? ""}
                 >
                   <option value="">All Branches</option>
-                  {branches.map((branch) => (
+                  {instructorBranches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
                     </option>
@@ -676,13 +778,14 @@ export default function SetExamPage() {
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Track:{" "}
-                          {tracks.find((t) => t.id === student.track)?.name ||
-                            "Unknown"}
+                          {instructorTracks.find((t) => t.id === student.track)
+                            ?.name || "Unknown"}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Branch:{" "}
-                          {branches.find((b) => b.id === student.branch)?.name ||
-                            "Unknown"}
+                          {instructorBranches.find(
+                            (b) => b.id === student.branch
+                          )?.name || "Unknown"}
                         </div>
                       </label>
                     </div>

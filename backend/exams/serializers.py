@@ -25,6 +25,7 @@ class ExamSerializer(serializers.ModelSerializer):
 class TempExamSerializer(serializers.ModelSerializer):
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     total_questions = serializers.SerializerMethodField()
+    instructor = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
 
 
     class Meta:
@@ -78,12 +79,3 @@ class CheatingLogSerializer(serializers.ModelSerializer):
         model = CheatingLog
         fields = ['exam_id', 'reason', 'timestamp', 'user']
 
-
-from .models import CheatingLog
-
-class CheatingLogSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
-
-    class Meta:
-        model = CheatingLog
-        fields = ['exam_id', 'reason', 'timestamp', 'user']

@@ -26,6 +26,7 @@ class User(AbstractUser):
         ('student', 'Student'),
         ('instructor', 'Instructor'),
         ('admin', 'Admin'),
+        # ('superuser', 'Superuser'),
     ]
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
@@ -58,7 +59,7 @@ class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor", null=True, blank=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
     branch = models.ForeignKey("Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="instructors")  # 🔹 الربط بالفرع
-
+    # role = models.CharField(max_length=10, choices=User.ROLE_CHOICES, default='instructor')  # 🔹 إضافة دور المدرب
 
     class Meta:
         verbose_name = "Instructor"
@@ -70,7 +71,7 @@ class Instructor(models.Model):
 # 🔹 Track Model (بعد التعديل)
 class Track(models.Model):
     name = models.CharField(max_length=255)  # اسم التراك
-    instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True, related_name="tracks")  # 🔹 كل مدرب يستطيع تدريس أكثر من تراك
+    instructors = models.ManyToManyField("Instructor", related_name="tracks", blank=True)
 
     class Meta:
         verbose_name = "Track"

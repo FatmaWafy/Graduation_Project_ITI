@@ -20,6 +20,7 @@ import QuestionNavigator from "./question-navigator";
 import MultipleChoiceQuestion from "./multiple-choice-question";
 import CodingQuestion from "./coding-question";
 import QuestionProgressBar from "./question-progress-bar";
+import StudentMonitor from "./monitoring/student-monitor";
 
 const LANGUAGE_VERSIONS = {
   javascript: "18.15.0",
@@ -618,6 +619,8 @@ export default function ExamDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} */}
     </div>
   );
 }
+

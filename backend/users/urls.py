@@ -18,6 +18,7 @@ from rest_framework.routers import DefaultRouter
  
 router = DefaultRouter()
 router.register(r'students', StudentViewSet, basename='student')
+router.register(r'instructors', InstructorViewSet)
 
 urlpatterns = [
     path("register/", RegisterInstructorAPIView.as_view(), name="register"),
