@@ -624,8 +624,6 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 "score": answer.score,
                 "submitted_at": answer.submitted_at
             })
-        print(f"grades: {results}")
-
         return Response({"grades": results}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
@@ -634,7 +632,6 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         try:
             exam_instance_id = request.query_params.get('exam_instance_id')
             student_name = request.query_params.get('student_name')
-            print(f"exam_instance_id: {exam_instance_id}, student_name: {student_name}")
             if not exam_instance_id or not student_name:
                 return Response(
                     {"error": "Both exam_instance_id and student_name parameters are required."},

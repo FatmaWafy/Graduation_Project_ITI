@@ -785,7 +785,6 @@ class UploadUserProfileImage(APIView):
             return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         image_file = request.FILES['profile_image']
-        print(f"Received file: {image_file.name}, size: {image_file.size}, content type: {image_file.content_type}")
 
         # Delete old image if exists
         if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
