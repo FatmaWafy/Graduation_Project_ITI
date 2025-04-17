@@ -27,7 +27,7 @@ class TemporaryExamInstance(models.Model):
     track = models.ForeignKey(Track, on_delete=models.CASCADE , blank=True, null=True)  
     students = models.ManyToManyField(Student, blank=True) 
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="exam_instances")  
-    instructor_id = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True, db_column='instructor_id')
+    instructor_id = models.ForeignKey(Instructor,on_delete=models.CASCADE, null=False, blank=False, db_column='instructor_id')
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
 
