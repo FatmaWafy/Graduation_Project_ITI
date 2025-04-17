@@ -230,4 +230,4 @@ class CheatingLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     exam_id = models.CharField(max_length=100)
     reason = models.TextField()
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(blank=True, null=True)

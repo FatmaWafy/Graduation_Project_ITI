@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Cookies from "js-cookie";
-import ExamHeader from "./exam-header";
+import ExamHeader from "../components/exam-header";
 import QuestionList from "./question-list";
 import CodingQuestion from "./coding-question";
 import MultipleChoiceQuestion from "./multiple-choice-question";

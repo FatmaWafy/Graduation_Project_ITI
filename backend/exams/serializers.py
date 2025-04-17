@@ -79,12 +79,3 @@ class CheatingLogSerializer(serializers.ModelSerializer):
         model = CheatingLog
         fields = ['exam_id', 'reason', 'timestamp', 'user']
 
-
-from .models import CheatingLog
-
-class CheatingLogSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
-
-    class Meta:
-        model = CheatingLog
-        fields = ['exam_id', 'reason', 'timestamp', 'user']

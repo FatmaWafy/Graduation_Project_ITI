@@ -154,13 +154,10 @@ export function SendNotificationForm() {
     async function fetchInstructorId(): Promise<number> {
       const userId = await getUserIdFromToken() // ✅ لازم await
       console.log("User ID from token:", userId)
-
       if (!userId) throw new Error("User ID not found in token.")
-
       const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`)
       const data = await res.json()
       console.log("Data from student API:", data)
-
       return data.id
     }
 

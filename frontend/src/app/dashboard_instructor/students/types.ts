@@ -9,8 +9,16 @@ export interface Student {
     enrollment_date?: string
     status?: string
     notes?: string
+    profile_image?: string
   }
-  // track?: string
+  track: {
+    id: number
+    name: string
+  }
+  branch: {
+    id: number
+    name: string
+  }
   track_name?: string
   university?: string | null
   graduation_year?: string | null

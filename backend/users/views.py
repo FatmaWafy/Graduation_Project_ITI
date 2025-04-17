@@ -23,8 +23,10 @@ import pandas as pd
 from openpyxl import load_workbook
 import csv
 from random import choice
+from django.db.models import Q
 import  string
 import os
+from datetime import date
 from rest_framework import generics 
 from datetime import datetime, timezone
 
@@ -254,6 +256,8 @@ class RegisterStudentAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
 def get_leetcode_stats_and_recent(leetcode_username, days=3):
     # إزالة أي رابط زائد
     leetcode_username = leetcode_username.strip("/").split("/")[-1]
@@ -432,7 +436,9 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"message": "Student deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'], url_path='external-stats')
-    def external_stats(self, request, user_id=None):
+    def external_stats(self, request, *args, **kwargs):
+        user_id = kwargs.get("user_id")
+        
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -458,9 +464,8 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         # -------- LeetCode --------
         if student.leetcode_profile:
-            leetcode_username = student.leetcode_profile.strip(
-                "/").split("/")[-1]
-            leetcode_solved = get_leetcode_solved_problems(leetcode_username)
+            leetcode_username = student.leetcode_profile.strip("/").split("/")[-1]
+            leetcode_solved = get_leetcode_stats_and_recent(leetcode_username)
 
         return Response({
             "github_repos": github_repos,
@@ -548,6 +553,107 @@ class TrackListAPIView(APIView):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
 
+# class RegisterStudentsFromExcelAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         if request.user.role != "instructor":
+#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+#         if 'file' not in request.FILES:
+#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         file = request.FILES['file']
+
+#         try:
+#             file_data = file.read().decode("utf-8").splitlines()
+#             csv_reader = csv.reader(file_data)
+#             next(csv_reader)  # Skip header
+#         except Exception as e:
+#             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         instructor = Instructor.objects.get(user=request.user)
+
+#         if instructor.tracks.count() == 0:
+#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         track_names = [track.name for track in instructor.tracks.all()]
+#         branch = instructor.branch
+
+#         students_added = 0
+#         for row in csv_reader:
+#             if len(row) < 8:
+#                 continue
+
+#             username, email, track_name = row[0], row[1], row[2]
+#             university = row[3]
+#             graduation_year = int(row[4]) if row[4].isdigit() else None
+#             college = row[5]
+#             leetcode_profile = row[6]
+#             github_profile = row[7]
+
+#             if track_name not in track_names:
+#                 continue
+
+#             password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+
+#             user_instance = User.objects.create_user(
+#                 email=email,
+#                 username=username,
+#                 password=password,
+#                 role='student'
+#             )
+
+#             track = Track.objects.get(name=track_name)
+
+#             student = Student.objects.create(
+#                 user=user_instance,
+#                 track=track,
+#                 branch=branch,
+#                 university=university,
+#                 graduation_year=graduation_year,
+#                 college=college,
+#                 leetcode_profile=leetcode_profile,
+#                 github_profile=github_profile,
+#                 inrollment_date=date.today(),
+#             )
+
+#     # إرسال البريد الإلكتروني (زي ما هو)
+
+
+#             email_subject = "Your Student Account Credentials"
+#             email_message = f"""
+#             Hi {student.user.username},
+
+#             Your student account has been created successfully.
+
+#             Track: {student.track.name}
+#             Email: {student.user.email}
+#             Password: {password}
+
+#             Please change your password after logging in.
+
+#             Best regards,
+#             Your Team
+#             """
+
+#             send_mail(
+#                 subject=email_subject,
+#                 message=email_message,
+#                 from_email=settings.DEFAULT_FROM_EMAIL,
+#                 recipient_list=[student.user.email],
+#                 fail_silently=False,
+#             )
+
+#             students_added += 1
+
+#         return Response({
+#             "message": f"{students_added} students added successfully.",
+#         }, status=status.HTTP_201_CREATED)
+
+
+
+
 class RegisterStudentsFromExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -576,6 +682,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
         branch = instructor.branch
 
         students_added = 0
+        duplicates = []
         for row in csv_reader:
             if len(row) < 8:
                 continue
@@ -588,6 +695,11 @@ class RegisterStudentsFromExcelAPIView(APIView):
             github_profile = row[7]
 
             if track_name not in track_names:
+                duplicates.append(f"{username} ({email}) - Invalid track")
+                continue
+
+            if User.objects.filter(Q(email=email) | Q(username=username)).exists():
+                duplicates.append(f"{username} ({email}) - Already exists")
                 continue
 
             password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
@@ -609,26 +721,25 @@ class RegisterStudentsFromExcelAPIView(APIView):
                 graduation_year=graduation_year,
                 college=college,
                 leetcode_profile=leetcode_profile,
-                github_profile=github_profile
+                github_profile=github_profile,
+                inrollment_date=date.today(),
             )
 
-    # إرسال البريد الإلكتروني (زي ما هو)
-
-
+            # إرسال البريد الإلكتروني
             email_subject = "Your Student Account Credentials"
             email_message = f"""
-            Hi {student.user.username},
+Hi {student.user.username},
 
-            Your student account has been created successfully.
+Your student account has been created successfully.
 
-            Track: {student.track.name}
-            Email: {student.user.email}
-            Password: {password}
+Track: {student.track.name}
+Email: {student.user.email}
+Password: {password}
 
-            Please change your password after logging in.
+Please change your password after logging in.
 
-            Best regards,
-            Your Team
+Best regards,
+Your Team
             """
 
             send_mail(
@@ -641,9 +752,14 @@ class RegisterStudentsFromExcelAPIView(APIView):
 
             students_added += 1
 
-        return Response({
+        response_data = {
             "message": f"{students_added} students added successfully.",
-        }, status=status.HTTP_201_CREATED)
+        }
+
+        if duplicates:
+            response_data["duplicates"] = duplicates
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -804,9 +920,14 @@ class InstructorViewSet(viewsets.ModelViewSet):
 
         # Get the tracks associated with the instructor
         tracks = instructor.tracks.all()
+        branch = instructor.branch
 
         # Get the students related to the instructor's tracks
-        students = Student.objects.filter(track__in=tracks)
+        if branch:
+            students = Student.objects.filter(track__in=tracks, branch=branch)
+        else:
+            # If instructor has no branch assigned, just filter by track
+            students = Student.objects.filter(track__in=tracks)
 
         # Serialize the data
         student_data = []
@@ -818,8 +939,14 @@ class InstructorViewSet(viewsets.ModelViewSet):
                     'email': student.user.email,
                     'role': student.user.role
                 },
-                'track': student.track.id if student.track else None,
-                'branch': student.branch.id if student.branch else None
+                'track': {
+                    'id': student.track.id if student.track else None,
+                    'name': student.track.name if student.track else None
+                },
+                'branch': {
+                    'id': student.branch.id if student.branch else None,
+                    'name': student.branch.name if student.branch else None
+                }
             })
 
         return Response(student_data)
