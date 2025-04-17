@@ -1,3 +1,5 @@
+// "use client";
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -17,7 +19,25 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
 
+export async function getUserIdFromToken(): Promise<number | null> {
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+  console.log("Token from cookie:", token);
+
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.user_id || decoded.id;
+  } catch (e) {
+    console.error("Invalid token:", e);
+    return null;
+  }
+}
 interface Track {
   id: number;
   name: string;
@@ -410,7 +430,26 @@ export default function SetExamPage() {
     try {
       const token = Cookies.get("token");
 
-      // Log the data being sent to verify instructor_id is included
+      // Get instructor ID from token
+      async function fetchInstructorId(): Promise<number> {
+        const userId = await getUserIdFromToken();
+        console.log("User ID from token:", userId);
+
+        if (!userId) throw new Error("User ID not found in token.");
+
+        const res = await fetch(
+          `http://127.0.0.1:8000/users/instructors/${userId}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch instructor ID");
+
+        const data = await res.json();
+        console.log("Data from instructor API:", data);
+
+        return data.id;
+      }
+
+      const instructorId = await fetchInstructorId();
+
       const submitData = {
         ...formData,
         track: formData.track || undefined,
@@ -439,9 +478,36 @@ export default function SetExamPage() {
       }
 
       toast.success("Exam scheduled successfully!");
+
+      const examName = responseData.name || `Exam ${responseData.exam}`; // If name is not available, fallback to exam ID or track name
+      const examStartDate = new Date(
+        responseData.start_datetime
+      ).toLocaleString(); // Formatting the start date
+      const message = `A new exam "${examName}" has been scheduled for you at ${examStartDate}.`;
+
+      // Loop over students to send notification
+      for (const studentId of formData.students) {
+        try {
+          await sendNotification({
+            student_id: studentId,
+            instructor_id: instructorId,
+            message: message,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to send notification to student ${studentId}`,
+            error
+          );
+        }
+      }
+
       router.push("/dashboard_instructor");
     } catch (error) {
-      toast.error(error.message || "Failed to schedule exam");
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to schedule exam");
+      } else {
+        toast.error("Failed to schedule exam");
+      }
     } finally {
       setLoading((prev) => ({ ...prev, submitting: false }));
     }

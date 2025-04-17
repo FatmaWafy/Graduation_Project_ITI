@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
+import { useState } from "react"
 import {
   type ColumnDef,
   flexRender,
@@ -11,31 +11,15 @@ import {
   useReactTable,
   type ColumnFiltersState,
   getFilteredRowModel,
-} from "@tanstack/react-table";
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  Edit,
-  Eye,
-  Trash2,
-  Search,
-  MoreHorizontal,
-} from "lucide-react";
+} from "@tanstack/react-table"
+import { ChevronDown, ChevronUp, ChevronsUpDown, Eye, Trash2, Search, MoreHorizontal } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DeleteStudentDialog } from "./delete-student-dialog";
-import type { Student } from "../types";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { DeleteStudentDialog } from "./delete-student-dialog"
+import type { Student } from "../types"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,87 +27,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getClientSideToken } from "@/lib/cookies";
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface StudentTableProps {
-  students: Student[];
-  isLoading: boolean;
-  onEdit: (student: Student) => void;
-  onView: (studentId: number) => void;
+  students: Student[]
+  isLoading: boolean
+  onEdit: (student: Student) => void
+  onView: (studentId: number) => void
 }
-interface Track {
-  id: number;
-  name: string;
-}
-interface Branch {
-  id: number;
-  name: string;
-}
-export function StudentTable({
-  students,
-  isLoading,
-  onEdit,
-  onView,
-}: StudentTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
 
+export function StudentTable({ students, isLoading, onEdit, onView }: StudentTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
 
-  useEffect(() => {
-    async function fetchBranches() {
-      try {
-        const token = getClientSideToken();
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
-        const response = await fetch("http://127.0.0.1:8000/users/branches/", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch branches");
-        }
-        const data = await response.json();
-        setBranches(data);
-        console.log("Fetched branches:", data); // Debug
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-      }
-    }
-    fetchBranches();
-  }, []);
-
-  useEffect(() => {
-    async function fetchTracks() {
-      try {
-        const token = getClientSideToken();
-        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch tracks");
-        }
-        const data = await response.json();
-        setTracks(data);
-      } catch (error) {
-        console.error("Error fetching tracks:", error);
-      }
-    }
-    fetchTracks();
-  }, []);
-  
   const columns: ColumnDef<Student>[] = [
     {
       id: "name",
@@ -131,36 +50,28 @@ export function StudentTable({
       header: ({ column }) => {
         return (
           <Button
-            variant='ghost'
+            variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className='hover:bg-[#f0f9ff]'
+            className="hover:bg-[#f0f9ff]"
           >
             Student
             {{
-              asc: <ChevronUp className='ml-2 h-4 w-4 text-[#007acc]' />,
-              desc: <ChevronDown className='ml-2 h-4 w-4 text-[#007acc]' />,
-            }[column.getIsSorted() as string] ?? (
-              <ChevronsUpDown className='ml-2 h-4 w-4 opacity-50' />
-            )}
+              asc: <ChevronUp className="ml-2 h-4 w-4 text-[#007acc]" />,
+              desc: <ChevronDown className="ml-2 h-4 w-4 text-[#007acc]" />,
+            }[column.getIsSorted() as string] ?? <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />}
           </Button>
-        );
+        )
       },
       cell: ({ row }) => (
-        <div
-          className='flex items-center gap-3 cursor-pointer'
-          onClick={() => onView(row.original.id)} // نقل الحدث هنا
-        >
-          <Avatar className='h-8 w-8 border border-[#e6f4ff]'>
-            <AvatarImage
-              src={row.original.user.profile_image || ""}
-              alt={row.original.user.username}
-            />
-            <AvatarFallback className='bg-[#f0f9ff] text-[#007acc]'>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => onView(row.original.id)}>
+          <Avatar className="h-8 w-8 border border-[#e6f4ff]">
+            <AvatarImage src={row.original.user.profile_image || ""} alt={row.original.user.username} />
+            <AvatarFallback className="bg-[#f0f9ff] text-[#007acc]">
               {row.original.user.username?.charAt(0).toUpperCase() || "S"}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className='font-medium'>{row.original.user.username}</div>
+            <div className="font-medium">{row.original.user.username}</div>
           </div>
         </div>
       ),
@@ -168,103 +79,65 @@ export function StudentTable({
     {
       id: "email",
       header: "Email",
-      cell: ({ row }) => (
-        <div className='font-mono text-sm text-muted-foreground'>
-          {row.original.user.email}
-        </div>
-      ),
+      cell: ({ row }) => <div className="font-mono text-sm text-muted-foreground">{row.original.user.email}</div>,
     },
     {
       id: "track",
-      accessorFn: (row) =>
-        tracks.find((t) => t.id === row.track)?.name || row.track_name || "Not assigned",
+      accessorFn: (row) => row.track?.name || "Not assigned",
       header: "Track",
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.track
-            ? tracks.find((t) => t.id === row.original.track)?.name || "Not assigned"
-            : row.original.track_name || "Not assigned"}
-        </div>
-      ),
+      cell: ({ row }) => <div className="text-sm">{row.original.track?.name || "Not assigned"}</div>,
     },
     {
       id: "branch",
-      accessorFn: (row) => {
-        const branchName = branches.find((b) => b.id === row.branch)?.name || "Not assigned";
-        console.log("Row branch ID:", row.branch, "Branch name:", branchName); // Debug
-        return branchName;
-      },
+      accessorFn: (row) => row.branch?.name || "Not assigned",
       header: "Branch",
-      cell: ({ row }) => {
-        console.log("Cell branch ID:", row.original.branch); // Debug
-        return (
-          <div className="text-sm">
-            {row.original.branch
-              ? branches.find((b) => b.id === row.original.branch)?.name || "Not assigned"
-              : "Not assigned"}
-          </div>
-        );
-      },
+      cell: ({ row }) => <div className="text-sm">{row.original.branch?.name || "Not assigned"}</div>,
     },
     {
       id: "actions",
       cell: ({ row }) => {
-        const student = row.original;
+        const student = row.original
 
         return (
-          <div className='flex items-center justify-end'>
+          <div className="flex items-center justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-8 w-8'
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className='h-4 w-4' />
-                  <span className='sr-only'>Open menu</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align='end' className='w-[160px]'>
+              <DropdownMenuContent align="end" className="w-[160px]">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onView(student.id);
+                    e.stopPropagation()
+                    onView(student.id)
                   }}
                 >
-                  <Eye className='mr-2 h-4 w-4' />
+                  <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(student);
-                  }}
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Edit Student
-                </DropdownMenuItem> */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={(e) => {
-                    e.stopPropagation();
-                    setStudentToDelete(student);
-                    setDeleteDialogOpen(true);
+                    e.stopPropagation()
+                    setStudentToDelete(student)
+                    setDeleteDialogOpen(true)
                   }}
-                  className='text-destructive focus:text-destructive'
+                  className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className='mr-2 h-4 w-4' />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        );
+        )
       },
     },
-  ];
+  ]
 
   const table = useReactTable({
     data: students,
@@ -284,48 +157,37 @@ export function StudentTable({
         pageSize: 8,
       },
     },
-  });
+  })
 
   if (isLoading) {
-    return <StudentTableSkeleton />;
+    return <StudentTableSkeleton />
   }
 
   return (
-    <div className='space-y-4'>
-      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='relative'>
-          <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder='Search students...'
+            placeholder="Search students..."
             value={(table.getColumn("name")?.getFilterValue() ?? "") as string}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className='pl-9 w-full sm:max-w-sm bg-white'
+            onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+            className="pl-9 w-full sm:max-w-sm bg-white"
           />
         </div>
-        <div className='flex items-center text-sm text-muted-foreground'>
-          Showing {table.getFilteredRowModel().rows.length} of {students.length}{" "}
-          students
+        <div className="flex items-center text-sm text-muted-foreground">
+          Showing {table.getFilteredRowModel().rows.length} of {students.length} students
         </div>
       </div>
 
-      <div className='rounded-md border border-[#e6f4ff] overflow-hidden bg-white'>
+      <div className="rounded-md border border-[#e6f4ff] overflow-hidden bg-white">
         <Table>
-          <TableHeader className='bg-[#f8fafc]'>
+          <TableHeader className="bg-[#f8fafc]">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className='hover:bg-[#f0f9ff]/50'>
+              <TableRow key={headerGroup.id} className="hover:bg-[#f0f9ff]/50">
                 {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className='text-[#64748b] font-medium'
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                  <TableHead key={header.id} className="text-[#64748b] font-medium">
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -334,27 +196,15 @@ export function StudentTable({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className='hover:bg-[#f0f9ff]/50' // أزل cursor-pointer و onClick
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="hover:bg-[#f0f9ff]/50">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className='h-24 text-center'
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No students found.
                 </TableCell>
               </TableRow>
@@ -363,27 +213,26 @@ export function StudentTable({
         </Table>
       </div>
 
-      <div className='flex items-center justify-between py-4'>
-        <div className='text-sm text-muted-foreground'>
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+      <div className="flex items-center justify-between py-4">
+        <div className="text-sm text-muted-foreground">
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
-        <div className='flex items-center space-x-2'>
+        <div className="flex items-center space-x-2">
           <Button
-            variant='outline'
-            size='sm'
+            variant="outline"
+            size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className='border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]'
+            className="border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]"
           >
             Previous
           </Button>
           <Button
-            variant='outline'
-            size='sm'
+            variant="outline"
+            size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className='border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]'
+            className="border-[#e6f4ff] hover:bg-[#f0f9ff] hover:text-[#007acc]"
           >
             Next
           </Button>
@@ -396,31 +245,31 @@ export function StudentTable({
         student={studentToDelete}
       />
     </div>
-  );
+  )
 }
 
 function StudentTableSkeleton() {
   return (
-    <div className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <Skeleton className='h-10 w-[250px]' />
-        <Skeleton className='h-4 w-[180px]' />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-10 w-[250px]" />
+        <Skeleton className="h-4 w-[180px]" />
       </div>
-      <div className='rounded-md border'>
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>
-                <Skeleton className='h-6 w-[100px]' />
+                <Skeleton className="h-6 w-[100px]" />
               </TableHead>
               <TableHead>
-                <Skeleton className='h-6 w-[150px]' />
+                <Skeleton className="h-6 w-[150px]" />
               </TableHead>
               <TableHead>
-                <Skeleton className='h-6 w-[120px]' />
+                <Skeleton className="h-6 w-[120px]" />
               </TableHead>
               <TableHead>
-                <Skeleton className='h-6 w-[80px]' />
+                <Skeleton className="h-6 w-[80px]" />
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -428,22 +277,22 @@ function StudentTableSkeleton() {
             {Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  <div className='flex items-center gap-3'>
-                    <Skeleton className='h-8 w-8 rounded-full' />
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
                     <div>
-                      <Skeleton className='h-5 w-[120px]' />
-                      <Skeleton className='h-3 w-[80px] mt-1' />
+                      <Skeleton className="h-5 w-[120px]" />
+                      <Skeleton className="h-3 w-[80px] mt-1" />
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-5 w-[180px]' />
+                  <Skeleton className="h-5 w-[180px]" />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-5 w-[100px]' />
+                  <Skeleton className="h-5 w-[100px]" />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className='h-8 w-8 rounded-full ml-auto' />
+                  <Skeleton className="h-8 w-8 rounded-full ml-auto" />
                 </TableCell>
               </TableRow>
             ))}
@@ -451,5 +300,5 @@ function StudentTableSkeleton() {
         </Table>
       </div>
     </div>
-  );
+  )
 }

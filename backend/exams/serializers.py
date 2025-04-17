@@ -80,5 +80,3 @@ class CheatingLogSerializer(serializers.ModelSerializer):
         model = CheatingLog
         fields = ['exam_id', 'reason', 'timestamp', 'user']
 
-
-

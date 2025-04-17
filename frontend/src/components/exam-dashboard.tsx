@@ -1,14 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
 import Cookies from "js-cookie";
-import ExamHeader from "./exam-header";
-import QuestionList from "./question-list";
-import CodingQuestion from "./coding-question";
-import MultipleChoiceQuestion from "./multiple-choice-question";
 import { Button } from "@/components/ui/button";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +12,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Trophy } from "lucide-react";
+
+// Import our improved components
+import ExamHeader from "./exam-header";
+import QuestionNavigator from "./question-navigator";
+import MultipleChoiceQuestion from "./multiple-choice-question";
+import CodingQuestion from "./coding-question";
+import QuestionProgressBar from "./question-progress-bar";
 import StudentMonitor from "./monitoring/student-monitor";
 
 const LANGUAGE_VERSIONS = {
@@ -48,8 +50,15 @@ interface Question {
 }
 
 export default function ExamDashboard() {
-  const router = useRouter();
-  const { id } = useParams();
+  // Mock router for compatibility
+  const router = {
+    push: (path: string) => {
+      window.location.href = path;
+    },
+  };
+
+  // Mock useParams for compatibility
+  const id = window.location.pathname.split("/").pop() || "";
 
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -122,6 +131,7 @@ export default function ExamDashboard() {
             ],
             correctAnswer: q.correct_answer,
             language: q.language || "python",
+            testCases: [], // MCQ questions won't have test cases
           })) || []),
           ...(questionsData.coding_questions?.map((q: any) => ({
             id: q.id.toString(),
@@ -198,6 +208,7 @@ export default function ExamDashboard() {
       [questionId]: results,
     }));
   };
+
   const handleSubmit = async () => {
     if (isSubmitted) {
       alert("You have already submitted this exam.");
@@ -208,25 +219,18 @@ export default function ExamDashboard() {
     setIsLoading(true);
 
     try {
-      // First run all test cases for coding questions
       const updatedCodeResults: Record<string, TestCaseResult[]> = {
         ...codeResults,
       };
 
-      // Run all test cases for each coding question
       for (const question of questions) {
         if (question.type === "coding" && answers[question.id]) {
           try {
-            // Find the coding question component reference
             const codeAnswer = answers[question.id];
-
-            // Run test cases for this question
             const testResults: TestCaseResult[] = [];
 
             for (let i = 0; i < question.testCases.length; i++) {
               const testCase = question.testCases[i];
-
-              // Prepare code with input handling
               const language = question.language.toLowerCase();
               const functionName = testCase.function_name || "solution";
               const input = testCase.input_data;
@@ -243,7 +247,6 @@ export default function ExamDashboard() {
                   codeWithInput = codeAnswer;
               }
 
-              // Execute the code
               const response = await fetch(
                 "https://emkc.org/api/v2/piston/execute",
                 {
@@ -280,7 +283,6 @@ export default function ExamDashboard() {
               `Error running test cases for question ${question.id}:`,
               error
             );
-            // Create failed test results if execution failed
             updatedCodeResults[question.id] = question.testCases.map(
               (testCase: { input_data: any; expected_output: any }) => ({
                 input: testCase.input_data,
@@ -293,10 +295,8 @@ export default function ExamDashboard() {
         }
       }
 
-      // Update code results state
       setCodeResults(updatedCodeResults);
 
-      // Calculate scores for each question
       let totalScore = 0;
       const submissionData = {
         exam_instance: id,
@@ -305,7 +305,6 @@ export default function ExamDashboard() {
         code_results: [] as any[],
       };
 
-      // Process MCQ answers - ensure keys are strings
       questions.forEach((question) => {
         const answer = answers[question.id];
         if (!answer) return;
@@ -315,7 +314,6 @@ export default function ExamDashboard() {
           if (["A", "B", "C", "D"].includes(cleanAnswer)) {
             submissionData.mcq_answers[question.id.toString()] = cleanAnswer;
 
-            // Check if answer is correct and add points
             if (cleanAnswer === question.correctAnswer) {
               totalScore += question.points || 0;
             }
@@ -323,24 +321,18 @@ export default function ExamDashboard() {
         } else if (question.type === "coding") {
           submissionData.coding_answers[question.id.toString()] = answer.trim();
 
-          // Calculate points based on test case results
           const results = updatedCodeResults[question.id] || [];
           const allPassed =
             results.length > 0 && results.every((r) => r.isSuccess);
-
-          // Add to code_results array, score only if all test cases passed
-          const earnedPoints = allPassed ? question.points || 0 : 0;
 
           submissionData.code_results.push({
             question_id: question.id.toString(),
             test_results: results,
           });
 
-          // Add to total score if all test cases passed
-          totalScore += earnedPoints;
+          totalScore += allPassed ? question.points || 0 : 0;
         }
       });
-      console.log("Submitting data:", submissionData); // Debug log
 
       const response = await fetch(
         `http://127.0.0.1:8000/exam/exam-answers/submit-answer/`,
@@ -356,7 +348,6 @@ export default function ExamDashboard() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Submission successful:", result); // Debug log
         setScore(result.score || 0);
         setShowScoreAlert(true);
         setIsSubmitted(true);
@@ -373,6 +364,7 @@ export default function ExamDashboard() {
       setIsLoading(false);
     }
   };
+
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
@@ -385,6 +377,10 @@ export default function ExamDashboard() {
     }
   };
 
+  const handleSelectQuestion = (index: number) => {
+    setCurrentQuestionIndex(index);
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -395,14 +391,26 @@ export default function ExamDashboard() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        Loading exam...
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='animate-pulse flex flex-col items-center'>
+          <div className='h-8 w-40 bg-muted rounded-md mb-4'></div>
+          <div className='h-4 w-24 bg-muted rounded-md'></div>
+        </div>
       </div>
     );
+
   if (!exam)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        Exam not found
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold mb-2'>Exam not found</h2>
+          <p className='text-muted-foreground mb-4'>
+            The exam you are looking for is not available
+          </p>
+          <Button onClick={() => router.push("/dashboard_student")}>
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
     );
 
@@ -410,85 +418,200 @@ export default function ExamDashboard() {
 
   if (!currentQuestion)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        No questions available
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold mb-2'>No questions available</h2>
+          <p className='text-muted-foreground mb-4'>
+            This exam doesn't have any questions
+          </p>
+          <Button onClick={() => router.push("/dashboard_student")}>
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
     );
 
   return (
-    <div className="container mx-auto px-4 pt-6 bg-background">
-      <ExamHeader
-        title={exam.title}
-        timeLeft={formatTime(timeLeft)}
-        onSubmit={handleSubmit}
-        isSubmitted={isSubmitted}
-      />
+    <div className='min-h-screen bg-background'>
+      <div className='container mx-auto px-4 pb-4'>
+        <ExamHeader
+          title={exam.title}
+          timeLeft={formatTime(timeLeft)}
+          onSubmit={handleSubmit}
+          isSubmitted={isSubmitted}
+        />
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-1 bg-background p-4 rounded-lg shadow border border-border">
-          <QuestionList
-            questions={questions}
-            currentIndex={currentQuestionIndex}
-            onSelectQuestion={setCurrentQuestionIndex}
-            answers={answers}
-          />
+        {/* Question Progress */}
+        <div className='mt-4'>
+          {questions.length > 0 && (
+            <div className='w-full mb-3'>
+              {/* @ts-ignore */}
+              <QuestionProgressBar
+                currentQuestion={currentQuestionIndex}
+                totalQuestions={questions.length}
+                answeredQuestions={Object.keys(answers).length}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="md:col-span-3 bg-background rounded-lg shadow border border-border">
-          {currentQuestion.type === "coding" ? (
-            <CodingQuestion
-              question={
-                currentQuestion as MultipleChoiceQuestionProps["question"]
-              }
-              onAnswerChange={(answer) =>
-                handleAnswerChange(currentQuestion.id, answer)
-              }
-              onTestResultsChange={handleTestResultsChange}
-              answer={
-                answers[currentQuestion.id] || currentQuestion.starterCode
-              }
-            />
-          ) : (
-            <MultipleChoiceQuestion
-              question={currentQuestion}
-              onAnswerChange={(answer) =>
-                handleAnswerChange(currentQuestion.id, answer)
-              }
-              selectedOption={answers[currentQuestion.id]}
-            />
-          )}
+        <div className='flex gap-4 mt-2'>
+          {/* Question Navigator */}
+          <QuestionNavigator
+            questions={questions}
+            currentQuestionIndex={currentQuestionIndex}
+            onSelectQuestion={handleSelectQuestion}
+            answers={answers}
+          />
 
-          <div className="p-4 border-t border-border flex justify-between bg-background">
-            <Button
-              variant="outline"
-              onClick={handlePrevQuestion}
-              disabled={currentQuestionIndex === 0}
-              className="border-border"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleNextQuestion}
-              disabled={currentQuestionIndex === questions.length - 1}
-              className="border-border"
-            >
-              Next
-            </Button>
+          {/* Main Content Area */}
+          <div className='flex-1 bg-background rounded-xl overflow-hidden border border-border'>
+            <div className='border-b border-border bg-muted/20 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <div className='flex items-center'>
+                    <span className='inline-flex items-center justify-center bg-primary/10 text-primary w-7 h-7 rounded-full text-sm font-semibold mr-2'>
+                      {currentQuestionIndex + 1}
+                    </span>
+                    <h2 className='text-xl font-bold text-foreground'>
+                      {currentQuestion.title}
+                    </h2>
+                    <span
+                      className={`ml-3 px-2 py-0.5 text-xs rounded-full ${
+                        currentQuestion.type === "coding"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                      }`}
+                    >
+                      {currentQuestion.type === "coding"
+                        ? "Coding"
+                        : "Multiple Choice"}
+                    </span>
+                  </div>
+                </div>
+                <div className='text-sm text-muted-foreground'>
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </div>
+              </div>
+            </div>
+
+            <div className='flex flex-col lg:flex-row'>
+              {/* Left side: Question content */}
+              <div className='w-full lg:w-1/2 border-r border-border lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto'>
+                {currentQuestion.type === "multiple-choice" ? (
+                  <MultipleChoiceQuestion
+                    key={currentQuestion.id} // Add unique key
+                    question={{
+                      id: currentQuestion.id,
+                      title: currentQuestion.title,
+                      question: currentQuestion.question || "",
+                      code: currentQuestion.code,
+                      options: currentQuestion.options || [],
+                    }}
+                    onAnswerChange={(answer) =>
+                      handleAnswerChange(currentQuestion.id, answer)
+                    }
+                    selectedOption={answers[currentQuestion.id]}
+                    isFirstQuestion={currentQuestionIndex === 0}
+                    isLastQuestion={
+                      currentQuestionIndex === questions.length - 1
+                    }
+                    onNextQuestion={handleNextQuestion}
+                    onPrevQuestion={handlePrevQuestion}
+                  />
+                ) : (
+                  <div className='p-6'>
+                    <div
+                      className='prose max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground'
+                      dangerouslySetInnerHTML={{
+                        __html: currentQuestion.description,
+                      }}
+                    />
+                    <div className='flex justify-between pt-4 mt-6 border-t border-border'>
+                      <Button
+                        variant='outline'
+                        onClick={handlePrevQuestion}
+                        disabled={currentQuestionIndex === 0}
+                        className='gap-1'
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        onClick={handleNextQuestion}
+                        disabled={currentQuestionIndex === questions.length - 1}
+                        className='gap-1'
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Code editor (only for coding questions) */}
+              <div className='w-full lg:w-1/2'>
+                {currentQuestion.type === "coding" ? (
+                  <CodingQuestion
+                    question={currentQuestion as any}
+                    onAnswerChange={(answer) =>
+                      handleAnswerChange(currentQuestion.id, answer)
+                    }
+                    onTestResultsChange={handleTestResultsChange}
+                    answer={
+                      answers[currentQuestion.id] ||
+                      currentQuestion.starterCode ||
+                      ""
+                    }
+                    questions={questions}
+                    currentQuestionIndex={currentQuestionIndex}
+                    onSelectQuestion={handleSelectQuestion}
+                    answers={answers}
+                    onNextQuestion={handleNextQuestion}
+                    onPrevQuestion={handlePrevQuestion}
+                    isFirstQuestion={currentQuestionIndex === 0}
+                    isLastQuestion={
+                      currentQuestionIndex === questions.length - 1
+                    }
+                  />
+                ) : (
+                  <div className='hidden lg:flex flex-col justify-center items-center p-12 h-full bg-muted/20'>
+                    <div className='text-center'>
+                      <div className='mb-4 p-4 rounded-full bg-muted/50 inline-block'>
+                        <Trophy className='h-12 w-12 text-primary opacity-60' />
+                      </div>
+                      <h3 className='text-lg font-medium mb-2'>
+                        Multiple Choice Question
+                      </h3>
+                      <p className='text-muted-foreground max-w-md'>
+                        Select your answer from the options on the left. The
+                        code editor is only available for programming questions.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <AlertDialog open={showScoreAlert} onOpenChange={setShowScoreAlert}>
-        <AlertDialogContent>
+        <AlertDialogContent className='bg-background'>
           <AlertDialogHeader>
-            <AlertDialogTitle>Exam Completed</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your score: {score} Points
+            <AlertDialogTitle className='flex items-center gap-2'>
+              <Trophy className='h-5 w-5 text-yellow-500' />
+              Exam Completed
+            </AlertDialogTitle>
+            <AlertDialogDescription className='text-center'>
+              <div className='font-medium text-lg'>{score} Points</div>
+              <p className='text-muted-foreground mt-1'>
+                Your exam has been submitted successfully
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
+              className='bg-primary'
               onClick={() => router.push("/dashboard_student")}
             >
               Return to Dashboard
@@ -496,7 +619,8 @@ export default function ExamDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} */}
+      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}
     </div>
   );
 }
+

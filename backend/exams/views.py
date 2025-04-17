@@ -21,6 +21,7 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from django.conf import settings
 import logging
+from django.utils import timezone
 from django.db.models import Q
 
 
@@ -820,26 +821,35 @@ class CheatingLogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Fetch all the cheating logs
         logs = CheatingLog.objects.all()
         serializer = CheatingLogSerializer(logs, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        # Handle POST request to log cheating
         serializer = CheatingLogSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            serializer.save(user=request.user)  # ربط الـ log بالمستخدم اللي في التوكن
             return Response({"status": "logged"})
         return Response(serializer.errors, status=400)
 
+    def delete_old_logs(self):
+        """
+        حذف السجلات التي مضى عليها أكثر من يومين.
+        """
+        expiration_time = timezone.now() - timedelta(days=2)
+        old_logs = CheatingLog.objects.filter(timestamp__lt=expiration_time)
+
+        if old_logs.exists():
+            deleted_count, _ = old_logs.delete()
+            print(f"{deleted_count} logs were deleted.")
+
+
+
+from rest_framework.decorators import api_view, permission_classes
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_cheating_logs(request, exam_id):
-    """
-    Endpoint to get all cheating logs for a specific exam.
-    """
     try:
         logs = CheatingLog.objects.filter(exam_id=exam_id)
         if not logs.exists():
@@ -849,7 +859,7 @@ def get_cheating_logs(request, exam_id):
         return Response(serializer.data, status=200)
 
     except Exception as e:
-            return Response({"error": str(e)}, status=500)
+        return Response({"error": str(e)}, status=500)
         
 @csrf_exempt
 @require_POST

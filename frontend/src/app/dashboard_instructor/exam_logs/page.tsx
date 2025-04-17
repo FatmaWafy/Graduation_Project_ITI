@@ -32,7 +32,8 @@ export default function ExamLogsIndexPage() {
 
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/exam/exams/", {
+        console.log( exams)
+        const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -90,7 +91,7 @@ export default function ExamLogsIndexPage() {
         {exams.map((exam: any) => (
           <Card key={exam.id} className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="bg-gray-100 rounded-t-lg">
-              <CardTitle className="text-lg font-semibold text-[#000000]">{exam.title}</CardTitle>
+              <CardTitle className="text-lg font-semibold text-[#000000]">{exam.exam_title}</CardTitle>
               <CardDescription className="text-sm text-gray-600">Exam ID: {exam.id}</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center py-4">
