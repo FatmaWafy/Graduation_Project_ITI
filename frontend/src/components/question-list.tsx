@@ -22,8 +22,7 @@ export default function QuestionList({
   answers,
 }: QuestionListProps) {
   return (
-    <div className="p-6 bg-background text-foreground">
-      <h2 className="text-lg font-semibold mb-4">Questions</h2>
+    <div className="p-1 bg-background text-foreground">
       <ul className="space-y-2">
         {questions.map((question, index) => {
           const isAnswered = !!answers[question.id];
