@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import CheatingLog, CodingQuestion, Exam,MCQQuestion, TemporaryExamInstance, StudentExamAnswer, CodingTestCase, Course
 
+
 class ExamSerializer(serializers.ModelSerializer):
     mcq_questions = serializers.PrimaryKeyRelatedField(
         queryset=MCQQuestion.objects.all(),
@@ -80,11 +81,4 @@ class CheatingLogSerializer(serializers.ModelSerializer):
         fields = ['exam_id', 'reason', 'timestamp', 'user']
 
 
-from .models import CheatingLog
 
-class CheatingLogSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)  # أو استخدمي user.username مثلاً لو عايزة تظهر اسمه
-
-    class Meta:
-        model = CheatingLog
-        fields = ['exam_id', 'reason', 'timestamp', 'user']

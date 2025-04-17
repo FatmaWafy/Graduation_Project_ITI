@@ -32,8 +32,14 @@ interface User {
 interface Student {
   id: number;
   user: User;
-  track: number | null;
-  branch: number | null;
+  track: {
+    id: number;
+    name: string;
+  } | null;
+  branch: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 interface InstructorData {
@@ -238,6 +244,7 @@ export default function SetExamPage() {
           },
         }
       );
+
       const data = await response.json();
       setAllStudents(data);
       setFilteredStudents(data);
@@ -269,13 +276,16 @@ export default function SetExamPage() {
     }
 
     // Apply track filter if selected
+    // Apply track filter if selected
     if (formData.track) {
-      result = result.filter((student) => student.track === formData.track);
+      result = result.filter((student) => student.track?.id === formData.track);
     }
 
     // Apply branch filter if selected
     if (formData.branch) {
-      result = result.filter((student) => student.branch === formData.branch);
+      result = result.filter(
+        (student) => student.branch?.id === formData.branch
+      );
     }
 
     setFilteredStudents(result);
@@ -717,15 +727,10 @@ export default function SetExamPage() {
                           {student.user.email}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Track:{" "}
-                          {instructorTracks.find((t) => t.id === student.track)
-                            ?.name || "Unknown"}
+                          Track: {student.track?.name || "Unknown"}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Branch:{" "}
-                          {instructorBranches.find(
-                            (b) => b.id === student.branch
-                          )?.name || "Unknown"}
+                          Branch: {student.branch?.name || "Unknown"}
                         </div>
                       </label>
                     </div>

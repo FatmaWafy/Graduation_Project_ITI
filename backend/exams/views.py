@@ -22,6 +22,7 @@ from django.conf import settings
 import logging
 from django.db.models import Q
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -902,23 +903,7 @@ class CheatingLogView(APIView):
             serializer.save(user=request.user)
             return Response({"status": "logged"})
         return Response(serializer.errors, status=400)
-class CheatingLogView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        # Fetch all the cheating logs
-        logs = CheatingLog.objects.all()
-        serializer = CheatingLogSerializer(logs, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        # Handle POST request to log cheating
-        serializer = CheatingLogSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response({"status": "logged"})
-        return Response(serializer.errors, status=400)
-from rest_framework.decorators import api_view, permission_classes
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

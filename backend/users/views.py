@@ -761,9 +761,14 @@ class InstructorViewSet(viewsets.ModelViewSet):
 
         # Get the tracks associated with the instructor
         tracks = instructor.tracks.all()
+        branch = instructor.branch
 
         # Get the students related to the instructor's tracks
-        students = Student.objects.filter(track__in=tracks)
+        if branch:
+            students = Student.objects.filter(track__in=tracks, branch=branch)
+        else:
+            # If instructor has no branch assigned, just filter by track
+            students = Student.objects.filter(track__in=tracks)
 
         # Serialize the data
         student_data = []
@@ -775,8 +780,14 @@ class InstructorViewSet(viewsets.ModelViewSet):
                     'email': student.user.email,
                     'role': student.user.role
                 },
-                'track': student.track.id if student.track else None,
-                'branch': student.branch.id if student.branch else None
+                'track': {
+                    'id': student.track.id if student.track else None,
+                    'name': student.track.name if student.track else None
+                },
+                'branch': {
+                    'id': student.branch.id if student.branch else None,
+                    'name': student.branch.name if student.branch else None
+                }
             })
 
         return Response(student_data)
