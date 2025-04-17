@@ -30,6 +30,8 @@ interface Grade {
   exam_title: string;
   score: number;
   submitted_at: string;
+  branch?: string; // Added for branch from API
+  track?: string; // Added for track from API
 }
 
 interface StudentGrade {
@@ -39,8 +41,8 @@ interface StudentGrade {
   examDate: string;
   score: number;
   examId: string;
-  branch?: string; // Added back, optional
-  track?: string; // Added back, optional
+  branch?: string;
+  track?: string;
 }
 
 export default function GradesPage() {
@@ -51,11 +53,11 @@ export default function GradesPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [examFilter, setExamFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [branchFilter, setBranchFilter] = useState(""); // Reintroduced
-  const [trackFilter, setTrackFilter] = useState(""); // Reintroduced
+  const [branchFilter, setBranchFilter] = useState("");
+  const [trackFilter, setTrackFilter] = useState("");
   const [exams, setExams] = useState<string[]>([]);
-  const [branches, setBranches] = useState<string[]>([]); // Reintroduced
-  const [tracks, setTracks] = useState<string[]>([]); // Reintroduced
+  const [branches, setBranches] = useState<string[]>([]);
+  const [tracks, setTracks] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -68,27 +70,6 @@ export default function GradesPage() {
         if (!token) {
           router.push("/login");
           return;
-        }
-
-        // Fetch instructor's branch (assuming an endpoint exists)
-        let instructorBranch: string | null = null;
-        try {
-          const branchResponse = await fetch(
-            "http://127.0.0.1:8000/users/instructor/instructor_data/", // Adjust endpoint as needed
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          if (branchResponse.ok) {
-            const branchData = await branchResponse.json();
-            instructorBranch = branchData.branch?.name || null; // Adjust based on actual response
-          }
-        } catch (branchError) {
-          console.error("Error fetching instructor branch:", branchError);
         }
 
         // Fetch grades data
@@ -113,6 +94,7 @@ export default function GradesPage() {
         }
 
         const data: { grades: Grade[] } = await response.json();
+        console.log("Fetched grades data:", data);
 
         const transformedData: StudentGrade[] = data.grades.map((grade) => ({
           id: `${grade.exam_id}-${grade.student_id}`,
@@ -121,15 +103,28 @@ export default function GradesPage() {
           examDate: grade.submitted_at,
           score: grade.score,
           examId: grade.exam_id.toString(),
-          branch: instructorBranch, // Assign instructor's branch
-          track: undefined, // Placeholder, as track is not provided
+          branch: grade.branch || undefined,
+          track: grade.track || undefined,
         }));
 
+        // Get unique values for filters
         const uniqueExams = Array.from(
           new Set(data.grades.map((grade) => grade.exam_title))
         );
-        const uniqueBranches = instructorBranch ? [instructorBranch] : [];
-        const uniqueTracks: string[] = []; // Empty until tracks are provided
+        const uniqueBranches = Array.from(
+          new Set(
+            data.grades
+              .map((grade) => grade.branch)
+              .filter((branch): branch is string => !!branch)
+          )
+        );
+        const uniqueTracks = Array.from(
+          new Set(
+            data.grades
+              .map((grade) => grade.track)
+              .filter((track): track is string => !!track)
+          )
+        );
 
         setGrades(transformedData);
         setFilteredGrades(transformedData);

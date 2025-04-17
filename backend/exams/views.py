@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import subprocess
 from django.http import JsonResponse
+from numpy import convolve
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -608,12 +609,15 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         for answer in answers:
             results.append({
                 "student_id": answer.student.id,
-                "student_username": answer.student.username,
+                "student_username": answer.student.user.username,
+                'branch': answer.student.branch.name if answer.student.branch else None,
+                'track': answer.student.track.name if answer.student.track else None,
                 "exam_id": answer.exam_instance.exam.id,
                 "exam_title": answer.exam_instance.exam.title,
                 "score": answer.score,
                 "submitted_at": answer.submitted_at
             })
+        print(f"grades: {results}")
 
         return Response({"grades": results}, status=status.HTTP_200_OK)
 

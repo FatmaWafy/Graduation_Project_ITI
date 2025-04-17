@@ -83,7 +83,7 @@ class MCQQuestion(models.Model):
 
 
 class StudentExamAnswer(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_answers")
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="exam_answers")
     exam_instance = models.ForeignKey(TemporaryExamInstance, on_delete=models.CASCADE, related_name="student_answers")
 
     compressed_answers = models.BinaryField()
