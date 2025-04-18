@@ -6,11 +6,26 @@ import Link from "next/link";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { LogOut, Menu, X, ChevronLeft } from "lucide-react";
+import {  Menu } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { jwtDecode } from "jwt-decode";
 import { getClientSideToken } from "@/lib/cookies";
+import {
+  LogOut,
+  X,
+  ChevronLeft,
+  Home,
+  FileText,
+  Calendar,
+  BookOpen,
+  Bell,
+  Users,
+  Upload,
+  BarChart2,
+  User,
+} from "lucide-react"
+
 
 export default function InstructorLayout({
   children,
@@ -82,6 +97,18 @@ export default function InstructorLayout({
     Cookies.remove("user");
     window.location.href = "/";
   };
+  const navItems = [
+    { href: "/dashboard_instructor", label: "Dashboard", icon: <Home className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/create-exam", label: "Create Exam", icon: <FileText className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/set-exam", label: "Set Exam", icon: <Calendar className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/exam_logs", label: "Exam Logs", icon: <BookOpen className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs", icon: <Upload className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/add-note", label: "Send Note", icon: <Bell className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/grades", label: "Grades", icon: <BarChart2 className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/students", label: "Student Management", icon: <Users className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/profile", label: "Profile", icon: <User className="h-5 w-5" /> },
+  ]
+
 
   if (loading) {
     return (
@@ -99,112 +126,103 @@ export default function InstructorLayout({
     <div className='flex min-h-screen'>
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? "w-64" : "w-16"
-        } fixed top-0 left-0 h-screen border-r p-4 flex flex-col z-50 transition-all duration-300 bg-white text-black`}
-      >
-        <div className='flex justify-between items-center mb-6 border-b'>
-          {sidebarOpen && (
-            <h2 className='text-xl font-bold text-center w-full   pb-3'>
-              Instructor Portal
-            </h2>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className='text-[#007acc] focus:outline-none flex items-center mb-2'
-          >
-            <ChevronLeft
-              className={`h-6 w-6 transition-transform ${
-                sidebarOpen ? "" : "rotate-180"
-              }`}
-            />
-          </button>
-        </div>
-
-        <nav className='flex flex-col gap-2 flex-1'>
-          {[
-            { href: "/dashboard_instructor", label: "Dashboard" },
-            { href: "/dashboard_instructor/create-exam", label: "Create Exam" },
-            { href: "/dashboard_instructor/set-exam", label: "Set Exam" },
-            { href: "/dashboard_instructor/exam_logs", label: "Exam Logs" },
-            { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs" },
-            { href: "/dashboard_instructor/add-note", label: "Send Note" },
-            { href: "/dashboard_instructor/grades", label: "Grades" },
-            {
-              href: "/dashboard_instructor/students",
-              label: "Student Management",
-            },
-            {
-              href: "/dashboard_instructor/Scrapping",
-              label: "Student Progress",
-            },
-            { href: "/dashboard_instructor/profile", label: "Profile" },
-          ].map((item, idx) => (
-            <Link href={item.href} key={idx}>
-              <p className='bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors'>
-                {sidebarOpen ? item.label : item.label[0]}
-              </p>
-            </Link>
-          ))}
-        </nav>
-
-        <div className='mt-auto pt-4 border-t border-t'>
-          <div className='flex items-center gap-3'>
-            {/* Always render the Avatar */}
-            {studentData ? (
-              <Avatar>
-                <AvatarImage
-                  src={
-                    studentData.profile_image?.startsWith("http")
-                      ? studentData.profile_image
-                      : studentData.profile_image
-                      ? `http://127.0.0.1:8000${studentData.profile_image}`
-                      : ""
-                  }
-                  alt={studentData.username}
-                />
-                <AvatarFallback>
-                  {studentData.username.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <Avatar>
-                <AvatarImage src='' alt='Instructor' />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            )}
-            {/* Render username and email only when sidebar is open */}
-            {sidebarOpen && (
-              <>
-                {studentData ? (
-                  <div className='flex flex-1 flex-col overflow-hidden'>
-                    <span className='text-sm font-medium leading-none text-sidebar-foreground'>
-                      {studentData.username}
-                    </span>
-                    <span className='text-xs text-muted-foreground'>
-                      {studentData.email}
-                    </span>
-                  </div>
-                ) : (
-                  <div className='flex-1'>
-                    <p className='text-sm font-medium'>{user.name}</p>
-                    <p className='text-xs text-gray-400'>{user.email}</p>
-                  </div>
-                )}
-                {/* Render logout button only when sidebar is open */}
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={handleLogout}
-                  className='text-[#007acc] hover:text-[#007abc]'
-                >
-                  <LogOut className='h-5 w-5' />
-                </Button>
-              </>
-            )}
+    className={`${
+      sidebarOpen ? "w-64" : "w-20"
+    } fixed top-0 left-0 h-screen border-r border-gray-200 flex flex-col z-50 transition-all duration-300 bg-white shadow-md`}
+  >
+    <div className="flex justify-between items-center p-4 border-b border-gray-200">
+      {sidebarOpen ? (
+        <h2 className="text-xl font-bold text-[#007acc]">Instructor Portal</h2>
+      ) : (
+        <div className="mx-auto">
+          <div className="h-10 w-10 rounded-full bg-[#007acc] text-white flex items-center justify-center font-bold text-lg">
+            IP
           </div>
         </div>
-      </aside>
+      )}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="text-gray-500 hover:text-[#007acc] focus:outline-none"
+      >
+        <ChevronLeft
+          className={`h-6 w-6 transition-transform ${sidebarOpen ? "" : "rotate-180"}`}
+        />
+      </button>
+    </div>
+
+    <nav className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
+      {navItems.map((item, idx) => {
+        const isActive = typeof window !== "undefined" && window.location.pathname === item.href;
+        return (
+          <Link href={item.href} key={idx}>
+            <div
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? "bg-[#007acc] text-white font-medium"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-[#007acc]"
+              }`}
+            >
+              <div className={`${isActive ? "text-white" : "text-gray-500"}`}>{item.icon}</div>
+              {sidebarOpen && (
+                <span className={`${isActive ? "font-medium" : ""} truncate`}>{item.label}</span>
+              )}
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+
+    <div className="mt-auto p-4 border-t border-gray-200">
+      <div className="flex items-center gap-3">
+        {sidebarOpen && (
+          <>
+            {studentData ? (
+              <>
+                <Avatar className="border border-gray-200">
+                  <AvatarImage
+                    src={
+                      studentData.profile_image?.startsWith("http")
+                        ? studentData.profile_image
+                        : studentData.profile_image
+                        ? `http://127.0.0.1:8000${studentData.profile_image}`
+                        : ""
+                    }
+                    alt={studentData.username}
+                  />
+                  <AvatarFallback className="bg-[#007acc] text-white">
+                    {studentData.username.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{studentData.username}</p>
+                  <p className="text-xs text-gray-500 truncate">{studentData.email}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <Avatar className="border border-gray-200">
+                  <AvatarImage src="/placeholder.svg" alt="Instructor" />
+                  <AvatarFallback className="bg-[#007acc] text-white">{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                </div>
+              </>
+            )}
+          </>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          className={`text-white bg-[#007acc] hover:bg-[#005fa3] rounded-full ${!sidebarOpen ? "mx-auto" : ""}`}
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </aside>
 
       {/* Main Content */}
       <main
