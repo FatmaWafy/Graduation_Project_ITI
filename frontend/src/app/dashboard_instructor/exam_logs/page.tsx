@@ -1,110 +1,142 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { FileText } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { jwtDecode } from "jwt-decode";
+import Cookies from "js-cookie";
+
+interface InstructorData {
+  id: number;
+  // Add other properties based on the API response
+}
+interface Exam {
+  temp_exam_id: number;
+  exam_title: string;
+}
 
 export default function ExamLogsIndexPage() {
-  // حالة لتخزين الامتحانات المسترجعة من الـ API
-  const [exams, setExams] = useState<any[]>([])
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<{ instructor_id?: number }>({});
 
-  // حالة لمعرفة إذا كان هناك خطأ أو تحميل البيانات
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+  const getInstructorId = () => {
+    const instructorId = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("instructor_id="))
+      ?.split("=")[1];
+    return instructorId || null;
+  };
 
-  // استخراج الـ Token من الـ Cookies
-  const getAuthToken = () => {
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('token='))
-      ?.split('=')[1]
-    return token || ''
-  }
-
-
-  // استخدام useEffect لجلب البيانات عند تحميل الصفحة
   useEffect(() => {
     const fetchExams = async () => {
-      const token = getAuthToken()
-      console.log("Token from cookies:", token)
-
-
       try {
-        console.log( exams)
-        const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
-          method: "GET",
+        setLoading(true);
+        setError(null);
+
+        const token = Cookies.get("token");
+        if (!token) throw new Error("Token not found");
+
+        const decoded: any = jwtDecode(token);
+        const userId = decoded.user_id;
+
+        // First fetch - get instructor data
+        const instructorResponse = await fetch(
+          `http://127.0.0.1:8000/users/instructors/${userId}/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!instructorResponse.ok) {
+          throw new Error(
+            `Failed to fetch instructor data: ${instructorResponse.status}`
+          );
+        }
+
+        const instructorData = await instructorResponse.json();
+        setUser({ instructor_id: instructorData.id });
+
+        // Second fetch - get exams
+        const examsUrl = `http://127.0.0.1:8000/exam/temp-exams/get_exam_info/?instructor_id=${instructorData.id}`;
+        const examsResponse = await fetch(examsUrl, {
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // إضافة الـ Token في الهيدر
+            Authorization: `Bearer ${token}`,
           },
-        })
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch exams")
+        if (!examsResponse.ok) {
+          throw new Error(`Failed to fetch exams: ${examsResponse.status}`);
         }
 
-        const data = await response.json()
-        setExams(data) // تعيين البيانات إلى state
+        const responseData = await examsResponse.json();
+
+        // Handle both array and single object responses
+        const examsData = Array.isArray(responseData)
+          ? responseData
+          : [responseData]; // Wrap single object in array
+
+        setExams(examsData);
       } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message)
-        } else {
-          setError("An unknown error occurred")
-        }
+        console.error("Fetch error:", error);
+        setError(
+          error instanceof Error ? error.message : "An unknown error occurred"
+        );
+        setExams([]); // Ensure exams is always an array
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchExams()
-  }, [])
+    fetchExams();
+  }, []);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#007acc]"></div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
-  
 
   if (error) {
-    return <div className="text-center text-red-500">{error}</div>
+    return <div>Error: {error}</div>;
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="h-8 w-8" />
-            Exam cheating Logs
-          </h1>
-          <p className="text-muted-foreground mt-1">Select an exam to view its logs</p>
-        </div>
-      </div>
-
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {exams.map((exam: any) => (
-          <Card key={exam.id} className="hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="bg-gray-100 rounded-t-lg">
-              <CardTitle className="text-lg font-semibold text-[#000000]">{exam.exam_title}</CardTitle>
-              <CardDescription className="text-sm text-gray-600">Exam ID: {exam.id}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center py-4">
-              <Link href={`/dashboard_instructor/exam_logs/${exam.id}`} passHref>
-                <Button className="bg-[#007acc] hover:bg-[#007abc] text-white px-6 py-2 rounded-md">
-                  View Logs
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {exams.map((exam) => (
+        <Card
+          key={exam.temp_exam_id}
+          className="hover:shadow-lg transition-shadow duration-300"
+        >
+          <CardHeader className="bg-gray-100 rounded-t-lg">
+            <CardTitle className="text-lg font-semibold text-[#000000]">
+              {exam.exam_title}
+            </CardTitle>
+            <CardDescription className="text-sm text-gray-600">
+              Exam ID: {exam.temp_exam_id}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center py-4">
+            <Link
+              href={`/dashboard_instructor/exam_logs/${exam.temp_exam_id}`}
+              passHref
+            >
+              <Button className="bg-[#007acc] hover:bg-[#007abc] text-white px-6 py-2 rounded-md">
+                View Logs
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ))}
     </div>
-  )
+  );
 }

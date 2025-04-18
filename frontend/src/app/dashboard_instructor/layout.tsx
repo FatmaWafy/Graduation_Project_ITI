@@ -134,7 +134,10 @@ export default function InstructorLayout({
               href: "/dashboard_instructor/students",
               label: "Student Management",
             },
-            { href: "/dashboard_instructor/Scrapping", label: "Student Progress" },
+            {
+              href: "/dashboard_instructor/Scrapping",
+              label: "Student Progress",
+            },
             { href: "/dashboard_instructor/profile", label: "Profile" },
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>

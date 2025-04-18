@@ -144,6 +144,36 @@ class TempExamViewSet(viewsets.ModelViewSet):
         
         except TemporaryExamInstance.DoesNotExist:
             return Response({"error": "TempExam not found"}, status=404)
+    
+    @action(detail=False, methods=['get'])
+    def get_exam_info(self, request):
+        """Returns all temp exam info (title and temp exam ID) filtered by instructor ID"""
+        instructor_id = request.query_params.get('instructor_id')
+
+        if not instructor_id:
+            return Response({"error": "instructor_id is required"}, status=400)
+
+        try:
+            temp_exams = TemporaryExamInstance.objects.filter(instructor_id_id=instructor_id)
+
+            if not temp_exams.exists():
+                return Response({"error": "No TempExam found for this instructor"}, status=404)
+
+            data = [
+                {
+                    'temp_exam_id': temp_exam.id,
+                    'exam_title': temp_exam.exam.title,
+                    'exam_date': temp_exam.start_datetime.strftime('%Y-%m-%d %H:%M:%S'),
+                }
+                for temp_exam in temp_exams
+            ]
+
+            return Response(data)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+
 
 
 class ExamViewSet(viewsets.ModelViewSet):
