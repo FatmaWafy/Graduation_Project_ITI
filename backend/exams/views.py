@@ -871,7 +871,6 @@ class CheatingLogView(APIView):
             print(f"{deleted_count} logs were deleted.")
 
 
-
 from rest_framework.decorators import api_view, permission_classes
 
 @api_view(['GET'])
