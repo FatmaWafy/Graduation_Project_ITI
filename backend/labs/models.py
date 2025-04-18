@@ -9,7 +9,7 @@ def lab_file_path(instance, filename):
 
 class Lab(models.Model):
     name = models.CharField(max_length=255)
-    file = models.FileField(upload_to='labs/')
+    # file = models.FileField(upload_to='labs/')
     description = models.TextField(blank=True, null=True)
     track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name='labs')
     instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='uploaded_labs')
@@ -18,7 +18,3 @@ class Lab(models.Model):
     file = models.FileField(upload_to=lab_file_path)
     def __str__(self):
         return self.name
-    
-
-
- 

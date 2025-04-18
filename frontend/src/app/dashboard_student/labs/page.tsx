@@ -96,50 +96,55 @@ export default function StudentLabsPage() {
       toast({
         title: "Downloading...",
         description: `Downloading ${lab.name}`,
-      })
-
-      const token = Cookies.get("token")
+      });
+  
+      const token = Cookies.get("token");
       if (!token) {
-        throw new Error("No authentication token found")
+        throw new Error("No authentication token found");
       }
-
-      // Use the download endpoint
+  
       const response = await fetch(`http://127.0.0.1:8000/labs/${lab.id}/download/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-
+      });
+  
       if (!response.ok) {
-        throw new Error("Download failed")
+        const errorText = await response.text();
+        console.error("Response error details:", response.status, errorText);
+        throw new Error(`Download failed: ${response.status} - ${errorText}`);
       }
-
-      // Create a blob from the response
-      const blob = await response.blob()
-
-      // Create a download link and trigger the download
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = lab.name
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      a.remove()
-
+  
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType || !contentType.includes("application/pdf")) {
+        throw new Error("Invalid file type received");
+      }
+  
+      const blob = await response.blob();
+      console.log("Blob details:", blob.type, blob.size);
+  
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = lab.name.endsWith(".pdf") ? lab.name : `${lab.name}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+  
       toast({
         title: "Download complete",
         description: `${lab.name} has been downloaded successfully`,
-      })
+      });
     } catch (error) {
-      console.error("Download error:", error)
+      console.error("Download error details:", error);
       toast({
         title: "Download failed",
-        description: "Failed to download the lab. Please try again.",
+        description: `Failed to download the lab: ${error.message}`,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

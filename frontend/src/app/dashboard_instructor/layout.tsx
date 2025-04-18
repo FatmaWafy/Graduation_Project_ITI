@@ -85,33 +85,33 @@ export default function InstructorLayout({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className='flex justify-center items-center h-64'>
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
       </div>
     );
   }
 
   if (role !== "instructor") {
-    return <p className="text-red-500 text-center mt-10">Access Denied</p>;
+    return <p className='text-red-500 text-center mt-10'>Access Denied</p>;
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className='flex min-h-screen'>
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-16"
         } fixed top-0 left-0 h-screen border-r p-4 flex flex-col z-50 transition-all duration-300 bg-white text-black`}
       >
-        <div className="flex justify-between items-center mb-6 border-b">
+        <div className='flex justify-between items-center mb-6 border-b'>
           {sidebarOpen && (
-            <h2 className="text-xl font-bold text-center w-full   pb-3">
+            <h2 className='text-xl font-bold text-center w-full   pb-3'>
               Instructor Portal
             </h2>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-[#007acc] focus:outline-none flex items-center mb-2"
+            className='text-[#007acc] focus:outline-none flex items-center mb-2'
           >
             <ChevronLeft
               className={`h-6 w-6 transition-transform ${
@@ -121,7 +121,7 @@ export default function InstructorLayout({
           </button>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className='flex flex-col gap-2 flex-1'>
           {[
             { href: "/dashboard_instructor", label: "Dashboard" },
             { href: "/dashboard_instructor/create-exam", label: "Create Exam" },
@@ -134,75 +134,74 @@ export default function InstructorLayout({
               href: "/dashboard_instructor/students",
               label: "Student Management",
             },
-            { href: "/dashboard_instructor/Scrapping", label: "Student Progress" },
+            {
+              href: "/dashboard_instructor/Scrapping",
+              label: "Student Progress",
+            },
             { href: "/dashboard_instructor/profile", label: "Profile" },
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>
-              <p className="bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors">
+              <p className='bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors'>
                 {sidebarOpen ? item.label : item.label[0]}
               </p>
             </Link>
           ))}
         </nav>
 
-        <div className="mt-auto pt-4 border-t border-t">
-          <div className="flex items-center gap-3">
+        <div className='mt-auto pt-4 border-t border-t'>
+          <div className='flex items-center gap-3'>
+            {/* Always render the Avatar */}
+            {studentData ? (
+              <Avatar>
+                <AvatarImage
+                  src={
+                    studentData.profile_image?.startsWith("http")
+                      ? studentData.profile_image
+                      : studentData.profile_image
+                      ? `http://127.0.0.1:8000${studentData.profile_image}`
+                      : ""
+                  }
+                  alt={studentData.username}
+                />
+                <AvatarFallback>
+                  {studentData.username.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <Avatar>
+                <AvatarImage src='' alt='Instructor' />
+                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
+            {/* Render username and email only when sidebar is open */}
             {sidebarOpen && (
               <>
                 {studentData ? (
-                  <>
-                    <Avatar>
-                      <AvatarImage
-                        src={
-                          studentData.profile_image?.startsWith("http")
-                            ? studentData.profile_image
-                            : studentData.profile_image
-                            ? `http://127.0.0.1:8000${studentData.profile_image}`
-                            : ""
-                        }
-                        alt={studentData.username}
-                      />
-                      <AvatarFallback>
-                        {studentData.username.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {studentData.username}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {studentData.email}
-                      </p>
-                    </div>
-                  </>
+                  <div className='flex flex-1 flex-col overflow-hidden'>
+                    <span className='text-sm font-medium leading-none text-sidebar-foreground'>
+                      {studentData.username}
+                    </span>
+                    <span className='text-xs text-muted-foreground'>
+                      {studentData.email}
+                    </span>
+                  </div>
                 ) : (
-                  <>
-                    <Avatar>
-                      <AvatarImage src="" alt="Instructor" />
-                      <AvatarFallback>
-                        {studentData.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{studentData.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {studentData.email}
-                      </p>
-                    </div>
-                  </>
+                  <div className='flex-1'>
+                    <p className='text-sm font-medium'>{user.name}</p>
+                    <p className='text-xs text-gray-400'>{user.email}</p>
+                  </div>
                 )}
+                {/* Render logout button only when sidebar is open */}
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={handleLogout}
+                  className='text-[#007acc] hover:text-[#007abc]'
+                >
+                  <LogOut className='h-5 w-5' />
+                </Button>
               </>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className={`text-white bg-[#007acc] hover:bg-[#007abc] hover:text-white ${
-                !sidebarOpen ? "mx-auto" : ""
-              }`}
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
           </div>
         </div>
       </aside>
