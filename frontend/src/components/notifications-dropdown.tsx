@@ -306,10 +306,12 @@ export function NotificationsDropdown() {
           created_at: notification.created_at,
           instructor: notification.instructor_name,
           read: notification.read,
-          is_track_notification: notification.is_track_notification || false,
+          is_track_notification: notification.track !== null,
         }));
 
         setNotifications(formattedNotifications);
+        console.log("Notifications:", response.data)
+
 
         const unread = formattedNotifications.filter(n => !n.read).length;
         setUnreadCount(unread);
