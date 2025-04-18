@@ -472,7 +472,7 @@ export function NotificationsDropdown() {
                   <div className="flex items-center gap-2">
                     {getNotificationIcon(notification)}
                     <span className="font-medium">
-                      Instructor #{notification.instructor}
+                      {notification.instructor}
                     </span>
                     {notification.is_track_notification ? (
                       <Badge className="ml-1 text-xs">
