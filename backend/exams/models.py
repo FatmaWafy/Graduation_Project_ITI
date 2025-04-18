@@ -49,10 +49,32 @@ class MCQOptions(models.TextChoices):
     D = "D", _("Option D")
 
 class language(models.TextChoices):
-    PYTHON = "Python", _("Python")
-    JAVASCRIPT = "JavaScript", _("JavaScript")
-    JAVA = "Java", _("Java")
-    SQL = "SQL", _("SQL")
+    PYTHON = "python", _("Python")
+    JAVASCRIPT = "javascript", _("JavaScript")
+    TYPESCRIPT = "typescript", _("TypeScript")
+    HTML = "html", _("HTML")
+    CSS = "css", _("CSS")
+    JSON = "json", _("JSON")
+    XML = "xml", _("XML")
+    # SQL = "sql", _("SQL")
+    JAVA = "java", _("Java")
+    C = "c", _("C")
+    CPP = "cpp", _("C++")
+    CSHARP = "csharp", _("C#")
+    PHP = "php", _("PHP")
+    RAZOR = "razor", _("Razor")  # Used in .NET web apps
+    MARKDOWN = "markdown", _("Markdown")
+    YAML = "yaml", _("YAML")
+    SHELL = "shell", _("Shell")
+    POWERSHELL = "powershell", _("PowerShell")
+    LUA = "lua", _("Lua")
+    R = "r", _("R")
+    PERL = "perl", _("Perl")
+    SWIFT = "swift", _("Swift")
+    OBJECTIVEC = "objective-c", _("Objective-C")
+    SCSS = "scss", _("SCSS")
+    LESS = "less", _("LESS")
+
     
 
 
