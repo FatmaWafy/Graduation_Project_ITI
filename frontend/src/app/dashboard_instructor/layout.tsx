@@ -24,6 +24,7 @@ import {
   Upload,
   BarChart2,
   User,
+  TrendingUp,
 } from "lucide-react"
 
 
@@ -105,8 +106,10 @@ export default function InstructorLayout({
     { href: "/dashboard_instructor/uploadLabs", label: "Upload Labs", icon: <Upload className="h-5 w-5" /> },
     { href: "/dashboard_instructor/add-note", label: "Send Note", icon: <Bell className="h-5 w-5" /> },
     { href: "/dashboard_instructor/grades", label: "Grades", icon: <BarChart2 className="h-5 w-5" /> },
+    { href: "/dashboard_instructor/Scrapping", label: "Student Progress", icon: <TrendingUp className="h-5 w-5" /> },
     { href: "/dashboard_instructor/students", label: "Student Management", icon: <Users className="h-5 w-5" /> },
     { href: "/dashboard_instructor/profile", label: "Profile", icon: <User className="h-5 w-5" /> },
+    
   ]
 
 

@@ -234,67 +234,67 @@ export default function ExamLogsIndexPage() {
   }, []);
 
   return (
-    <div className="container mx-auto py-10 px-4 text-white">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-indigo-400">
-            <FileText className="h-8 w-8" />
-            Exam Cheating Logs
-          </h1>
-          <p className="text-gray-400 mt-1">
-            Select an exam to view its logs
-          </p>
-        </div>
+    <div className="container mx-auto py-10 px-4  text-white">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-blue-400">
+          <FileText className="h-8 w-8" />
+          Exam Cheating Logs
+        </h1>
+        <p className="text-gray-400 mt-1">
+          Select an exam to view its logs
+        </p>
       </div>
-
-      {loading ? (
-        <div className="flex flex-col justify-center items-center h-40 gap-4">
-       <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-500"></div>
-       <p className="text-gray-400">Loading exam logs...</p>
-
-       </div>
-        ) : error ? (
-        <div className="text-center text-red-400">Error: {error}</div>
-      ) : exams.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
-          <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-200 mb-2">No Exams Found</h3>
-          <p className="text-gray-400 max-w-md mx-auto mb-6">
-            There are no exams available to view logs for.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {exams.map((exam) => (
-            <Card
-              key={exam.temp_exam_id}
-              className="bg-[#1f2937] border border-gray-700 hover:shadow-lg transition-shadow duration-300"
-            >
-              <CardHeader className="bg-[#111827] pb-4">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-white">
-                    {exam.exam_title}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-gray-400">
-                    Exam ID: {exam.temp_exam_id}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-
-              <CardContent className="py-4 flex justify-end">
-                <Link
-                  href={`/dashboard_instructor/exam_logs/${exam.temp_exam_id}`}
-                  passHref
-                >
-                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                    View Logs <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
+  
+    {loading ? (
+      <div className="flex flex-col justify-center items-center h-40 gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+        <p className="text-gray-400">Loading exam logs...</p>
+      </div>
+    ) : error ? (
+      <div className="text-center text-red-400">Error: {error}</div>
+    ) : exams.length === 0 ? (
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
+        <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-200 mb-2">No Exams Found</h3>
+        <p className="text-gray-400 max-w-md mx-auto mb-6">
+          There are no exams available to view logs for.
+        </p>
+      </div>
+    ) : (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {exams.map((exam) => (
+          <Card
+            key={exam.temp_exam_id}
+            className="bg-[#1f2937] border border-gray-700 hover:shadow-lg transition-shadow duration-300"
+          >
+            <CardHeader className="bg-[#111827] pb-4">
+              <div>
+                <CardTitle className="text-lg font-semibold text-white">
+                  {exam.exam_title}
+                </CardTitle>
+                <CardDescription className="text-sm text-gray-400">
+                  Exam ID: {exam.temp_exam_id}
+                </CardDescription>
+              </div>
+            </CardHeader>
+  
+            <CardContent className="py-4 flex justify-end">
+              <Link
+                href={`/dashboard_instructor/exam_logs/${exam.temp_exam_id}`}
+                passHref
+              >
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  View Logs <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )}
+  </div>
+  
   );
 }
