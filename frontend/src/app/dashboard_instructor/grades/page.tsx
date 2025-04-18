@@ -23,34 +23,26 @@ import { Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { getClientSideToken } from "@/lib/cookies";
 
+interface Grade {
+  student_id: number;
+  student_username: string;
+  exam_id: number;
+  exam_title: string;
+  score: number;
+  submitted_at: string;
+  branch?: string; // Added for branch from API
+  track?: string; // Added for track from API
+}
+
 interface StudentGrade {
   id: string;
   name: string;
   examTitle: string;
   examDate: string;
   score: number;
-  totalPoints: number;
-  track?: string;
+  examId: string;
   branch?: string;
-  course?: string;
-  examInstanceId: string;
-}
-
-interface ApiResponse {
-  exam_instance_id: number;
-  exam_title: string;
-  start_datetime: string;
-  course?: string;
-  students_scores: {
-    total_points: number;
-    student: string;
-    track?: string;
-    branch?: string;
-    course?: string;
-    score: number;
-    mcq_answers: Record<string, any>;
-    coding_answers: Record<string, any>;
-  }[];
+  track?: string;
 }
 
 export default function GradesPage() {
@@ -61,13 +53,11 @@ export default function GradesPage() {
   const [nameFilter, setNameFilter] = useState("");
   const [examFilter, setExamFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [trackFilter, setTrackFilter] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
-  const [courseFilter, setCourseFilter] = useState("");
-  const [tracks, setTracks] = useState<string[]>([]);
+  const [trackFilter, setTrackFilter] = useState("");
   const [exams, setExams] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
-  const [courses, setCourses] = useState<string[]>([]);
+  const [tracks, setTracks] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -103,48 +93,44 @@ export default function GradesPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data: ApiResponse[] = await response.json();
+        const data: { grades: Grade[] } = await response.json();
+        console.log("Fetched grades data:", data);
 
-        const transformedData: StudentGrade[] = [];
-        const uniqueTracks = new Set<string>();
-        const uniqueExams = new Set<string>();
-        const uniqueBranches = new Set<string>();
-        const uniqueCourses = new Set<string>();
+        const transformedData: StudentGrade[] = data.grades.map((grade) => ({
+          id: `${grade.exam_id}-${grade.student_id}`,
+          name: grade.student_username,
+          examTitle: grade.exam_title,
+          examDate: grade.submitted_at,
+          score: grade.score,
+          examId: grade.exam_id.toString(),
+          branch: grade.branch || undefined,
+          track: grade.track || undefined,
+        }));
 
-        data.forEach((examInstance) => {
-          examInstance.students_scores.forEach((studentScore) => {
-            transformedData.push({
-              id: `${examInstance.exam_instance_id}-${studentScore.student}`,
-              name: studentScore.student,
-              examTitle: examInstance.exam_title,
-              examDate: examInstance.start_datetime,
-              score: studentScore.score,
-              totalPoints: studentScore.total_points,
-              track: studentScore.track,
-              branch: studentScore.branch,
-              course: studentScore.course,
-              examInstanceId: examInstance.exam_instance_id.toString(),
-            });
-
-            if (studentScore.track) {
-              uniqueTracks.add(studentScore.track);
-            }
-            if (studentScore.branch) {
-              uniqueBranches.add(studentScore.branch);
-            }
-            if (studentScore.course) {
-              uniqueCourses.add(studentScore.course);
-            }
-            uniqueExams.add(examInstance.exam_title);
-          });
-        });
+        // Get unique values for filters
+        const uniqueExams = Array.from(
+          new Set(data.grades.map((grade) => grade.exam_title))
+        );
+        const uniqueBranches = Array.from(
+          new Set(
+            data.grades
+              .map((grade) => grade.branch)
+              .filter((branch): branch is string => !!branch)
+          )
+        );
+        const uniqueTracks = Array.from(
+          new Set(
+            data.grades
+              .map((grade) => grade.track)
+              .filter((track): track is string => !!track)
+          )
+        );
 
         setGrades(transformedData);
         setFilteredGrades(transformedData);
-        setTracks(Array.from(uniqueTracks));
-        setExams(Array.from(uniqueExams));
-        setBranches(Array.from(uniqueBranches));
-        setCourses(Array.from(uniqueCourses));
+        setExams(uniqueExams);
+        setBranches(uniqueBranches);
+        setTracks(uniqueTracks);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -168,49 +154,38 @@ export default function GradesPage() {
         );
       }
 
-      if (examFilter) {
+      if (examFilter && examFilter !== "all") {
         result = result.filter((grade) =>
           grade.examTitle.toLowerCase().includes(examFilter.toLowerCase())
         );
       }
 
       if (dateFilter) {
-        result = result.filter((grade) => grade.examDate.includes(dateFilter));
-      }
-
-      if (trackFilter && trackFilter !== "all") {
-        result = result.filter((grade) => grade.track === trackFilter);
+        result = result.filter((grade) =>
+          grade.examDate.split("T")[0].includes(dateFilter)
+        );
       }
 
       if (branchFilter && branchFilter !== "all") {
         result = result.filter((grade) => grade.branch === branchFilter);
       }
 
-      if (courseFilter && courseFilter !== "all") {
-        result = result.filter((grade) => grade.course === courseFilter);
+      if (trackFilter && trackFilter !== "all") {
+        result = result.filter((grade) => grade.track === trackFilter);
       }
 
       setFilteredGrades(result);
     };
 
     applyFilters();
-  }, [
-    nameFilter,
-    examFilter,
-    dateFilter,
-    trackFilter,
-    branchFilter,
-    courseFilter,
-    grades,
-  ]);
+  }, [nameFilter, examFilter, dateFilter, branchFilter, trackFilter, grades]);
 
   const resetFilters = () => {
     setNameFilter("");
     setExamFilter("");
     setDateFilter("");
-    setTrackFilter("");
     setBranchFilter("");
-    setCourseFilter("");
+    setTrackFilter("");
   };
 
   if (loading) {
@@ -285,25 +260,6 @@ export default function GradesPage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="track-filter" className="text-sm font-medium">
-              Track
-            </label>
-            <Select value={trackFilter} onValueChange={setTrackFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Tracks" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tracks</SelectItem>
-                {tracks.map((track) => (
-                  <SelectItem key={track} value={track}>
-                    {track}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <label htmlFor="branch-filter" className="text-sm font-medium">
               Branch
             </label>
@@ -323,18 +279,18 @@ export default function GradesPage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="course-filter" className="text-sm font-medium">
-              Course
+            <label htmlFor="track-filter" className="text-sm font-medium">
+              Track
             </label>
-            <Select value={courseFilter} onValueChange={setCourseFilter}>
+            <Select value={trackFilter} onValueChange={setTrackFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="All Courses" />
+                <SelectValue placeholder="All Tracks" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Courses</SelectItem>
-                {courses.map((course) => (
-                  <SelectItem key={course} value={course}>
-                    {course}
+                <SelectItem value="all">All Tracks</SelectItem>
+                {tracks.map((track) => (
+                  <SelectItem key={track} value={track}>
+                    {track}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -366,9 +322,8 @@ export default function GradesPage() {
                 <TableHead>Student Name</TableHead>
                 <TableHead>Exam Title</TableHead>
                 <TableHead>Exam Date</TableHead>
-                <TableHead>Track</TableHead>
                 <TableHead>Branch</TableHead>
-                <TableHead>Course</TableHead>
+                <TableHead>Track</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -382,16 +337,13 @@ export default function GradesPage() {
                     <TableCell>
                       {new Date(grade.examDate).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{grade.track || "-"}</TableCell>
                     <TableCell>{grade.branch || "-"}</TableCell>
-                    <TableCell>{grade.course || "-"}</TableCell>
-                    <TableCell className="font-medium">
-                      {grade.score}/{grade.totalPoints}
-                    </TableCell>
+                    <TableCell>{grade.track || "-"}</TableCell>
+                    <TableCell className="font-medium">{grade.score}</TableCell>
                     <TableCell>
                       <Link
                         href={`/dashboard_instructor/grades/${
-                          grade.examInstanceId
+                          grade.examId
                         }?student=${encodeURIComponent(grade.name)}`}
                         className="text-primary hover:underline"
                       >
@@ -403,7 +355,7 @@ export default function GradesPage() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="text-center py-8 text-muted-foreground"
                   >
                     No results found. Try adjusting your filters.

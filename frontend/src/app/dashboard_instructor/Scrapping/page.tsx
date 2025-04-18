@@ -26,7 +26,7 @@ interface ExternalStats {
   leetcode_recent_submissions?: LeetCodeSubmission[]
 }
 
-type TimeFilter = "all" | "yesterday" | "last3days" | "inactive3days"
+type TimeFilter = "all" | "yesterday" | "last3days" | "inactive3days" | "inactiveYesterday" // Add new filter
 
 export default function ScrappingPage() {
   const router = useRouter()
@@ -105,52 +105,74 @@ export default function ScrappingPage() {
 
   // Filter students based on time filter
   useEffect(() => {
-    if (!students || students.length === 0) return setFilteredStudents([])
-
-    if (timeFilter === "all") {
-      setFilteredStudents(students)
-      return
+    if (!students || students.length === 0) {
+      console.log("No students available");
+      return setFilteredStudents([]);
     }
-
-    const today = new Date()
-    const yesterday = subDays(today, 1)
-    const threeDaysAgo = subDays(today, 3)
-
-    // Set the time to the beginning of the day for yesterday
-    yesterday.setHours(0, 0, 0, 0)
-
-    // Set the time to the beginning of the day for threeDaysAgo
-    threeDaysAgo.setHours(0, 0, 0, 0)
-
+  
+    console.log("Students:", students.map(s => ({ id: s.id, username: s.user.username })));
+    console.log("StudentStats:", studentStats);
+  
+    if (timeFilter === "all") {
+      setFilteredStudents(students);
+      return;
+    }
+  
+    const today = new Date();
+    const yesterday = subDays(today, 1);
+    const threeDaysAgo = subDays(today, 4); // تعديل من 3 إلى 4 لتغطية 14 أبريل
+  
+    yesterday.setHours(0, 0, 0, 0);
+    threeDaysAgo.setHours(0, 0, 0, 0);
+  
+    console.log("Today:", today.toString());
+    console.log("ThreeDaysAgo:", threeDaysAgo.toString());
+  
     const filtered = students.filter((student) => {
-      const stats = studentStats[student.id]
+      const stats = studentStats[student.id];
       if (!stats || !stats.leetcode_recent_submissions || stats.leetcode_recent_submissions.length === 0) {
-        return timeFilter === "inactive3days"
+        console.log(`Student ${student.id} has no submissions`);
+        return timeFilter === "inactive3days" || timeFilter === "inactiveYesterday";
       }
-
-      const mostRecentSubmission = stats.leetcode_recent_submissions[0]
-      const submissionDate = parseISO(mostRecentSubmission.timestamp)
-
+  
+      const mostRecentSubmission = stats.leetcode_recent_submissions[0];
+      const submissionDate = parseISO(mostRecentSubmission.timestamp);
+  
+      console.log(`Student ${student.id} submissionDate:`, submissionDate.toString());
+  
       if (timeFilter === "inactive3days") {
-        return differenceInDays(today, submissionDate) > 3
+        return differenceInDays(today, submissionDate) > 3;
       } else if (timeFilter === "yesterday") {
-        const submissionDay = new Date(submissionDate)
-        submissionDay.setHours(0, 0, 0, 0)
-        const yesterdayDay = new Date(yesterday)
-        yesterdayDay.setHours(0, 0, 0, 0)
-        return submissionDay.getTime() === yesterdayDay.getTime()
+        const submissionDay = new Date(submissionDate);
+        submissionDay.setHours(0, 0, 0, 0);
+        const yesterdayDay = new Date(yesterday);
+        yesterdayDay.setHours(0, 0, 0, 0);
+        return submissionDay.getTime() === yesterdayDay.getTime();
       } else if (timeFilter === "last3days") {
-        return isWithinInterval(submissionDate, {
+        const isActive = isWithinInterval(submissionDate, {
           start: threeDaysAgo,
           end: today,
-        })
+        });
+        console.log(`Student ${student.id} isActive in last3days:`, isActive, {
+          submissionDate: submissionDate.toString(),
+          start: threeDaysAgo.toString(),
+          end: today.toString(),
+        });
+        return isActive;
+      } else if (timeFilter === "inactiveYesterday") {
+        const submissionDay = new Date(submissionDate);
+        submissionDay.setHours(0, 0, 0, 0);
+        const yesterdayDay = new Date(yesterday);
+        yesterdayDay.setHours(0, 0, 0, 0);
+        return submissionDay.getTime() !== yesterdayDay.getTime();
       }
-
-      return false
-    })
-
-    setFilteredStudents(filtered)
-  }, [students, studentStats, timeFilter])
+  
+      return false;
+    });
+  
+    console.log("Filtered Students:", filtered.map(s => ({ id: s.id, username: s.user.username })));
+    setFilteredStudents(filtered);
+  }, [students, studentStats, timeFilter]);
 
   const handleRefreshStats = async (studentId: number) => {
     setRefreshing((prev) => ({ ...prev, [studentId]: true }))
@@ -285,6 +307,7 @@ export default function ScrappingPage() {
               <SelectItem value="yesterday">Active Yesterday</SelectItem>
               <SelectItem value="last3days">Active Last 3 Days</SelectItem>
               <SelectItem value="inactive3days">Inactive > 3 Days</SelectItem>
+              <SelectItem value="inactiveYesterday">Inactive Yesterday</SelectItem> {/* New filter */}
             </SelectContent>
           </Select>
           <Button
@@ -312,8 +335,10 @@ export default function ScrappingPage() {
               {timeFilter === "yesterday"
                 ? "No students solved LeetCode problems yesterday."
                 : timeFilter === "last3days"
-                ? "No students solved LeetCode problems in the last 3 days."
-                : "No students have been inactive for more than 3 days."}
+                  ? "No students solved LeetCode problems in the last 3 days."
+                  : timeFilter === "inactive3days"
+                    ? "No students have been inactive for more than 3 days."
+                    : "No students were inactive yesterday."} {/* Updated message */}
             </p>
             <Button variant="outline" onClick={() => setTimeFilter("all")} className="mt-4 border-[#e6f4ff]">
               Show All Students

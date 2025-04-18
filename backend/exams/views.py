@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import subprocess
 from django.http import JsonResponse
+from numpy import convolve
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,7 +23,6 @@ from django.conf import settings
 import logging
 from django.utils import timezone
 from django.db.models import Q
-
 
 
 logger = logging.getLogger(__name__)
@@ -498,6 +498,11 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
     @permission_classes([IsAuthenticated])
     def submit_exam_answer(self, request):
         student = request.user
+        # Validate user is a student
+        if not hasattr(student, 'student'):
+            return Response({"error": "User is not a student."}, 
+                        status=status.HTTP_403_FORBIDDEN)
+            
         
         # Validate data structure
         if not isinstance(request.data, dict):
@@ -528,7 +533,8 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
 
             # Create or get the exam answer record
             exam_answer, created = StudentExamAnswer.objects.get_or_create(
-                student=student,
+                student=Student.objects.get(user__username=Student.objects.get(user=student).user.username)  ,
+                 
                 exam_instance=exam_instance
             )
 
@@ -584,119 +590,167 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
             logger.error(f"Error in get_student_answer: {str(e)}", exc_info=True)
             return Response({"error": f"An error occurred: {str(e)}"}, 
                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+   
     @action(detail=False, methods=['get'])
     def get_all_student_scores(self, request):
-        """Get all students' scores for all exams (filtered by instructor's tracks/branches)"""
+        user = request.user
+
+        if not user:
+            return Response({"error": "instructor_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            # Get the current instructor profile
+            instructor = Instructor.objects.get(user=user)
+        except Instructor.DoesNotExist:
+            return Response({"error": "Instructor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all exam instances assigned by this instructor
+        exam_instances = TemporaryExamInstance.objects.filter(instructor_id__user=request.user)
+
+        # Get student answers related to these exam instances
+        answers = StudentExamAnswer.objects.filter(
+            exam_instance__in=exam_instances
+        ).select_related('student', 'exam_instance__exam')
+
+        # Prepare the results
+        results = []
+        for answer in answers:
+            results.append({
+                "student_id": answer.student.id,
+                "student_username": answer.student.user.username,
+                'branch': answer.student.branch.name if answer.student.branch else None,
+                'track': answer.student.track.name if answer.student.track else None,
+                "exam_id": answer.exam_instance.id,
+                "exam_title": answer.exam_instance.exam.title,
+                "score": answer.score,
+                "submitted_at": answer.submitted_at
+            })
+        return Response({"grades": results}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def get_answers(self, request):
+        """Get detailed answers for a specific student and exam"""
+        try:
+            exam_instance_id = request.query_params.get('exam_instance_id')
+            student_name = request.query_params.get('student_name')
+            if not exam_instance_id or not student_name:
+                return Response(
+                    {"error": "Both exam_instance_id and student_name parameters are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             try:
-                instructor_profile = request.user.instructor
-            except AttributeError:
-                return Response({"error": "User is not an instructor"}, 
-                            status=status.HTTP_403_FORBIDDEN)
+                exam_instance_id = int(exam_instance_id)
+            except ValueError:
+                return Response(
+                    {"error": "exam_instance_id must be an integer."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            # Get the tracks and branches this instructor is associated with
-            instructor_tracks = instructor_profile.tracks.all()  # From ManyToMany relationship
-            instructor_branch = instructor_profile.branch  # From ForeignKey (could be None)
-            
-            # Get all exam instances that have student answers
-            exam_instance_ids = StudentExamAnswer.objects.values_list(
-                'exam_instance_id', flat=True
-            ).distinct()
-            
-            result = []
+            # Get the student object by username
+            try:
+                student = Student.objects.get(user__username=student_name)          
+            # student = Student.objects.get(user__username=student_name)                
+            except Student.DoesNotExist:
+                return Response(
+                    {"error": f"Student with username {student_name} not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-            for exam_instance_id in exam_instance_ids:
+            # Get the student's answer for this exam instance
+            try:
+                student_answer = StudentExamAnswer.objects.get(
+                    exam_instance_id=exam_instance_id,
+                    student=student
+                )
+            except StudentExamAnswer.DoesNotExist:
+                return Response(
+                    {"error": "No answers found for this student and exam instance."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            exam_instance = student_answer.exam_instance
+            answer_data = student_answer.get_answers()
+
+            # Calculate total possible points
+            mcq_total = MCQQuestion.objects.filter(
+                exam=exam_instance.exam
+            ).aggregate(total=Sum('points'))['total'] or 0
+
+            coding_total = CodingQuestion.objects.filter(
+                exam=exam_instance.exam
+            ).aggregate(total=Sum('points'))['total'] or 0
+
+            mcq_points = float(mcq_total) if mcq_total else 0.0
+            coding_points = float(coding_total) if coding_total else 0.0
+
+            total_points = mcq_points + coding_points
+
+            # Format MCQ answers with question details
+            mcq_answers = []
+            for qid, selected_oid in answer_data.get("mcq_answers", {}).items():
                 try:
-                    exam_instance = TemporaryExamInstance.objects.get(id=exam_instance_id)
-                    
-                    # Get exam details
-                    exam_title = exam_instance.exam.title
-                    start_datetime = exam_instance.start_datetime
-                    
-                    # Base query for student answers
-                    exam_instance_answers = StudentExamAnswer.objects.filter(
-                        exam_instance_id=exam_instance_id
-                    )
-                    
-                    # Apply filtering based on instructor's tracks and branch
-                    if instructor_tracks.exists() or instructor_branch:
-                        # Create Q objects for filtering
-                        track_filter = Q(student__student__track__in=instructor_tracks) if instructor_tracks.exists() else Q()
-                        branch_filter = Q(student__student__branch=instructor_branch) if instructor_branch else Q()
-                        
-                        # Apply filters with OR condition (student can be in either matching track OR branch)
-                        exam_instance_answers = exam_instance_answers.filter(
-                            track_filter | branch_filter
-                        )
-                    
-                    # If no answers after filtering, skip this exam instance
-                    if not exam_instance_answers.exists():
-                        continue
-                    
-                    # Calculate total possible points for the exam
-                    mcq_total = MCQQuestion.objects.filter(
-                        exam=exam_instance.exam
-                    ).aggregate(total=Sum('points'))['total'] or 0
-                    
-                    coding_total = CodingQuestion.objects.filter(
-                        exam=exam_instance.exam
-                    ).aggregate(total=Sum('points'))['total'] or 0
-                    
-                    # Convert to float to ensure consistent type
-                    try:
-                        mcq_points = float(mcq_total)
-                    except (ValueError, TypeError):
-                        mcq_points = 0.0
-                        
-                    try:
-                        coding_points = float(coding_total)
-                    except (ValueError, TypeError):
-                        coding_points = 0.0
-                    
-                    total_points = mcq_points + coding_points
-                    
-                    # Format student scores
-                    students_scores = []
-                    for answer in exam_instance_answers:
-                        try:
-                            student_profile = answer.student.student
-                            answers = answer.get_answers()
-                            
-                            student_data = {
-                                "student": answer.student.username,
-                                "track": student_profile.track.name if student_profile.track else None,
-                                "branch": student_profile.branch.name if student_profile.branch else None,
-                                "score": answer.score,
-                                "total_points": total_points,
-                                "mcq_answers": answers.get("mcq_answers", {}),
-                                "coding_answers": answers.get("coding_answers", {})
-                            }
-                            students_scores.append(student_data)
-                        except AttributeError:
-                            # Skip if student profile is missing
-                            continue
-                    
-                    # Add exam instance data to results
-                    result.append({
-                        "exam_instance_id": exam_instance_id,
-                        "exam_title": exam_title,
-                        "start_datetime": start_datetime,
-                        "students_scores": students_scores
+                    question = MCQQuestion.objects.get(id=qid)
+                    option_field = f"option_{selected_oid.lower()}"
+                    selected_option = getattr(question, option_field, None)
+
+                    correct_option_field = f"option_{question.correct_option.lower()}"
+                    correct_option = getattr(question, correct_option_field, None)
+
+                    mcq_answers.append({
+                        "question_id": qid,
+                        "question_text": question.question_text,
+                        "student_answer": selected_option or "N/A",
+                        "correct_answer": correct_option or "N/A",
+                        "is_correct": selected_oid.upper() == question.correct_option.upper()
                     })
-                    
-                except TemporaryExamInstance.DoesNotExist:
-                    # Skip this exam instance if it doesn't exist
+                except MCQQuestion.DoesNotExist:
                     continue
 
-            return Response(result, status=status.HTTP_200_OK)
-            
+            # Format coding answers with question details
+            coding_answers = []
+            for qid, student_code in answer_data.get("coding_answers", {}).items():
+                try:
+                    coding_question = CodingQuestion.objects.get(id=qid)
+
+                    test_results = next(
+                        (r.get('test_results', []) for r in answer_data.get('code_results', []) 
+                        if str(r.get('question_id')) == str(qid)),
+                        []
+                    )
+
+                    passed = sum(1 for t in test_results if t.get('isSuccess', False))
+                    total = len(test_results)
+                    pass_rate = f"{passed}/{total}"
+
+                    coding_answers.append({
+                        "question_id": qid,
+                        "title": coding_question.title,
+                        "description": coding_question.description,
+                        "student_code": student_code,
+                        "test_results": test_results,
+                        "pass_rate": pass_rate,
+                        "all_passed": passed == total and total > 0
+                    })
+                except CodingQuestion.DoesNotExist:
+                    continue
+
+            response_data = {
+                "exam_title": exam_instance.exam.title,
+                "student_name": student_answer.student.user.username,
+                "score": student_answer.score,
+                "total_points": total_points,
+                "mcq_answers": mcq_answers,
+                "coding_answers": coding_answers,
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.error(f"Error in get_all_student_scores: {str(e)}", exc_info=True)
-            return Response({"error": f"An error occurred: {str(e)}"}, 
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
     @action(detail=False, methods=['get'])
     def get_user_exams_scores(self, request):
         """Get all exams and scores for the current user"""
@@ -704,7 +758,11 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
         
         try:
             # Get all exam answers for the current user
-            student_answers = StudentExamAnswer.objects.filter(student=student)
+            student_answers = StudentExamAnswer.objects.filter(student=Student.objects.get(user__username=Student.objects.get(user=student).user.username) )
+            if not student_answers.exists():    
+                return Response({"message": "No exams found for this user."}, 
+                            status=status.HTTP_404_NOT_FOUND)
+            # Prepare the results
 
             result = []
 
@@ -747,149 +805,14 @@ class StudentExamAnswerViewSet(viewsets.ViewSet):
                 return Response(result, status=status.HTTP_200_OK)
             else:
                 return Response({"message": "No exams found for this user."}, 
-                             status=status.HTTP_404_NOT_FOUND)
+                            status=status.HTTP_404_NOT_FOUND)
                 
         except Exception as e:
             import traceback
             print(f"Error in get_user_exams_scores: {str(e)}")
             print(traceback.format_exc())
             return Response({"error": f"An error occurred: {str(e)}"}, 
-                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    @action(detail=False, methods=['get'])
-    def get_answers(self, request):
-        """Get detailed answers for a specific student and exam"""
-        try:
-            exam_instance_id = request.query_params.get('exam_instance_id')
-            student_name = request.query_params.get('student_name')
-
-            if not exam_instance_id or not student_name:
-                return Response(
-                    {"error": "Both exam_instance_id and student_name parameters are required."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            try:
-                exam_instance_id = int(exam_instance_id)
-            except ValueError:
-                return Response(
-                    {"error": "exam_instance_id must be an integer."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Get the student's answer for this exam
-            student_answer = StudentExamAnswer.objects.get(
-                exam_instance_id=exam_instance_id,
-                student__username=student_name
-            )
-
-            exam_instance = student_answer.exam_instance
-            answer_data = student_answer.get_answers()
-
-            # Calculate total possible points
-            mcq_total = MCQQuestion.objects.filter(
-                exam=exam_instance.exam
-            ).aggregate(total=Sum('points'))['total'] or 0
-            
-            coding_total = CodingQuestion.objects.filter(
-                exam=exam_instance.exam
-            ).aggregate(total=Sum('points'))['total'] or 0
-            
-            # Convert to float to ensure consistent type
-            try:
-                mcq_points = float(mcq_total)
-            except (ValueError, TypeError):
-                mcq_points = 0.0
-                
-            try:
-                coding_points = float(coding_total)
-            except (ValueError, TypeError):
-                coding_points = 0.0
-            
-            total_points = mcq_points + coding_points
-
-            # Format MCQ answers with question details
-            mcq_answers = []
-            for qid, selected_oid in answer_data.get("mcq_answers", {}).items():
-                try:
-                    # Get the question
-                    question = MCQQuestion.objects.get(id=qid)
-
-                    # Map option ID to option text
-                    option_field = f"option_{selected_oid.lower()}"
-                    selected_option = getattr(question, option_field, None)
-
-                    # Get correct option text
-                    correct_option_field = f"option_{question.correct_option.lower()}"
-                    correct_option = getattr(question, correct_option_field, None)
-
-                    mcq_answers.append({
-                        "question_id": qid,
-                        "question_text": question.question_text,
-                        "student_answer": selected_option or "N/A",
-                        "correct_answer": correct_option or "N/A",
-                        "is_correct": selected_oid.upper() == question.correct_option.upper()
-                    })
-                except MCQQuestion.DoesNotExist:
-                    continue
-
-            # Format coding answers with question details
-            coding_answers = []
-            for qid, student_code in answer_data.get("coding_answers", {}).items():
-                try:
-                    coding_question = CodingQuestion.objects.get(id=qid)
-                    
-                    # Get test results for this question
-                    test_results = next(
-                        (r.get('test_results', []) for r in answer_data.get('code_results', []) 
-                         if str(r.get('question_id')) == str(qid)),
-                        []
-                    )
-                    
-                    # Calculate pass rate
-                    passed = sum(1 for t in test_results if t.get('isSuccess', False))
-                    total = len(test_results)
-                    pass_rate = f"{passed}/{total}"
-                    
-                    coding_answers.append({
-                        "question_id": qid,
-                        "title": coding_question.title,
-                        "description": coding_question.description,
-                        "student_code": student_code,
-                        "test_results": test_results,
-                        "pass_rate": pass_rate,
-                        "all_passed": passed == total and total > 0
-                    })
-                except CodingQuestion.DoesNotExist:
-                    continue
-
-            # Prepare response
-            response_data = {
-                "exam_title": exam_instance.exam.title,
-                "student_name": student_answer.student.get_full_name() or student_answer.student.username,
-                "score": student_answer.score,
-                "total_points": total_points,
-                "mcq_answers": mcq_answers,
-                "coding_answers": coding_answers,
-            }
-            
-            return Response(response_data, status=status.HTTP_200_OK)
-
-        except StudentExamAnswer.DoesNotExist:
-            return Response(
-                {"error": "No exam answers found for the specified student and exam instance."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            import traceback
-            print(f"Error in get_answers: {str(e)}")
-            print(traceback.format_exc())
-            return Response(
-                {"error": f"An unexpected error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CheatingLogView(APIView):
     permission_classes = [IsAuthenticated]

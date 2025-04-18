@@ -28,19 +28,40 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
   const [faceDetected, setFaceDetected] = useState(false);
   const [detectionInterval, setDetectionInterval] =
     useState<NodeJS.Timeout | null>(null);
+  const [lastAlertTime, setLastAlertTime] = useState<{ [key: string]: number }>(
+    {}
+  );
 
-  // Load face-api models  const [isKickedOut, setIsKickedOut] = useState(false);
+  // Utility to debounce alerts
+  const showAlert = (message: string, type: "warn" | "error", id: string) => {
+    const now = Date.now();
+    const lastAlert = lastAlertTime[id] || 0;
+    
+    // Only show alert if 5 seconds have passed since last alert of this type
+    if (now - lastAlert < 5000) return;
+    
+    setLastAlertTime((prev) => ({ ...prev, [id]: now }));
+    
+    const toastStyles = {
+      warn: { backgroundColor: "#FF9800", color: "#FFFFFF" }, // Orange for warnings
+      error: { backgroundColor: "#EF4444", color: "#FFFFFF" }, // Red for errors
+    };
 
+    toast[type](message, {
+      toastId: id,
+      style: toastStyles[type],
+      autoClose: 3000,
+    });
+  };
+
+  // Load face-api models
   useEffect(() => {
     const loadModels = async () => {
       try {
         setLoadingMessage("Loading face detection models...");
-
-        // Use a more reliable CDN for the models
         const MODEL_URL =
           "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
-        // Only load the models we actually need
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -55,8 +76,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
           "Failed to load face detection models. Please refresh the page and try again."
         );
         setIsLoading(false);
-
-        // Fallback to simple camera monitoring without face detection
         startSimpleMonitoring();
       }
     };
@@ -64,10 +83,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     loadModels();
 
     return () => {
-      // Clean up
-      if (detectionInterval) {
-        clearInterval(detectionInterval);
-      }
+      if (detectionInterval) clearInterval(detectionInterval);
     };
   }, []);
 
@@ -78,16 +94,11 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     const startVideoStream = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 640,
-            height: 480,
-            facingMode: "user",
-          },
+          video: { width: 640, height: 480, facingMode: "user" },
         });
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-
           videoRef.current.onloadedmetadata = () => {
             if (videoRef.current) {
               videoRef.current
@@ -95,7 +106,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
                 .then(() => {
                   console.log("Video is playing, starting face detection");
                   setIsLoading(false);
-                  // Wait a moment to ensure video is fully initialized
                   setTimeout(() => startFaceDetection(), 1000);
                 })
                 .catch((err) => {
@@ -120,20 +130,15 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     startVideoStream();
   }, [modelsLoaded]);
 
-  // Fallback to simple camera monitoring without face detection
+  // Fallback to simple camera monitoring
   const startSimpleMonitoring = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 640,
-          height: 480,
-          facingMode: "user",
-        },
+        video: { width: 640, height: 480, facingMode: "user" },
       });
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
             videoRef.current
@@ -141,9 +146,8 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
               .then(() => {
                 console.log("Video is playing, using simple monitoring");
                 setIsLoading(false);
-                setFaceDetected(true); // Assume face is detected since we can't check
+                setFaceDetected(true);
 
-                // Simple interval to check if video is still playing
                 const interval = setInterval(() => {
                   if (videoRef.current && videoRef.current.paused) {
                     console.log("Video paused, possible violation");
@@ -177,23 +181,17 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         logCheating("User switched to a new tab or minimized the browser");
-        toast.warn("You switched to a new tab or minimized the browser.", {
-          style: {
-            backgroundColor: "#FFD700",
-            color: "black",
-          },
-        });
-
-        // Mark exam as violated for tab switching
+        showAlert(
+          "Warning: Tab switching detected. Please stay on the exam page.",
+          "warn",
+          "tab-switch"
+        );
         markExamAsViolated("Tab switching detected");
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
   // Set up copy prevention
@@ -201,22 +199,16 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault();
       logCheating("User attempted to copy content");
-      toast.warn("Copying content is not allowed.", {
-        style: {
-          backgroundColor: "#FFD700",
-          color: "black",
-        },
-      });
-
-      // Mark exam as violated for copying
+      showAlert(
+        "Warning: Copying content is prohibited during the exam.",
+        "warn",
+        "copy-attempt"
+      );
       markExamAsViolated("Copy attempt detected");
     };
 
     document.addEventListener("copy", handleCopy as EventListener);
-
-    return () => {
-      document.removeEventListener("copy", handleCopy as EventListener);
-    };
+    return () => document.removeEventListener("copy", handleCopy as EventListener);
   }, []);
 
   const startFaceDetection = () => {
@@ -230,7 +222,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
 
@@ -239,32 +230,21 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
 
     console.log("Starting face detection interval");
 
-    // Run face detection every 500ms
     const interval = setInterval(async () => {
       if (video.paused || video.ended || !modelsLoaded) return;
 
       try {
-        // Only use TinyFaceDetector which is more reliable
         const detections = await faceapi
           .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks();
 
-        // Resize detections to match display size
-        const resizedDetections = faceapi.resizeResults(
-          detections,
-          displaySize
-        );
-
-        // Get canvas context and clear previous drawings
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Draw detections and landmarks
           faceapi.draw.drawDetections(canvas, resizedDetections);
           faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
 
-          // Check if face is detected
           if (detections.length === 0) {
             console.log("No face detected");
             setFaceDetected(false);
@@ -272,28 +252,22 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
               const newCount = prevCount + 1;
               console.log("No face count:", newCount);
 
-              // If no face detected for 5 consecutive checks (2.5 seconds)
               if (newCount >= 5) {
-                const timeSinceLastDetection =
-                  Date.now() - lastFaceDetectionTime;
+                const timeSinceLastDetection = Date.now() - lastFaceDetectionTime;
 
-                // If no face for more than 5 seconds
                 if (timeSinceLastDetection > 5000) {
                   logCheating("No face detected for extended period");
-                  toast.error(
-                    "Your face is not detected! Please ensure you are in camera frame.",
-                    {
-                      toastId: "no-face-warning",
-                    }
+                  showAlert(
+                    "Please ensure your face is visible in the camera frame.",
+                    "error",
+                    "no-face-warning"
                   );
 
-                  // After 10 seconds of no face, consider it cheating
                   if (timeSinceLastDetection > 10000) {
-                    toast.error(
-                      "Suspicious activity recorded due to absence of face for extended period.",
-                      {
-                        toastId: "no-face-error",
-                      }
+                    showAlert(
+                      "Extended absence detected. This has been recorded.",
+                      "error",
+                      "no-face-error"
                     );
                     markExamAsViolated("Face not detected for extended period");
                   }
@@ -306,16 +280,12 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
             setFaceDetected(true);
             setNoFaceCount(0);
             setLastFaceDetectionTime(Date.now());
-
-            // Clear any no-face warnings
             toast.dismiss("no-face-warning");
             toast.dismiss("no-face-error");
           }
         }
       } catch (error) {
         console.error("Error during face detection:", error);
-
-        // If face detection fails, switch to simple monitoring
         clearInterval(interval);
         setError(
           "Face detection failed. Switching to simple camera monitoring."
@@ -328,27 +298,21 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
   };
 
   const markExamAsViolated = (reason: string) => {
-    // Store violation in localStorage
     localStorage.setItem(`exam_violated_${examId}`, "true");
     localStorage.setItem(`exam_violation_reason_${examId}`, reason);
 
-    // Redirect to dashboard
-    toast.error(
-      "Exam violation detected. You are being redirected to the dashboard.",
-      {
-        onClose: () => {
-          router.push("/dashboard_student");
-        },
-        autoClose: 3000,
-      }
+    showAlert(
+      "Exam violation detected. Redirecting to dashboard...",
+      "error",
+      "exam-violated"
     );
+
+    setTimeout(() => router.push("/dashboard_student"), 3000);
   };
 
   const logCheating = async (reason: string) => {
     try {
       console.log("Logging suspicious activity:", reason);
-
-      // Store in localStorage as backup
       const logs = JSON.parse(localStorage.getItem("exam_logs") || "[]");
       logs.push({
         exam_id: examId,
@@ -357,7 +321,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
       });
       localStorage.setItem("exam_logs", JSON.stringify(logs));
 
-      // Try to send to server if possible
       const token = getCookie("token");
       if (token) {
         try {
@@ -369,9 +332,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
               timestamp: new Date().toISOString(),
             },
             {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              headers: { Authorization: `Bearer ${token}` },
             }
           );
         } catch (apiError) {
@@ -393,38 +354,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     return match ? match[2] : null;
   };
 
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === "hidden") {
-      logCheating("User switched to a new tab or minimized the browser");
-      toast.warn("You switched to a new tab or minimized the browser.", {
-        style: { backgroundColor: "#FFD700", color: "black" },
-      });
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  const handleCopy = () => {
-    logCheating("User attempted to copy content");
-    toast.warn("Copying content is not allowed.", {
-      style: { backgroundColor: "#FFD700", color: "black" },
-    });
-  };
-
-  useEffect(() => {
-    document.addEventListener("copy", handleCopy);
-
-    return () => {
-      document.removeEventListener("copy", handleCopy);
-    };
-  }, []);
-
   return (
     <div
       style={{
@@ -432,10 +361,10 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
         width: "500px",
         height: "400px",
         marginTop: "2rem",
-        border: "2px solid #cbd5e1", // لون لبني خفيف
+        border: "2px solid #cbd5e1",
         borderRadius: "1rem",
         padding: "1rem",
-        backgroundColor: "#f8fafc", // لون خلفية فاتح
+        backgroundColor: "#f8fafc",
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
       }}
     >

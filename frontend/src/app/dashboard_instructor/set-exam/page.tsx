@@ -19,24 +19,23 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { sendNotification } from "../../../lib/actions/notification-actions" // Adjust the path as needed
-
+import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
 
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
-    ?.split("=")[1]
-  console.log("Token from cookie:", token)
+    ?.split("=")[1];
+  console.log("Token from cookie:", token);
 
-  if (!token) return null
+  if (!token) return null;
 
   try {
-    const decoded: any = jwtDecode(token)
-    return decoded.user_id || decoded.id
+    const decoded: any = jwtDecode(token);
+    return decoded.user_id || decoded.id;
   } catch (e) {
-    console.error("Invalid token:", e)
-    return null
+    console.error("Invalid token:", e);
+    return null;
   }
 }
 interface Track {
@@ -53,8 +52,14 @@ interface User {
 interface Student {
   id: number;
   user: User;
-  track: number | null;
-  branch: number | null;
+  track: {
+    id: number;
+    name: string;
+  } | null;
+  branch: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 interface InstructorData {
@@ -259,6 +264,7 @@ export default function SetExamPage() {
           },
         }
       );
+
       const data = await response.json();
       setAllStudents(data);
       setFilteredStudents(data);
@@ -290,13 +296,16 @@ export default function SetExamPage() {
     }
 
     // Apply track filter if selected
+    // Apply track filter if selected
     if (formData.track) {
-      result = result.filter((student) => student.track === formData.track);
+      result = result.filter((student) => student.track?.id === formData.track);
     }
 
     // Apply branch filter if selected
     if (formData.branch) {
-      result = result.filter((student) => student.branch === formData.branch);
+      result = result.filter(
+        (student) => student.branch?.id === formData.branch
+      );
     }
 
     setFilteredStudents(result);
@@ -397,57 +406,60 @@ export default function SetExamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     // Validation
     if (!formData.start_datetime) {
       toast.error("Please select start time");
       return;
     }
-  
+
     const selectedDateTime = new Date(formData.start_datetime);
     const now = new Date();
     if (selectedDateTime < now) {
       toast.error("Cannot schedule exam in the past");
       return;
     }
-  
+
     if (formData.students.length === 0) {
       toast.error("Please select at least one student");
       return;
     }
-  
+
     setLoading((prev) => ({ ...prev, submitting: true }));
-  
+
     try {
       const token = Cookies.get("token");
-  
+
       // Get instructor ID from token
       async function fetchInstructorId(): Promise<number> {
         const userId = await getUserIdFromToken();
         console.log("User ID from token:", userId);
-  
+
         if (!userId) throw new Error("User ID not found in token.");
-  
-        const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`);
+
+        const res = await fetch(
+          `http://127.0.0.1:8000/users/instructors/${userId}`
+        );
         if (!res.ok) throw new Error("Failed to fetch instructor ID");
-  
+
         const data = await res.json();
         console.log("Data from instructor API:", data);
-  
+
         return data.id;
       }
-  
+
       const instructorId = await fetchInstructorId();
-  
+
       const submitData = {
         ...formData,
         track: formData.track || undefined,
         branch: formData.branch || undefined,
-        instructor: instructorId,
+
+        instructor_id: user?.instructor_id, // This will be the instructor ID (5), not the user ID (14)
       };
-  
+
       console.log("Submitting exam data with instructor ID:", submitData);
-  
+
       const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
         method: "POST",
         headers: {
@@ -456,19 +468,23 @@ export default function SetExamPage() {
         },
         body: JSON.stringify(submitData),
       });
-  
+
       const responseData = await response.json();
-  
+
       if (!response.ok) {
-        throw new Error(responseData.message || "Failed to create temporary exam");
+        throw new Error(
+          responseData.message || "Failed to create temporary exam"
+        );
       }
-  
+
       toast.success("Exam scheduled successfully!");
-  
-      const examName = responseData.name || `Exam ${responseData.exam}`;  // If name is not available, fallback to exam ID or track name
-      const examStartDate = new Date(responseData.start_datetime).toLocaleString(); // Formatting the start date
+
+      const examName = responseData.name || `Exam ${responseData.exam}`; // If name is not available, fallback to exam ID or track name
+      const examStartDate = new Date(
+        responseData.start_datetime
+      ).toLocaleString(); // Formatting the start date
       const message = `A new exam "${examName}" has been scheduled for you at ${examStartDate}.`;
-  
+
       // Loop over students to send notification
       for (const studentId of formData.students) {
         try {
@@ -478,12 +494,14 @@ export default function SetExamPage() {
             message: message,
           });
         } catch (error) {
-          console.error(`Failed to send notification to student ${studentId}`, error);
+          console.error(
+            `Failed to send notification to student ${studentId}`,
+            error
+          );
         }
       }
-  
+
       router.push("/dashboard_instructor");
-  
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message || "Failed to schedule exam");
@@ -494,7 +512,6 @@ export default function SetExamPage() {
       setLoading((prev) => ({ ...prev, submitting: false }));
     }
   };
-  
 
   if (loading.exams || loading.tracks || loading.branches || loading.students) {
     return (
@@ -777,15 +794,10 @@ export default function SetExamPage() {
                           {student.user.email}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Track:{" "}
-                          {instructorTracks.find((t) => t.id === student.track)
-                            ?.name || "Unknown"}
+                          Track: {student.track?.name || "Unknown"}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Branch:{" "}
-                          {instructorBranches.find(
-                            (b) => b.id === student.branch
-                          )?.name || "Unknown"}
+                          Branch: {student.branch?.name || "Unknown"}
                         </div>
                       </label>
                     </div>
