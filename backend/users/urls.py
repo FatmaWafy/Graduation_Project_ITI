@@ -12,7 +12,8 @@ from .views import  (
     RegisterStudentsFromExcelAPIView,
     UploadUserProfileImage,
     ChangePasswordAPIView,
-    InstructorViewSet
+    InstructorViewSet ,
+    InstructorTrackListAPIView
 )
 from rest_framework.routers import DefaultRouter
  
@@ -39,7 +40,8 @@ urlpatterns = [
     path('students/<int:user_id>/update/', StudentViewSet.as_view({'patch': 'update'}), name='student-update'),
     path('students/delete-by-student-id/<int:student_id>/', StudentViewSet.as_view({'delete': 'delete_by_student_id'}), name='student-delete-by-id'),     # مسار الـ GET للحصول على الـ external stats للطالب
     path('students/<int:user_id>/external-stats/', StudentViewSet.as_view({'get': 'external_stats'}), name='student-external-stats'),
-    
+    path('instructor/<int:instructor_id>/tracks/', InstructorTrackListAPIView.as_view(), name='instructor-tracks'),
+
     path('instructors/<int:user_id>/', InstructorViewSet.as_view({'get': 'retrieve'}), name='instructor-detail'),
     path('branches/', BranchListCreateView.as_view(), name='branch-list-create'),
     path('branches/<int:pk>/', BranchRetrieveUpdateDestroyView.as_view(), name='branch-retrieve-update-destroy'),
@@ -53,5 +55,7 @@ urlpatterns = [
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
         path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
 
+
     path('', include(router.urls)),
+
 ]

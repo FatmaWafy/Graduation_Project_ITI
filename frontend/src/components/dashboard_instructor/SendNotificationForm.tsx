@@ -121,20 +121,34 @@ export function SendNotificationForm() {
       }
     }
 
-    const fetchTracks = async () => {
+    const fetchInstructorTracks = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/")
-        const data = await response.json()
-        console.log("tracks data:", data)
-        // إذا كانت البيانات تأتي مع الـ "id" و "name"، نقوم بتخزين الـ "name"
-        setTracks(data) // نحفظ فقط الـ name
+        // 1️⃣ Get userId from token
+        const userId = await getUserIdFromToken()
+        console.log("User ID from token:", userId)
+        if (!userId) throw new Error("User ID not found in token.")
+    
+        // 2️⃣ Get instructorId using userId
+        const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`)
+        const instructorData = await res.json()
+        const instructorId = instructorData.id
+        console.log("Instructor ID:", instructorId)
+    
+        // 3️⃣ Fetch tracks for this instructor
+        const trackRes = await fetch(`http://127.0.0.1:8000/users/instructor/${instructorId}/tracks/`)
+        const trackData = await trackRes.json()
+        console.log("Tracks for instructor:", trackData)
+    
+        // 4️⃣ Set tracks
+        setTracks(trackData)
       } catch (error) {
-        console.error("Failed to fetch tracks:", error)
+        console.error("Failed to fetch instructor tracks:", error)
       }
     }
+    
 
     fetchStudents()
-    fetchTracks()
+    fetchInstructorTracks()
   }, [])
 
   const handleRecipientTypeChange = (value: RecipientType) => {
@@ -163,6 +177,7 @@ export function SendNotificationForm() {
 
     try {
       const instructor_id = await fetchInstructorId() // استخدم القيمة الثابتة مباشرة هنا.
+      console.log("Instructor ID:", instructor_id)
 
       const payload = {
         instructor_id,

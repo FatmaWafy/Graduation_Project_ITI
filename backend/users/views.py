@@ -1105,3 +1105,18 @@ class ChangeInstructorPasswordAPIView(APIView):
             return Response({"error": "Instructor not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+        
+class InstructorTrackListAPIView(APIView):
+    """
+    API endpoint to get tracks for a specific instructor.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, instructor_id):
+        try:
+            instructor = Instructor.objects.get(id=instructor_id)
+            tracks = instructor.tracks.all().values('id', 'name')  # Get only related tracks
+            return Response(tracks, status=status.HTTP_200_OK)
+        except Instructor.DoesNotExist:
+            return Response({'error': 'Instructor not found'}, status=status.HTTP_404_NOT_FOUND)
