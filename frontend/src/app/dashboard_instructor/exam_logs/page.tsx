@@ -81,6 +81,7 @@ export default function ExamLogsIndexPage() {
         }
 
         const responseData = await examsResponse.json();
+        console.log("Response Data:", responseData);
 
         // Handle both array and single object responses
         const examsData = Array.isArray(responseData)
