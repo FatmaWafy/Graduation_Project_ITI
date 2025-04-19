@@ -24,10 +24,6 @@ export function ExamLogsHeader({ examId }: ExamLogsHeaderProps) {
           Viewing logs for Exam #{examId}
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline">Export Logs</Button>
-        <Button variant="default">Refresh</Button>
-      </div>
     </div>
   );
 }

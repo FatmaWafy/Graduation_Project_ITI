@@ -1,25 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import type { ExamLog } from "../lib/types"
-import { formatDate } from "@/lib/utils"
+import { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import type { ExamLog } from "../lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface ExamLogsTableProps {
-  logs: ExamLog[]
+  logs: ExamLog[];
 }
 
 export function ExamLogsTable({ logs }: ExamLogsTableProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filteredLogs = logs.filter(
     (log) =>
       log.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      log.user.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card className="mt-8">
@@ -27,7 +40,9 @@ export function ExamLogsTable({ logs }: ExamLogsTableProps) {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <CardTitle>Activity Logs</CardTitle>
-            <CardDescription>{logs.length} log entries found for this exam</CardDescription>
+            <CardDescription>
+              {logs.length} log entries found for this exam
+            </CardDescription>
           </div>
           <div className="w-full md:w-64">
             <Input
@@ -46,7 +61,6 @@ export function ExamLogsTable({ logs }: ExamLogsTableProps) {
               <TableHead>User</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Timestamp</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -66,9 +80,6 @@ export function ExamLogsTable({ logs }: ExamLogsTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>{formatDate(log.timestamp)}</TableCell>
-                  <TableCell className="text-right">
-                    <button className="text-sm text-blue-600 hover:underline">View Details</button>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -76,7 +87,5 @@ export function ExamLogsTable({ logs }: ExamLogsTableProps) {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }
-
-
