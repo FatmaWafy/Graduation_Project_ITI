@@ -1,204 +1,220 @@
-"use client"
+"use client";
 
-import type React from "react"
+import React, { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { School, Eye, EyeOff, LockKeyhole, BookOpen, Award } from "lucide-react"
+export default function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-import Cookies from "js-cookie"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-
-export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-
-    try {
-      const res = await fetch("http://127.0.0.1:8000/users/login/", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Login failed")
-
-      if (data.access) {
-        Cookies.set("token", data.access, { expires: 7, secure: true, sameSite: "Lax" })
-      } else {
-        throw new Error("Token is missing")
-      }
-
-      if (data.role) {
-        Cookies.set("role", data.role, { expires: 7, secure: true, sameSite: "Lax" })
-        const dashboardPath = data.role === "instructor" ? "/dashboard_instructor" : "/dashboard_student"
-        router.push(dashboardPath)
-      } else {
-        throw new Error("Role is missing")
-      }
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Left Column - Visual Elements */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-red-900 to-red-950 flex-col items-center justify-center">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-10 gap-8">
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <div className="w-24 h-24 rounded-full bg-red-800/30 flex items-center justify-center">
-              <School className="w-12 h-12 text-white" />
-            </div>
-            <div className="flex gap-12">
-              <div className="w-16 h-16 rounded-full bg-red-800/30 flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
-              <div className="w-16 h-16 rounded-full bg-red-800/30 flex items-center justify-center">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-            </div>
+    <div className='relative h-screen bg-background text-foreground overflow-hidden'>
+      {/* Background Image with Overlay */}
+      <div
+        className='absolute inset-0 bg-cover bg-[top_20%_right] sm:bg-[top_30%_right] md:bg-[top_40%_right] lg:bg-[top_50%_center]  brightness-[0.5]'
+        style={{
+          backgroundImage: "url('/landing.jpg')",
+        }}
+      ></div>
+      <div className='absolute inset-0 bg-black/20'></div>
+
+      {/* Navbar */}
+      <nav className='relative z-20 flex items-center justify-between p-4 sm:p-6'>
+        <div className='flex items-center gap-3'>
+          <img
+            className='w-30 h-16 sm:w-30 sm:h-20'
+            src='/logo.png'
+            alt='logo'
+          />
+        </div>
+
+        {/* Burger Menu Icon for Small Screens */}
+        <div className='sm:hidden'>
+          <button
+            onClick={toggleMenu}
+            className='text-white focus:outline-none '
+          >
+            {isMenuOpen ? (
+              <X className='w-6 h-6 animate-spin-once   ' />
+            ) : (
+              <Menu className='w-6 h-6 animate-spin-once  ' />
+            )}
+          </button>
+        </div>
+
+        {/* Menu Items for Larger Screens */}
+        <div className='hidden sm:flex sm:gap-4'>
+          <Link href='/signin'>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500'>
+              Login
+            </Button>
+          </Link>
+          <Link href='/signup'>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 delay-100'>
+              Signup
+            </Button>
+          </Link>
+          <Link href='/faq'>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 delay-200'>
+              FAQ
+            </Button>
+          </Link>
+        </div>
+
+        {/* Mobile Menu (Visible when Burger Menu is Open) */}
+        <div
+          className={`fixed top-0 left-0 right-0 bg-black/0 backdrop-blur-sm flex flex-col items-center py-12 gap-6 transform transition-transform duration-500 ease-in-out sm:hidden z-30 border-b border-white/20 ${
+            isMenuOpen ? "translate-y-0" : "-translate-y-full"
+          }`}
+        >
+          <button
+            onClick={toggleMenu}
+            className='absolute top-4 right-4 text-white focus:outline-none'
+          >
+            <X className='w-6 h-6' />
+          </button>
+          <Link href='/signin' onClick={toggleMenu}>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
+              Login
+            </Button>
+          </Link>
+          <Link href='/signup' onClick={toggleMenu}>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
+              Signup
+            </Button>
+          </Link>
+          <Link href='/faq' onClick={toggleMenu}>
+            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
+              FAQ
+            </Button>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className='relative z-10 flex flex-col items-center justify-center h-screen text-center px-4 sm:px-6'>
+        {/* Main Title and Description */}
+        <h1 className='text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-6 animate-fade-in-up duration-700'>
+          ITI Examination System
+        </h1>
+        <p className='text-base sm:text-lg md:text-xl text-white/90 max-w-lg sm:max-w-2xl mb-8 animate-fade-in-up duration-700 delay-200'>
+          People Develop Countries… We Develop{" "}
+          <span className='text-primary'>PEOPLE</span>
+        </p>
+
+        {/* PEOPLE Values Section */}
+        <div className='grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mb-10 animate-fade-in-up duration-700 delay-400'>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>P</h3>
+            <p className='text-sm font-semibold text-white'>Professionalism</p>
+            {/* <p className='text-xs text-emerald-100'>
+              Deliver excellence in every exam
+            </p> */}
           </div>
-
-          <div className="max-w-md text-center space-y-4">
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-lg">
-              <h2 className="text-3xl font-bold text-white mb-4">Information Technology Institute</h2>
-              <p className="text-red-100 text-lg">
-                Egypt's premier technology education center empowering the next generation of tech leaders
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm">
-                <h3 className="font-semibold text-white">Expert Instructors</h3>
-                <p className="text-sm text-red-100">Learn from industry professionals</p>
-              </div>
-              <div className="bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm">
-                <h3 className="font-semibold text-white">Cutting-Edge Curriculum</h3>
-                <p className="text-sm text-red-100">Stay ahead with modern tech</p>
-              </div>
-              <div className="bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm">
-                <h3 className="font-semibold text-white">Career Support</h3>
-                <p className="text-sm text-red-100">Job placement assistance</p>
-              </div>
-              <div className="bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm">
-                <h3 className="font-semibold text-white">Recognized Certification</h3>
-                <p className="text-sm text-red-100">Industry-valued credentials</p>
-              </div>
-            </div>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>E</h3>
+            <p className='text-sm font-semibold text-white'>Elation</p>
+            {/* <p className='text-xs text-emerald-100'>
+              Celebrate your achievements
+            </p> */}
+          </div>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>O</h3>
+            <p className='text-sm font-semibold text-white'>Openness</p>
+            {/* <p className='text-xs text-emerald-100'>
+              Collaborate with confidence
+            </p> */}
+          </div>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>P</h3>
+            <p className='text-sm font-semibold text-white'>Passion</p>
+            {/* <p className='text-xs text-emerald-100'>Learn with enthusiasm</p> */}
+          </div>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>L</h3>
+            <p className='text-sm font-semibold text-white'>Loyalty</p>
+            {/* <p className='text-xs text-emerald-100'>Stay committed to growth</p> */}
+          </div>
+          <div className='bg-white/10 p-4 rounded-lg shadow backdrop-blur-sm text-center'>
+            <h3 className='text-2xl font-bold text-primary'>E</h3>
+            <p className='text-sm font-semibold text-white'>Extra Mile</p>
+            {/* <p className='text-xs text-emerald-100'>Exceed your goals</p> */}
           </div>
         </div>
+
+        {/* Call to Action Button */}
+        {/* <Link href='/signup'>
+          <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium px-4 py-2 sm:py-3 sm:px-6 rounded-xl animate-scale-in duration-700 delay-600'>
+            Get Started
+          </Button>
+        </Link> */}
       </div>
 
-      {/* Right Column - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
-        <Card className="w-full max-w-md p-6 shadow-lg bg-white rounded-xl border-0">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="rounded-full bg-red-900 p-3">
-                <LockKeyhole className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-800">Welcome Back</CardTitle>
-            <p className="text-gray-600 mt-2">Sign in to access your ITI examination dashboard</p>
-          </CardHeader>
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-5 pt-4">
-              {error && (
-                <Alert variant="destructive" className="bg-red-50 text-red-700 border-red-200">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700">
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="student@iti.eg"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border-gray-200 focus-visible:ring-red-800"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-gray-700">
-                    Password
-                  </Label>
-                  <Link href="/forget_pass" className="text-sm text-red-800 hover:text-red-900 hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="border-gray-200 focus-visible:ring-red-800 pr-10"
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-gray-600"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  className="text-red-800 border-gray-300 data-[state=checked]:bg-red-800"
-                />
-                <Label htmlFor="remember" className="text-sm text-gray-600">
-                  Remember me for 30 days
-                </Label>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col space-y-4 pt-2">
-              <Button type="submit" className="w-full bg-red-900 hover:bg-red-950 text-white font-medium py-6">
-                Sign In
-              </Button>
-
-              <div className="text-center text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link href="/signup" className="text-red-800 hover:text-red-900 hover:underline font-medium">
-                  Register
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
+      {/* Custom Animation Styles */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes scaleIn {
+          from {
+            transform: scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes spinOnce {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(90deg);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn ease-in-out;
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp ease-in-out;
+        }
+        .animate-scale-in {
+          animation: scaleIn ease-in-out;
+        }
+        .animate-spin-once {
+          animation: spinOnce 300ms ease-in-out;
+        }
+        .delay-100 {
+          animation-delay: 100ms;
+        }
+        .delay-200 {
+          animation-delay: 200ms;
+        }
+        .delay-400 {
+          animation-delay: 400ms;
+        }
+      `}</style>
     </div>
-  )
+  );
 }
