@@ -95,6 +95,15 @@ export default function DashboardLayout({
     fetchStudentData();
   }, []);
 
+  const handleLogout = () => {
+    // Reset theme to light in localStorage
+    localStorage.setItem('theme', 'light');
+    // Apply light theme to document
+    document.documentElement.classList.remove('dark');
+    // Call the original logout function
+    logout();
+  };
+
   if (!user) {
     return null;
   }
@@ -192,7 +201,7 @@ export default function DashboardLayout({
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={logout}
+                  onClick={handleLogout}
                   className='text-sidebar-foreground'
                 >
                   <LogOut className='h-5 w-5' />
@@ -253,11 +262,8 @@ export default function DashboardLayout({
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={logout}
-                  // className="text-sidebar-foreground"
-                  className={`  text-[#007acc] hover:text-[#007abc]   ${
-                    !isSidebarOpen ? "mx-auto" : ""
-                  }`}
+                  onClick={handleLogout}
+                  className={`text-[#007acc] hover:text-[#007abc] ${!isSidebarOpen ? "mx-auto" : ""}`}
                 >
                   <LogOut className='h-5 w-5' />
                 </Button>
