@@ -104,7 +104,7 @@ export default function AddExamPage() {
       difficulty: "Easy",
       source: "exam_ui",
       points: 1.0,
-      language: "python",
+      language: "Python",
     },
   ]);
 
@@ -125,66 +125,6 @@ export default function AddExamPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(false);
-
-  const languageMapForDisplay: Record<string, string> = {
-    python: "Python",
-    javascript: "JavaScript",
-    typescript: "TypeScript",
-    html: "HTML",
-    css: "CSS",
-    json: "JSON",
-    xml: "XML",
-    java: "Java",
-    c: "C",
-    cpp: "C++",
-    csharp: "C#",
-    php: "PHP",
-    razor: "Razor",
-    markdown: "Markdown",
-    yaml: "YAML",
-    shell: "Shell",
-    powershell: "PowerShell",
-    lua: "Lua",
-    r: "R",
-    perl: "Perl",
-    swift: "Swift",
-    "objective-c": "Objective-C",
-    scss: "SCSS",
-    less: "LESS",
-  };
-
-  const languageMapForSubmission: Record<string, string> = {
-    Python: "python",
-    JavaScript: "javascript",
-    TypeScript: "typescript",
-    HTML: "html",
-    CSS: "css",
-    JSON: "json",
-    XML: "xml",
-    Java: "java",
-    C: "c",
-    "C++": "cpp",
-    "C#": "csharp",
-    PHP: "php",
-    Razor: "razor",
-    Markdown: "markdown",
-    YAML: "yaml",
-    Shell: "shell",
-    PowerShell: "powershell",
-    Lua: "lua",
-    R: "r",
-    Perl: "perl",
-    Swift: "swift",
-    "Objective-C": "objective-c",
-    SCSS: "scss",
-    LESS: "less",
-  };
-
-  const normalizeLanguageForSubmission = (language: string): string => {
-    return (
-      languageMapForSubmission[language] || language.toLowerCase() || "python"
-    );
-  };
 
   const getTokenFromCookies = () => {
     const cookies = document.cookie.split(";");
@@ -245,6 +185,7 @@ export default function AddExamPage() {
 
     try {
       const token = getTokenFromCookies();
+
       if (!token) {
         throw new Error("No authentication token found in cookies");
       }
@@ -256,7 +197,36 @@ export default function AddExamPage() {
 
       let url = baseUrl;
       if (selectedLanguage !== "all") {
-        url = `${baseUrl}?language=${selectedLanguage}`;
+        const languageMap: Record<string, string> = {
+          python: "Python",
+          javascript: "JavaScript",
+          typescript: "TypeScript",
+          html: "HTML",
+          css: "CSS",
+          json: "JSON",
+          xml: "XML",
+          java: "Java",
+          c: "C",
+          cpp: "C++",
+          csharp: "C#",
+          php: "PHP",
+          razor: "Razor",
+          markdown: "Markdown",
+          yaml: "YAML",
+          shell: "Shell",
+          powershell: "PowerShell",
+          lua: "Lua",
+          r: "R",
+          perl: "Perl",
+          swift: "Swift",
+          "objective-c": "Objective-C",
+          scss: "SCSS",
+          less: "LESS",
+        };
+
+        const formattedLanguage =
+          languageMap[selectedLanguage.toLowerCase()] || selectedLanguage;
+        url = `${baseUrl}?language=${formattedLanguage}`;
         console.log("Fetching questions with URL:", url);
       }
 
@@ -282,13 +252,11 @@ export default function AddExamPage() {
             type: "code",
             question_text: q.title || q.question_text || "",
             description: q.description || "",
-            language: q.language, // Keep backend value
           };
         } else {
           return {
             ...q,
             type: "mcq",
-            language: q.language, // Keep backend value
           };
         }
       });
@@ -322,10 +290,6 @@ export default function AddExamPage() {
 
   const handleTypeChange = (index: number, type: "mcq" | "code") => {
     const updatedQuestions = [...questions];
-    const currentLanguage = updatedQuestions[index].language || "python";
-    console.log(
-      `Changing question ${index} to type ${type}, language: ${currentLanguage}`
-    );
     if (type === "mcq") {
       updatedQuestions[index] = {
         ...updatedQuestions[index],
@@ -339,7 +303,7 @@ export default function AddExamPage() {
         difficulty: "Easy",
         source: "exam_ui",
         points: 1.0,
-        language: currentLanguage,
+        language: updatedQuestions[index].language || "Python",
       };
     } else {
       updatedQuestions[index] = {
@@ -351,7 +315,7 @@ export default function AddExamPage() {
         difficulty: "Easy",
         source: "exam_ui",
         points: 1.0,
-        language: currentLanguage,
+        language: updatedQuestions[index].language || "Python",
         tags: [],
         test_cases: [],
       };
@@ -409,11 +373,7 @@ export default function AddExamPage() {
 
   const handleLanguageChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
-    const normalizedLanguage = normalizeLanguageForSubmission(value);
-    console.log(
-      `Setting language for question ${index} to ${normalizedLanguage}`
-    );
-    updatedQuestions[index].language = normalizedLanguage;
+    updatedQuestions[index].language = value;
     setQuestions(updatedQuestions);
   };
 
@@ -465,7 +425,7 @@ export default function AddExamPage() {
         difficulty: "Easy",
         source: "exam_ui",
         points: 1.0,
-        language: "python",
+        language: "Python",
       },
     ]);
   };
@@ -514,39 +474,21 @@ export default function AddExamPage() {
   };
 
   const validateQuestions = (questions: Question[]) => {
-    console.log("Validating questions:", questions);
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
+    for (const question of questions) {
       if (!question.language) {
-        console.error(
-          `Validation failed: Question ${i + 1} has no language.`,
-          question
-        );
-        toast.error(`Please select a language for question ${i + 1}.`);
+        toast.error("Please select a language for all questions.");
         return false;
       }
       if (!question.difficulty) {
-        console.error(
-          `Validation failed: Question ${i + 1} has no difficulty.`,
-          question
-        );
-        toast.error(`Please select a difficulty level for question ${i + 1}.`);
+        toast.error("Please select a difficulty level for all questions.");
         return false;
       }
       if (question.type === "mcq" && !question.question_text.trim()) {
-        console.error(
-          `Validation failed: Question ${i + 1} has no question text.`,
-          question
-        );
-        toast.error(`Please provide text for question ${i + 1} (MCQ).`);
+        toast.error("Please provide text for all MCQ questions.");
         return false;
       }
-      if (question.type === "code" && !question.title?.trim()) {
-        console.error(
-          `Validation failed: Question ${i + 1} has no title.`,
-          question
-        );
-        toast.error(`Please provide a title for question ${i + 1} (Coding).`);
+      if (question.type === "code" && !question.title.trim()) {
+        toast.error("Please provide a title for all coding questions.");
         return false;
       }
     }
@@ -572,11 +514,6 @@ export default function AddExamPage() {
         return;
       }
 
-      if (!validateQuestions(questions)) {
-        setIsSubmitting(false);
-        return;
-      }
-
       const newMCQs = questions
         .filter((q) => q.type === "mcq" && q.question_text.trim() !== "")
         .map((q) => ({
@@ -589,7 +526,7 @@ export default function AddExamPage() {
           difficulty: q.difficulty,
           source: "exam_ui",
           points: q.points || 1.0,
-          language: normalizeLanguageForSubmission(q.language || "python"),
+          language: q.language,
         }));
 
       const newCodingQuestions = questions
@@ -606,12 +543,9 @@ export default function AddExamPage() {
           starter_code: q.starter_code || "",
           source: "exam_ui",
           points: q.points || 1.0,
-          language: normalizeLanguageForSubmission(q.language || "python"),
+          language: q.language,
           tags: q.tags || [],
         }));
-
-      console.log("Submitting MCQs:", newMCQs);
-      console.log("Submitting Coding Questions:", newCodingQuestions);
 
       const createdMCQIds: number[] = [];
       const createdCodingIds: number[] = [];
@@ -632,13 +566,8 @@ export default function AddExamPage() {
             );
 
             if (!mcqResponse.ok) {
-              const errorData = await mcqResponse.json();
-              console.error("MCQ creation failed:", errorData);
-              toast.error(
-                `Failed to create MCQ question: ${
-                  errorData.message || "Unknown error"
-                }`
-              );
+              await debugApiResponse(mcqResponse);
+              toast.error("Failed to create MCQ question.");
               continue;
             }
 
@@ -680,7 +609,7 @@ export default function AddExamPage() {
 
             if (!codingResponse.ok) {
               const errorData = await codingResponse.json();
-              console.error("Coding question creation failed:", errorData);
+              console.error("Failed to create coding question:", errorData);
               toast.error(
                 `Failed to create coding question: ${
                   errorData.message || "Unknown error"
@@ -719,7 +648,7 @@ export default function AddExamPage() {
 
                   if (!testCaseResponse.ok) {
                     const errorData = await testCaseResponse.json();
-                    console.error("Test case creation failed:", errorData);
+                    console.error("Failed to create test case:", errorData);
                     toast.error(
                       `Failed to create test case: ${
                         errorData.message || "Unknown error"
@@ -790,7 +719,7 @@ export default function AddExamPage() {
           difficulty: "Easy",
           source: "exam_ui",
           points: 1.0,
-          language: "python",
+          language: "Python",
         },
       ]);
       setSelectedQuestions([]);
@@ -1043,13 +972,10 @@ export default function AddExamPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Languages</SelectItem>
-                        {Object.entries(languageMapForDisplay).map(
-                          ([backendValue, displayValue]) => (
-                            <SelectItem key={backendValue} value={backendValue}>
-                              {displayValue}
-                            </SelectItem>
-                          )
-                        )}
+                        <SelectItem value="python">Python</SelectItem>
+                        <SelectItem value="javascript">JavaScript</SelectItem>
+                        <SelectItem value="java">Java</SelectItem>
+                        <SelectItem value="sql">SQL</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1126,9 +1052,7 @@ export default function AddExamPage() {
                                 {getDifficultyBadge(question.difficulty)}
                               </TableCell>
                               <TableCell>
-                                {languageMapForDisplay[question.language] ||
-                                  question.language ||
-                                  "N/A"}
+                                {question.language || "N/A"}
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button
@@ -1221,12 +1145,7 @@ export default function AddExamPage() {
                                     {getDifficultyBadge(question.difficulty)}
                                     <span>|</span>
                                     <span>
-                                      Language:{" "}
-                                      {languageMapForDisplay[
-                                        question.language
-                                      ] ||
-                                        question.language ||
-                                        "N/A"}
+                                      Language: {question.language || "N/A"}
                                     </span>
                                   </div>
                                 </div>
@@ -1274,12 +1193,7 @@ export default function AddExamPage() {
                                     {getDifficultyBadge(question.difficulty)}
                                     <span>|</span>
                                     <span>
-                                      Language:{" "}
-                                      {languageMapForDisplay[
-                                        question.language
-                                      ] ||
-                                        question.language ||
-                                        "N/A"}
+                                      Language: {question.language || "N/A"}
                                     </span>
                                   </div>
                                 </div>
@@ -1430,6 +1344,58 @@ export default function AddExamPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label className="text-[#007acc] font-medium">
+                                Language
+                              </Label>
+                              <Select
+                                value={question.language}
+                                onValueChange={(value) =>
+                                  handleLanguageChange(index, value)
+                                }
+                              >
+                                <SelectTrigger className="border-[#c7e5ff]">
+                                  <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Python">Python</SelectItem>
+                                  <SelectItem value="JavaScript">
+                                    JavaScript
+                                  </SelectItem>
+                                  <SelectItem value="TypeScript">
+                                    TypeScript
+                                  </SelectItem>
+                                  <SelectItem value="HTML">HTML</SelectItem>
+                                  <SelectItem value="CSS">CSS</SelectItem>
+                                  <SelectItem value="JSON">JSON</SelectItem>
+                                  <SelectItem value="XML">XML</SelectItem>
+                                  <SelectItem value="Java">Java</SelectItem>
+                                  <SelectItem value="C">C</SelectItem>
+                                  <SelectItem value="C++">C++</SelectItem>
+                                  <SelectItem value="C#">C#</SelectItem>
+                                  <SelectItem value="PHP">PHP</SelectItem>
+                                  <SelectItem value="Razor">Razor</SelectItem>
+                                  <SelectItem value="Markdown">
+                                    Markdown
+                                  </SelectItem>
+                                  <SelectItem value="YAML">YAML</SelectItem>
+                                  <SelectItem value="Shell">Shell</SelectItem>
+                                  <SelectItem value="PowerShell">
+                                    PowerShell
+                                  </SelectItem>
+                                  <SelectItem value="Lua">Lua</SelectItem>
+                                  <SelectItem value="R">R</SelectItem>
+                                  <SelectItem value="Perl">Perl</SelectItem>
+                                  <SelectItem value="Swift">Swift</SelectItem>
+                                  <SelectItem value="Objective-C">
+                                    Objective-C
+                                  </SelectItem>
+                                  <SelectItem value="SCSS">SCSS</SelectItem>
+                                  <SelectItem value="LESS">LESS</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="text-[#007acc] font-medium">
                                 Difficulty
                               </Label>
                               <Select
@@ -1451,206 +1417,94 @@ export default function AddExamPage() {
                                 </SelectContent>
                               </Select>
                             </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-[#007acc] font-medium">
-                                Language
-                              </Label>
-                              <Select
-                                value={
-                                  languageMapForDisplay[question.language] ||
-                                  question.language
-                                }
-                                onValueChange={(value) =>
-                                  handleLanguageChange(index, value)
-                                }
-                              >
-                                <SelectTrigger className="border-[#c7e5ff]">
-                                  <SelectValue placeholder="Select language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(languageMapForDisplay).map(
-                                    ([backendValue, displayValue]) => (
-                                      <SelectItem
-                                        key={backendValue}
-                                        value={displayValue}
-                                      >
-                                        {displayValue}
-                                      </SelectItem>
-                                    )
-                                  )}
-                                </SelectContent>
-                              </Select>
-                            </div>
                           </div>
 
-                          {question.type === "mcq" && (
-                            <>
-                              <div className="space-y-4 bg-[#f0f7ff] p-4 rounded-md">
-                                <Label className="text-[#007acc] font-medium">
-                                  Options
-                                </Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-a-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option A
-                                    </Label>
-                                    <Input
-                                      id={`option-a-${index}`}
-                                      placeholder="Enter option A"
-                                      value={question.option_a || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_a",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-b-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option B
-                                    </Label>
-                                    <Input
-                                      id={`option-b-${index}`}
-                                      placeholder="Enter option B"
-                                      value={question.option_b || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_b",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-c-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option C
-                                    </Label>
-                                    <Input
-                                      id={`option-c-${index}`}
-                                      placeholder="Enter option C"
-                                      value={question.option_c || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_c",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-d-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option D
-                                    </Label>
-                                    <Input
-                                      id={`option-d-${index}`}
-                                      placeholder="Enter option D"
-                                      value={question.option_d || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_d",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
+                          <div className="space-y-2">
+                            <Label className="text-[#007acc] font-medium">
+                              Points
+                            </Label>
+                            <Input
+                              type="number"
+                              placeholder="Enter points"
+                              value={question.points || 1}
+                              onChange={(e) => {
+                                const updatedQuestions = [...questions];
+                                updatedQuestions[index].points = Number(
+                                  e.target.value
+                                );
+                                setQuestions(updatedQuestions);
+                              }}
+                              min="0.1"
+                              step="0.1"
+                              className="border-[#c7e5ff]"
+                            />
+                          </div>
 
-                              <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
-                                <Label className="text-[#007acc] font-medium">
-                                  Correct Answer
-                                </Label>
-                                <RadioGroup
-                                  value={question.correct_option}
-                                  onValueChange={(value) =>
-                                    handleCorrectAnswerChange(index, value)
-                                  }
-                                  className="grid grid-cols-4 gap-4"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="A"
-                                      id={`A-${index}`}
+                          {question.type === "mcq" ? (
+                            <div className="space-y-4 bg-[#f0f7ff] p-4 rounded-md">
+                              <Label className="text-[#007acc] font-medium">
+                                Options
+                              </Label>
+                              <RadioGroup
+                                value={question.correct_option || "A"}
+                                onValueChange={(value) =>
+                                  handleCorrectAnswerChange(index, value)
+                                }
+                                className="space-y-3"
+                              >
+                                {["A", "B", "C", "D"].map((option) => (
+                                  <div
+                                    key={option}
+                                    className="flex items-center space-x-2 p-3 bg-white rounded-md border border-[#c7e5ff] hover:border-[#007acc] transition-colors"
+                                  >
+                                    <div className="grid gap-1.5">
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem
+                                          className="text-[#007acc] border-[#007acc]"
+                                          value={option}
+                                          id={`option-${index}-${option}`}
+                                        />
+                                        <Label
+                                          htmlFor={`option-${index}-${option}`}
+                                          className="font-medium text-[#007abc]"
+                                        >
+                                          Option {option}
+                                        </Label>
+                                      </div>
+                                    </div>
+                                    <Input
+                                      placeholder={`Enter option ${option}`}
+                                      value={
+                                        (question[
+                                          `option_${option.toLowerCase()}` as keyof Question
+                                        ] as string) || ""
+                                      }
+                                      onChange={(e) =>
+                                        handleOptionChange(
+                                          index,
+                                          `option_${option.toLowerCase()}` as
+                                            | "option_a"
+                                            | "option_b"
+                                            | "option_c"
+                                            | "option_d",
+                                          e.target.value
+                                        )
+                                      }
+                                      className="border-[#c7e5ff] flex-1"
                                     />
-                                    <Label
-                                      htmlFor={`A-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      A
-                                    </Label>
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="B"
-                                      id={`B-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`B-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      B
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="C"
-                                      id={`C-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`C-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      C
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="D"
-                                      id={`D-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`D-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      D
-                                    </Label>
-                                  </div>
-                                </RadioGroup>
-                              </div>
-                            </>
-                          )}
-
-                          {question.type === "code" && (
-                            <>
+                                ))}
+                              </RadioGroup>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
                               <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
                                 <Label className="text-[#007acc] font-medium">
                                   Starter Code
                                 </Label>
                                 <Textarea
-                                  placeholder="Enter starter code (optional)"
-                                  className="min-h-[100px] font-mono border-[#c7e5ff]"
+                                  placeholder="Enter the starter code"
+                                  className="font-mono min-h-[150px] border-[#c7e5ff]"
                                   value={question.starter_code || ""}
                                   onChange={(e) =>
                                     handleCodeChange(index, e.target.value)
@@ -1658,113 +1512,125 @@ export default function AddExamPage() {
                                 />
                               </div>
 
-                              <div className="space-y-4">
+                              <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label className="text-[#007acc] font-medium">
                                     Test Cases
                                   </Label>
                                   <Button
+                                    type="button"
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleAddTestCase(index)}
                                     className="border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]"
                                   >
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="mr-2 h-4 w-4" />
                                     Add Test Case
                                   </Button>
                                 </div>
-                                {question.test_cases?.map(
-                                  (testCase, tcIndex) => (
-                                    <div
-                                      key={tcIndex}
-                                      className="border rounded-md p-4 bg-[#f0f7ff] space-y-4 relative"
-                                    >
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() =>
-                                          handleRemoveTestCase(index, tcIndex)
-                                        }
-                                        className="absolute top-2 right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      >
-                                        <X className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Remove test case
-                                        </span>
-                                      </Button>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`input-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Input
-                                          </Label>
-                                          <Input
-                                            id={`input-${index}-${tcIndex}`}
-                                            placeholder="Enter input data"
-                                            value={testCase.input_data}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "input_data",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`output-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Expected Output
-                                          </Label>
-                                          <Input
-                                            id={`output-${index}-${tcIndex}`}
-                                            placeholder="Enter expected output"
-                                            value={testCase.expected_output}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "expected_output",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`function-name-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Function Name (Optional)
-                                          </Label>
-                                          <Input
-                                            id={`function-name-${index}-${tcIndex}`}
-                                            placeholder="Enter function name"
-                                            value={testCase.function_name || ""}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "function_name",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
+
+                                {question.test_cases &&
+                                question.test_cases.length > 0 ? (
+                                  <div className="space-y-4">
+                                    {question.test_cases.map(
+                                      (testCase, tcIndex) => (
+                                        <Card
+                                          key={tcIndex}
+                                          className="border-[#c7e5ff] bg-[#f0f7ff]"
+                                        >
+                                          <CardHeader className="py-3 bg-[#007acc] text-white rounded-t-md">
+                                            <div className="flex items-center justify-between">
+                                              <CardTitle className="text-sm font-medium">
+                                                Test Case {tcIndex + 1}
+                                              </CardTitle>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                  handleRemoveTestCase(
+                                                    index,
+                                                    tcIndex
+                                                  )
+                                                }
+                                                className="h-8 w-8 text-white hover:bg-white/20"
+                                              >
+                                                <X className="h-4 w-4" />
+                                                <span className="sr-only">
+                                                  Remove
+                                                </span>
+                                              </Button>
+                                            </div>
+                                          </CardHeader>
+                                          <CardContent className="py-4 space-y-4 bg-white rounded-b-md">
+                                            <div className="space-y-2">
+                                              <Label className="text-sm text-[#007acc]">
+                                                Function Name
+                                              </Label>
+                                              <Input
+                                                placeholder="Enter function name (e.g., findMax)"
+                                                value={
+                                                  testCase.function_name || ""
+                                                }
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "function_name",
+                                                    e.target.value
+                                                  )
+                                                }
+                                                className="border-[#c7e5ff]"
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-sm text-[#007acc]">
+                                                Input
+                                              </Label>
+                                              <Textarea
+                                                placeholder="Input data"
+                                                className="font-mono min-h-[80px] border-[#c7e5ff]"
+                                                value={testCase.input_data}
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "input_data",
+                                                    e.target.value
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label className="text-sm text-[#007acc]">
+                                                Expected Output
+                                              </Label>
+                                              <Textarea
+                                                placeholder="Expected output"
+                                                className="font-mono min-h-[80px] border-[#c7e5ff]"
+                                                value={testCase.expected_output}
+                                                onChange={(e) =>
+                                                  handleTestCaseChange(
+                                                    index,
+                                                    tcIndex,
+                                                    "expected_output",
+                                                    e.target.value
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      )
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 border rounded-md text-muted-foreground border-[#c7e5ff]">
+                                    No test cases added yet.
+                                  </div>
                                 )}
                               </div>
-                            </>
+                            </div>
                           )}
                         </div>
                       </AccordionContent>
@@ -1772,46 +1638,53 @@ export default function AddExamPage() {
                   ))}
                 </Accordion>
 
-                <div className="flex justify-between">
-                  <Button
-                    onClick={addQuestion}
-                    className="bg-[#007acc] hover:bg-[#007abc] text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Another Question
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addQuestion}
+                  className="w-full border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Another Question
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-[#007acc] hover:bg-[#007abc] text-white"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Create Exam
-              </>
-            )}
-          </Button>
-        </div>
+        <Card className="border-0 shadow-none">
+          <CardContent className="pt-6">
+            <Button
+              onClick={handleSubmit}
+              className="w-full h-12 text-lg bg-gradient-to-r from-[#007acc] to-[#007abc] hover:from-[#007abc] hover:to-[#007acc] rounded-md text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-5 w-5" />
+                  Create Exam
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
         {debugInfo && (
-          <div className="mt-4 p-4 border border-[#c7e5ff] bg-[#f0f7ff] rounded-md">
-            <h3 className="text-[#007acc] font-medium">Debug Info</h3>
-            <p className="text-sm text-muted-foreground">{debugInfo}</p>
-          </div>
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs font-mono bg-muted p-4 rounded-md overflow-auto max-h-[200px]">
+                {debugInfo}
+              </pre>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
