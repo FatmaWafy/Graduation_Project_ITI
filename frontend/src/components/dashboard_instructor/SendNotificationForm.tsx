@@ -101,7 +101,7 @@ export function SendNotificationForm() {
           return
         }
 
-        const response = await fetch("http://127.0.0.1:8000/users/students", {
+        const response = await fetch("http://127.0.0.1:8000/users/instructors/instructor_students/", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`, // إضافة التوكن في الهيدر هنا

@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Helper functions for calendar
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -274,7 +275,7 @@ export default function CalendarPage() {
       </div> */}
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 h-[650px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>
               {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
@@ -301,7 +302,7 @@ export default function CalendarPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
+          <Card className="h-[300px]">
             <CardHeader>
               <CardTitle>Today's Events</CardTitle>
               <CardDescription>Events scheduled for today</CardDescription>
@@ -338,7 +339,7 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-red-200 bg-red-50">
+          <Card className="h-[300px] border-red-200 bg-red-50">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2">
                 <CalendarIcon className="h-5 w-5 text-red-500" />
@@ -382,7 +383,7 @@ export default function CalendarPage() {
           </Card>
 
           {pastExams.length > 0 && (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="h-[300px] border-green-200 bg-green-50">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5 text-green-500" />
@@ -391,37 +392,39 @@ export default function CalendarPage() {
                 <CardDescription>Your completed exams</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {pastExams.map((event, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start border-b border-green-100 pb-2 last:border-0"
-                    >
-                      <div>
-                        <h3 className="font-medium text-green-800">
-                          {event.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {event.course}
-                        </p>
-                        {event.time && (
-                          <p className="text-xs text-green-700">
-                            Time: {event.time}
+                <ScrollArea className="h-[200px]">
+                  <div className="space-y-4">
+                    {pastExams.map((event, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-start border-b border-green-100 pb-2 last:border-0"
+                      >
+                        <div>
+                          <h3 className="font-medium text-green-800">
+                            {event.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {event.course}
                           </p>
-                        )}
+                          {event.time && (
+                            <p className="text-xs text-green-700">
+                              Time: {event.time}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-sm bg-green-100 px-2 py-1 rounded text-green-800">
+                          {new Date(event.date).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div className="text-sm bg-green-100 px-2 py-1 rounded text-green-800">
-                        {new Date(event.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           )}
 
           {showCourseEvents && (
-            <Card>
+            <Card className="h-[300px]">
               <CardHeader>
                 <CardTitle>Upcoming Events</CardTitle>
                 <CardDescription>Your next scheduled events</CardDescription>
