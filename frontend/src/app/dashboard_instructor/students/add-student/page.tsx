@@ -5,13 +5,18 @@ import { useState, useEffect } from "react"
 import Cookies from "js-cookie"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Upload, FileSpreadsheet, Info, CheckCircle } from "lucide-react"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function AddStudentPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [tracks, setTracks] = useState<{ id: number; name: string }[]>([])
+  const [dragActive, setDragActive] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle")
 
   useEffect(() => {
     const fetchTracks = async () => {
@@ -48,17 +53,43 @@ export default function AddStudentPage() {
     }
   }
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+        setCsvFile(file)
+      } else {
+        toast.error("Please upload a CSV file only.")
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const accessToken = Cookies.get("token")
 
     if (!accessToken) {
-      alert("❌ Authentication Error: No token found. Please log in again.")
+      toast.error("Authentication Error: No token found. Please log in again.")
       return
     }
 
     if (!csvFile) {
-      alert("❌ Please select a CSV file first.")
+      toast.error("Please select a CSV file first.")
       return
     }
 
@@ -68,31 +99,73 @@ export default function AddStudentPage() {
     formData.append("file", csvFile)
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/users/register-students-excel/", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: formData,
-      })
+      setUploadStatus("uploading")
+      setUploadProgress(10)
 
-      const data = await response.json()
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", "http://127.0.0.1:8000/users/register-students-excel/", true)
+      xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`)
 
-      if (response.ok) {
-        alert(`✅ ${data.message}`)
-        setCsvFile(null)
-        // Reset file input
-        const fileInput = document.getElementById("csv-upload") as HTMLInputElement
-        if (fileInput) fileInput.value = ""
-      } else {
-        alert(`❌ Error: ${JSON.stringify(data, null, 2)}`)
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 90)
+          setUploadProgress(percentComplete)
+        }
       }
+
+      xhr.onload = async () => {
+        setUploadProgress(100)
+
+        try {
+          const data = JSON.parse(xhr.responseText)
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            setUploadStatus("success")
+            toast.success(data.message)
+            setCsvFile(null)
+            // Reset file input
+            const fileInput = document.getElementById("csv-upload") as HTMLInputElement
+            if (fileInput) fileInput.value = ""
+          } else {
+            setUploadStatus("error")
+            toast.error(typeof data.detail === "string" ? data.detail : JSON.stringify(data, null, 2))
+          }
+        } catch (error) {
+          setUploadStatus("error")
+          toast.error("Could not parse server response.")
+        } finally {
+          setIsSubmitting(false)
+        }
+      }
+
+      xhr.onerror = () => {
+        setUploadStatus("error")
+        setIsSubmitting(false)
+        toast.error("Something went wrong. Please try again.")
+      }
+
+      xhr.send(formData)
     } catch (error) {
+      setUploadStatus("error")
+      setIsSubmitting(false)
       console.error("❌ Request Error:", error)
-      alert("❌ Something went wrong. Please try again.")
+      toast.error("Something went wrong. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const downloadSampleCsv = () => {
+    const csvContent =
+      "username,email,track_name,university,graduation_year,college,leetcode_profile,github_profile\nstudent1,student1@example.com,Web Development,Example University,2024,Engineering,leetcode.com/student1,github.com/student1\nstudent2,student2@example.com,Data Science,Another University,2025,Computer Science,leetcode.com/student2,github.com/student2"
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", "sample_students.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
@@ -162,6 +235,15 @@ export default function AddStudentPage() {
                   username,email,track_name
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Additional fields are optional</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 text-xs w-full border-[#c7e5ff] text-[#007acc] hover:bg-[#f0f7ff]"
+                  onClick={downloadSampleCsv}
+                >
+                  <FileSpreadsheet className="h-3 w-3 mr-1" />
+                  Download Sample CSV
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -203,27 +285,55 @@ export default function AddStudentPage() {
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="bg-[#f8fcff] border border-[#c7e5ff] rounded-lg p-5">
-                      <Label htmlFor="csv-upload" className="flex items-center gap-2 text-[#007acc] mb-3">
-                        <Upload className="h-4 w-4 text-[#007acc]" />
-                        <span>Upload CSV File</span>
-                      </Label>
-                      <div className="border-2 border-dashed border-[#c7e5ff] rounded-lg p-10 text-center hover:border-[#007acc] transition-colors bg-white">
-                        <input
-                          id="csv-upload"
-                          type="file"
-                          accept=".csv"
-                          onChange={handleCsvChange}
-                          className="hidden"
-                        />
-                        <label htmlFor="csv-upload" className="cursor-pointer">
-                          <Upload className="h-12 w-12 text-[#007acc] mx-auto" />
-                          <p className="mt-3 text-base font-medium text-[#007acc]">
-                            {csvFile ? csvFile.name : "Click to upload or drag and drop"}
-                          </p>
-                          <p className="mt-2 text-sm text-gray-500">CSV files only (max 10MB)</p>
-                        </label>
-                      </div>
+                    <div
+                      className={`border-2 border-dashed ${dragActive ? "border-[#007acc] bg-[#f0f7ff]" : "border-[#c7e5ff]"} rounded-lg p-10 text-center hover:border-[#007acc] transition-colors bg-white relative`}
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                    >
+                      <input id="csv-upload" type="file" accept=".csv" onChange={handleCsvChange} className="hidden" />
+                      <label htmlFor="csv-upload" className="cursor-pointer block">
+                        <Upload className="h-12 w-12 text-[#007acc] mx-auto" />
+                        <p className="mt-3 text-base font-medium text-[#007acc]">
+                          {csvFile ? csvFile.name : "Click to upload or drag and drop"}
+                        </p>
+                        <p className="mt-2 text-sm text-gray-500">CSV files only (max 10MB)</p>
+                      </label>
+
+                      {csvFile && (
+                        <div className="mt-4 bg-[#f0f7ff] p-3 rounded-lg border border-[#c7e5ff] flex items-center">
+                          <FileSpreadsheet className="h-5 w-5 text-[#007acc] mr-2" />
+                          <div className="flex-1 text-left">
+                            <p className="text-sm font-medium text-[#007acc] truncate">{csvFile.name}</p>
+                            <p className="text-xs text-gray-500">{(csvFile.size / 1024).toFixed(2)} KB</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-500 hover:text-red-500"
+                            onClick={() => {
+                              setCsvFile(null)
+                              const fileInput = document.getElementById("csv-upload") as HTMLInputElement
+                              if (fileInput) fileInput.value = ""
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+
+                      {uploadStatus === "uploading" && (
+                        <div className="mt-4">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-[#007acc] h-2.5 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Uploading: {uploadProgress}%</p>
+                        </div>
+                      )}
                     </div>
 
                     <Button
@@ -263,6 +373,24 @@ export default function AddStudentPage() {
                       )}
                     </Button>
                   </form>
+                  {uploadStatus === "success" && (
+                    <Alert className="bg-green-50 border-green-200 text-green-800 mt-4">
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertTitle>Upload Successful</AlertTitle>
+                      <AlertDescription>
+                        Students have been registered successfully and will receive login credentials via email.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {uploadStatus === "error" && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertTitle>Upload Failed</AlertTitle>
+                      <AlertDescription>
+                        There was an error processing your CSV file. Please check the format and try again.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </CardContent>
 
@@ -282,6 +410,17 @@ export default function AddStudentPage() {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   )
 }
