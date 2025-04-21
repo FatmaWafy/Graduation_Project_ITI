@@ -138,7 +138,7 @@ export default function CalendarPage() {
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-24 border border-border p-1"></div>
+        <div key={`empty-${i}`} className='h-24 border border-border p-1'></div>
       );
     }
 
@@ -170,7 +170,7 @@ export default function CalendarPage() {
           key={day}
           className={`min-h-24 border border-border p-1 ${bgColorClass}`}
         >
-          <div className="flex justify-between">
+          <div className='flex justify-between'>
             <span
               className={`text-sm font-medium ${
                 hasExams
@@ -198,7 +198,7 @@ export default function CalendarPage() {
               </span>
             )}
           </div>
-          <div className="mt-1 space-y-1">
+          <div className='mt-1 space-y-1'>
             {dayEvents.map((event, index) => (
               <div
                 key={index}
@@ -246,11 +246,11 @@ export default function CalendarPage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort in reverse chronological order
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className='space-y-6'>
+      <div className='flex justify-between items-center'>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground">
+          <h1 className='text-3xl font-bold tracking-tight'>Calendar</h1>
+          <p className='text-muted-foreground'>
             View and manage your academic schedule
           </p>
         </div>
@@ -258,11 +258,11 @@ export default function CalendarPage() {
 
       {error && (
         <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-          role="alert"
+          className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative'
+          role='alert'
         >
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
+          <strong className='font-bold'>Error!</strong>
+          <span className='block sm:inline'> {error}</span>
         </div>
       )}
 
@@ -274,25 +274,25 @@ export default function CalendarPage() {
         <Switch id="show-course-events" checked={showCourseEvents} onCheckedChange={setShowCourseEvents} />
       </div> */}
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2 h-[650px]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <div className='grid gap-6 md:grid-cols-3'>
+        <Card className='md:col-span-2 h-[650px]'>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle>
               {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={prevMonth}>
-                <ChevronLeft className="h-4 w-4" />
+            <div className='flex items-center gap-2'>
+              <Button variant='outline' size='icon' onClick={prevMonth}>
+                <ChevronLeft className='h-4 w-4' />
               </Button>
-              <Button variant="outline" size="icon" onClick={nextMonth}>
-                <ChevronRight className="h-4 w-4" />
+              <Button variant='outline' size='icon' onClick={nextMonth}>
+                <ChevronRight className='h-4 w-4' />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-0">
+            <div className='grid grid-cols-7 gap-0'>
               {DAYS.map((day) => (
-                <div key={day} className="p-2 text-center text-sm font-medium">
+                <div key={day} className='p-2 text-center text-sm font-medium'>
                   {day}
                 </div>
               ))}
@@ -301,118 +301,122 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="h-[300px]">
-            <CardHeader>
+        <div className='space-y-6'>
+          <Card className='h-[300px]'>
+            <CardHeader className='pb-2'>
               <CardTitle>Today's Events</CardTitle>
               <CardDescription>Events scheduled for today</CardDescription>
             </CardHeader>
             <CardContent>
-              {todayEvents.length === 0 ? (
-                <p className="text-center text-muted-foreground">
-                  No events today
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {todayEvents.map((event, index) => (
-                    <div key={index} className="space-y-1">
-                      <h3 className="font-medium flex items-center gap-2">
-                        {event.title}
-                        {"isExam" in event && event.isExam && (
-                          <Badge variant="destructive" className="text-xs">
-                            Exam
-                          </Badge>
-                        )}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {event.course}
-                      </p>
-                      {"time" in event && event.time && (
-                        <p className="text-xs text-muted-foreground">
-                          Time: {event.time}
+              <ScrollArea className='h-[200px]'>
+                {todayEvents.length === 0 ? (
+                  <p className='text-center text-muted-foreground'>
+                    No events today
+                  </p>
+                ) : (
+                  <div className='space-y-4'>
+                    {todayEvents.map((event, index) => (
+                      <div key={index} className='space-y-1'>
+                        <h3 className='font-medium flex items-center gap-2'>
+                          {event.title}
+                          {"isExam" in event && event.isExam && (
+                            <Badge variant='destructive' className='text-xs'>
+                              Exam
+                            </Badge>
+                          )}
+                        </h3>
+                        <p className='text-sm text-muted-foreground'>
+                          {event.course}
                         </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        {"time" in event && event.time && (
+                          <p className='text-xs text-muted-foreground'>
+                            Time: {event.time}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
 
-          <Card className="h-[300px] border-red-200 bg-red-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-red-500" />
+          <Card className='h-[300px] border-red-200 bg-red-50'>
+            <CardHeader className='pb-2'>
+              <CardTitle className='flex items-center gap-2'>
+                <CalendarIcon className='h-5 w-5 text-red-500' />
                 Upcoming Exams
               </CardTitle>
               <CardDescription>Your scheduled exams</CardDescription>
             </CardHeader>
             <CardContent>
-              {upcomingExams.length === 0 ? (
-                <p className="text-center text-muted-foreground">
-                  No upcoming exams
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {upcomingExams.map((event, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start border-b border-red-100 pb-2 last:border-0"
-                    >
-                      <div>
-                        <h3 className="font-medium text-red-800">
-                          {event.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {event.course}
-                        </p>
-                        {event.time && (
-                          <p className="text-xs text-red-700">
-                            Time: {event.time}
+              <ScrollArea className='h-[200px]'>
+                {upcomingExams.length === 0 ? (
+                  <p className='text-center text-muted-foreground'>
+                    No upcoming exams
+                  </p>
+                ) : (
+                  <div className='space-y-4'>
+                    {upcomingExams.map((event, index) => (
+                      <div
+                        key={index}
+                        className='flex justify-between items-start border-b border-red-100 pb-2 last:border-0'
+                      >
+                        <div>
+                          <h3 className='font-medium text-red-800'>
+                            {event.title}
+                          </h3>
+                          <p className='text-sm text-muted-foreground'>
+                            {event.course}
                           </p>
-                        )}
+                          {event.time && (
+                            <p className='text-xs text-red-700'>
+                              Time: {event.time}
+                            </p>
+                          )}
+                        </div>
+                        <div className='text-sm bg-red-100 px-2 py-1 rounded text-red-800'>
+                          {new Date(event.date).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div className="text-sm bg-red-100 px-2 py-1 rounded text-red-800">
-                        {new Date(event.date).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
 
           {pastExams.length > 0 && (
-            <Card className="h-[300px] border-green-200 bg-green-50">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-green-500" />
+            <Card className='h-[300px] border-green-200 bg-green-50'>
+              <CardHeader className='pb-2'>
+                <CardTitle className='flex items-center gap-2'>
+                  <CalendarIcon className='h-5 w-5 text-green-500' />
                   Past Exams
                 </CardTitle>
                 <CardDescription>Your completed exams</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-4">
+                <ScrollArea className='h-[200px]'>
+                  <div className='space-y-4'>
                     {pastExams.map((event, index) => (
                       <div
                         key={index}
-                        className="flex justify-between items-start border-b border-green-100 pb-2 last:border-0"
+                        className='flex justify-between items-start border-b border-green-100 pb-2 last:border-0'
                       >
                         <div>
-                          <h3 className="font-medium text-green-800">
+                          <h3 className='font-medium text-green-800'>
                             {event.title}
                           </h3>
-                          <p className="text-sm text-muted-foreground">
+                          <p className='text-sm text-muted-foreground'>
                             {event.course}
                           </p>
                           {event.time && (
-                            <p className="text-xs text-green-700">
+                            <p className='text-xs text-green-700'>
                               Time: {event.time}
                             </p>
                           )}
                         </div>
-                        <div className="text-sm bg-green-100 px-2 py-1 rounded text-green-800">
+                        <div className='text-sm bg-green-100 px-2 py-1 rounded text-green-800'>
                           {new Date(event.date).toLocaleDateString()}
                         </div>
                       </div>
@@ -424,43 +428,48 @@ export default function CalendarPage() {
           )}
 
           {showCourseEvents && (
-            <Card className="h-[300px]">
-              <CardHeader>
+            <Card className='h-[300px]'>
+              <CardHeader className='pb-2'>
                 <CardTitle>Upcoming Events</CardTitle>
                 <CardDescription>Your next scheduled events</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {upcomingEvents.length === 0 ? (
-                    <p className="text-center text-muted-foreground">
-                      No upcoming events
-                    </p>
-                  ) : (
-                    upcomingEvents.map((event, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between space-y-1"
-                      >
-                        <div>
-                          <h3 className="font-medium flex items-center gap-2">
-                            {event.title}
-                            {"isExam" in event && event.isExam && (
-                              <Badge variant="destructive" className="text-xs">
-                                Exam
-                              </Badge>
-                            )}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {event.course}
-                          </p>
+                <ScrollArea className='h-[200px]'>
+                  <div className='space-y-4'>
+                    {upcomingEvents.length === 0 ? (
+                      <p className='text-center text-muted-foreground'>
+                        No upcoming events
+                      </p>
+                    ) : (
+                      upcomingEvents.map((event, index) => (
+                        <div
+                          key={index}
+                          className='flex justify-between space-y-1'
+                        >
+                          <div>
+                            <h3 className='font-medium flex items-center gap-2'>
+                              {event.title}
+                              {"isExam" in event && event.isExam && (
+                                <Badge
+                                  variant='destructive'
+                                  className='text-xs'
+                                >
+                                  Exam
+                                </Badge>
+                              )}
+                            </h3>
+                            <p className='text-sm text-muted-foreground'>
+                              {event.course}
+                            </p>
+                          </div>
+                          <div className='text-sm text-muted-foreground'>
+                            {new Date(event.date).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(event.date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           )}
