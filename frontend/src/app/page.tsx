@@ -50,17 +50,17 @@ export default function LandingPage() {
         {/* Menu Items for Larger Screens */}
         <div className='hidden sm:flex sm:gap-4'>
           <Link href='/signin'>
-            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500'>
+            <Button className='bg-primary  text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500'>
               Login
             </Button>
           </Link>
-          <Link href='/signup'>
+          {/* <Link href='/signup'>
             <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 delay-100'>
               Signup
             </Button>
-          </Link>
+          </Link> */}
           <Link href='/faq'>
-            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 delay-200'>
+            <Button className='bg-primary  text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 '>
               FAQ
             </Button>
           </Link>
@@ -83,11 +83,11 @@ export default function LandingPage() {
               Login
             </Button>
           </Link>
-          <Link href='/signup' onClick={toggleMenu}>
+          {/* <Link href='/signup' onClick={toggleMenu}>
             <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
               Signup
             </Button>
-          </Link>
+          </Link> */}
           <Link href='/faq' onClick={toggleMenu}>
             <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
               FAQ

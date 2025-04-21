@@ -29,8 +29,12 @@ import os
 from datetime import date
 from rest_framework import generics 
 from datetime import datetime, timezone
+from social_django.utils import psa
+from social_django.utils import load_strategy, load_backend
+from django.contrib.auth import get_user_model
 
 token_generator = PasswordResetTokenGenerator()
+User = get_user_model()
 
 class RegisterInstructorAPIView(APIView):
     permission_classes = [AllowAny]
@@ -1120,3 +1124,144 @@ class InstructorTrackListAPIView(APIView):
             return Response(tracks, status=status.HTTP_200_OK)
         except Instructor.DoesNotExist:
             return Response({'error': 'Instructor not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+# class GoogleLoginAPIView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         try:
+#             token = request.data.get('token')
+#             track_name = request.data.get('track_name')
+#             branch_name = request.data.get('branch_name')
+#             is_signup = request.data.get('is_signup', False)
+
+#             if not token:
+#                 return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # التحقق من التوكن يدويًا عبر Google API
+#             print("Verifying token with Google API:", token)
+#             response = requests.get(
+#                 'https://www.googleapis.com/oauth2/v3/userinfo',
+#                 headers={'Authorization': f'Bearer {token}'}
+#             )
+
+#             if response.status_code != 200:
+#                 return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+#             user_data = response.json()
+#             email = user_data.get('email')
+#             if not email:
+#                 return Response({"error": "Email not provided by Google"}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # التحقق من وجود المستخدم
+#             if User.objects.filter(email=email).exists():
+#                 existing_user = User.objects.get(email=email)
+#                 refresh = RefreshToken.for_user(existing_user)
+#                 return Response({
+#                     "access": str(refresh.access_token),
+#                     "refresh": str(refresh),
+#                     "role": existing_user.role,
+#                 }, status=status.HTTP_200_OK)
+
+#             # إذا لم يكن المستخدم موجودًا
+#             if is_signup:
+#                 if not track_name or not branch_name:
+#                     return Response({"error": "Track and branch are required for new instructors"}, status=status.HTTP_400_BAD_REQUEST)
+
+#                 track = Track.objects.filter(name=track_name).first()
+#                 branch = Branch.objects.filter(name=branch_name).first()
+#                 if not track or not branch:
+#                     return Response({"error": "Invalid track or branch"}, status=status.HTTP_400_BAD_REQUEST)
+
+#                 user_data = {
+#                     "username": email.split('@')[0],
+#                     "email": email,
+#                     "role": "instructor",
+#                 }
+#                 new_user = User.objects.create_user(**user_data)
+
+#                 instructor = Instructor.objects.create(user=new_user, branch=branch)
+#                 track.instructors.add(instructor)
+
+#                 refresh = RefreshToken.for_user(new_user)
+#                 return Response({
+#                     "access": str(refresh.access_token),
+#                     "refresh": str(refresh),
+#                     "role": new_user.role,
+#                 }, status=status.HTTP_201_CREATED)
+#             else:
+#                 return Response({"error": "User does not exist. Please sign up as an instructor."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         except Exception as e:
+#             print("Exception occurred:", str(e))
+#             return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GoogleLoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            token = request.data.get('token')
+            track_name = request.data.get('track_name')
+            branch_name = request.data.get('branch_name')
+            is_signup = request.data.get('is_signup', False)
+
+            if not token:
+                return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # التحقق من التوكن يدويًا عبر Google API
+            print("Verifying token with Google API:", token)
+            response = requests.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+
+            if response.status_code != 200:
+                print("Google API response:", response.status_code, response.text)
+                return Response({"error": "Invalid token", "details": response.text}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_data = response.json()
+            email = user_data.get('email')
+            if not email:
+                return Response({"error": "Email not provided by Google"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # التحقق من وجود المستخدم
+            if User.objects.filter(email=email).exists():
+                existing_user = User.objects.get(email=email)
+                refresh = RefreshToken.for_user(existing_user)
+                return Response({
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "role": existing_user.role,
+                }, status=status.HTTP_200_OK)
+
+            # إذا لم يكن المستخدم موجودًا
+            if is_signup:
+                user_data = {
+                    "username": email.split('@')[0],
+                    "email": email,
+                    "role": "instructor",
+                }
+                new_user = User.objects.create_user(**user_data)
+
+                # إنشاء Instructor
+                track = Track.objects.filter(name=track_name).first()
+                branch = Branch.objects.filter(name=branch_name).first()
+                if not track or not branch:
+                    return Response({"error": "Invalid track or branch"}, status=status.HTTP_400_BAD_REQUEST)
+
+                instructor = Instructor.objects.create(user=new_user, branch=branch)
+                track.instructors.add(instructor)
+
+                refresh = RefreshToken.for_user(new_user)
+                return Response({
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "role": new_user.role,
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error": "User does not exist. Please sign up as an instructor."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print("Exception occurred:", str(e))
+            return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

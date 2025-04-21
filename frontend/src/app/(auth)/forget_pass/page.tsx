@@ -259,7 +259,7 @@ export default function ForgotPassword() {
     <div className='flex min-h-screen bg-white'>
       {/* Left Column - Form */}
       <div className='w-full lg:w-1/2 flex items-center justify-center p-4'>
-        <Card className='w-full max-w-md shadow-none border-0'>
+        <Card className='w-full max-w-md shadow-xl rounded-lg px-6 py-6'>
           <CardHeader className='text-center space-y-2 pt-4'>
             <CardTitle className='text-2xl font-bold'>
               Forgot Password

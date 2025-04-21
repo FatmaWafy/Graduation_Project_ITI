@@ -13,7 +13,8 @@ from .views import  (
     UploadUserProfileImage,
     ChangePasswordAPIView,
     InstructorViewSet ,
-    InstructorTrackListAPIView
+    InstructorTrackListAPIView,
+    GoogleLoginAPIView,
 )
 from rest_framework.routers import DefaultRouter
  
@@ -24,6 +25,8 @@ router.register(r'instructors', InstructorViewSet)
 urlpatterns = [
     path("register/", RegisterInstructorAPIView.as_view(), name="register"),
     path("login/", LoginAPIView.as_view(), name="login"),
+    path('google/login/', GoogleLoginAPIView.as_view(), name='google_login'),  # نقطة نهاية لـ Google
+    path('google/callback/', include('social_django.urls', namespace='social')),  # مسار Callback
     path("reset-password-request/", ResetPasswordRequestAPIView.as_view(), name="reset-password-request"),
     path("reset-password/", ResetPasswordAPIView.as_view(), name="reset-password"),
     path('students/<int:user_id>/', StudentViewSet.as_view({'get': 'retrieve'})),
