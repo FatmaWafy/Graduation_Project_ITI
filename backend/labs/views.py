@@ -59,7 +59,8 @@ class LabViewSet(viewsets.ModelViewSet):
             serializer.save(
                 instructor=self.request.user,
                 size=size_str,
-                track=track
+                track=track,
+                submission_link=self.request.data.get('submission_link')
             )
         except Exception as e:
             raise serializers.ValidationError({"error": str(e)})

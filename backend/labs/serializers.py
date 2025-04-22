@@ -10,8 +10,8 @@ class LabSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lab
         fields = ['id', 'name', 'file', 'description', 'track', 'track_name', 
-                  'instructor', 'instructor_name', 'created_at', 'size']
-        read_only_fields = ['instructor', 'created_at', 'size']
+                  'instructor', 'instructor_name', 'created_at', 'size' , 'submission_link']
+        read_only_fields = ['instructor', 'created_at', 'size' ]
     
     def get_instructor_name(self, obj):
         return obj.instructor.username if obj.instructor else None

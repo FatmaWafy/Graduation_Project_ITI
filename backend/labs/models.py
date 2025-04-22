@@ -16,5 +16,6 @@ class Lab(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     size = models.CharField(max_length=20, blank=True, null=True)  # Store file size as string (e.g., "2.4 MB")
     file = models.FileField(upload_to=lab_file_path)
+    submission_link = models.URLField(blank=True, null=True)
     def __str__(self):
         return self.name
