@@ -346,14 +346,14 @@ export function SendNotificationForm() {
                   }}
                 >
                   <FormControl>
-                    <SelectTrigger className="w-full border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2">
-                      <SelectValue placeholder="Choose a student to notify" />
+                  <SelectTrigger className="w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black">
+                  <SelectValue placeholder="Choose a student to notify" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="border-gray-200">
                     {students.length > 0 ? (
                       students.map((student) => (
-                        <SelectItem key={student.id} value={String(student.id)}>
+                        <SelectItem key={student.id} value={String(student.id)} >
                           {student.user.username}
                         </SelectItem>
                       ))
@@ -389,8 +389,8 @@ export function SendNotificationForm() {
                   }}
                 >
                   <FormControl>
-                    <SelectTrigger className="w-full border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2">
-                      <SelectValue placeholder="Choose a track" />
+                  <SelectTrigger className="w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black">
+                  <SelectValue placeholder="Choose a track" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="border-gray-200">
@@ -430,7 +430,7 @@ export function SendNotificationForm() {
               <FormControl>
                 <Textarea
                   placeholder="Type your notification message here..."
-                  className="min-h-40 resize-none border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] mt-2 text-base"
+                  className="min-h-40 resize-none bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] mt-2 text-base text-black"
                   {...field}
                 />
               </FormControl>
@@ -480,7 +480,7 @@ export function SendNotificationForm() {
               render={({ field }) => (
                 <Textarea
                   placeholder="Enter your message here..."
-                  className="min-h-[150px]"
+                  className="min-h-[150px] bg-white text-black border border-gray-300 rounded-md focus:ring-[#007acc] focus:border-[#007acc] mb-6"
                   {...field}
                 />
               )}
