@@ -1,5 +1,3 @@
- 
-
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -252,6 +250,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { jwtDecode } from "jwt-decode";
 import { getClientSideToken } from "@/lib/cookies";
+import Chatbot from "@/components/Chatbot";
 
 export default function InstructorLayout({
   children,
@@ -275,7 +274,9 @@ export default function InstructorLayout({
     profile_image?: string;
   }
 
-  const [instructorData, setInstructorData] = useState<InstructorData | null>(null);
+  const [instructorData, setInstructorData] = useState<InstructorData | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -302,7 +303,7 @@ export default function InstructorLayout({
           `http://127.0.0.1:8000/users/instructors/${userId}/`,
           {
             headers: {
-              "Authorization": `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           }
@@ -488,6 +489,7 @@ export default function InstructorLayout({
         }`}
       >
         {children}
+        <Chatbot />
         <ToastContainer />
       </main>
     </div>

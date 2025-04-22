@@ -26,6 +26,7 @@ urlpatterns = [
     path('notifications/', include('st_notifications.urls')),
     path('exam/', include('exams.urls')),
     path('labs/', include('labs.urls')),
+    path('chatbot/', include('chatbot.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
