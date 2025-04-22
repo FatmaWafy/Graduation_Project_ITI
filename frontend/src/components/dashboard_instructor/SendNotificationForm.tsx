@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import { Loader2, Users, User, MessageSquare, Send, Info, Bell, UserCheck, UsersRound } from "lucide-react"
 
@@ -16,6 +16,10 @@ import { Label } from "../ui/label"
 import Cookies from "js-cookie"
 import "react-toastify/dist/ReactToastify.css"
 import { jwtDecode } from "jwt-decode"
+import { PredefinedMessages } from "./PredefinedMessages"
+import { toast, ToastContainer } from "react-toastify"
+
+
 
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = document.cookie
@@ -78,6 +82,7 @@ export function SendNotificationForm() {
   const [students, setStudents] = useState<any[]>([]) // Ensure it is an array
   const [tracks, setTracks] = useState<any[]>([]) // Ensure it is an array
   const [selectedStudent, setSelectedStudent] = useState(null) // لحفظ الطالب المحدد
+  // const [message, setMessage] = useState("") // State for the message content
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -127,25 +132,25 @@ export function SendNotificationForm() {
         const userId = await getUserIdFromToken()
         console.log("User ID from token:", userId)
         if (!userId) throw new Error("User ID not found in token.")
-    
+
         // 2️⃣ Get instructorId using userId
         const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}`)
         const instructorData = await res.json()
         const instructorId = instructorData.id
         console.log("Instructor ID:", instructorId)
-    
+
         // 3️⃣ Fetch tracks for this instructor
         const trackRes = await fetch(`http://127.0.0.1:8000/users/instructor/${instructorId}/tracks/`)
         const trackData = await trackRes.json()
         console.log("Tracks for instructor:", trackData)
-    
+
         // 4️⃣ Set tracks
         setTracks(trackData)
       } catch (error) {
         console.error("Failed to fetch instructor tracks:", error)
       }
     }
-    
+
 
     fetchStudents()
     fetchInstructorTracks()
@@ -196,7 +201,11 @@ export function SendNotificationForm() {
         result.message &&
         (result.message.includes("Notes sent to all students") || result.message.includes("Note sent successfully")) // تحقق من نجاح الإرسال بناءً على الرسالة
       ) {
-        alert("Notification sent successfully!")
+        toast.success("Notification sent successfully!", {
+          autoClose: 3000,
+          closeOnClick: true,
+        })
+
       } else {
         throw new Error("Failed to send notification.")
       }
@@ -207,11 +216,23 @@ export function SendNotificationForm() {
       })
     } catch (error) {
       console.error("Failed to send notification:", error)
-      alert("There was an error sending your notification. Please try again.")
+      toast.error("❌ There was an error sending your notification. Please try again.", {
+        autoClose: 3000,
+        closeOnClick: true,
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const handleSelectPredefinedMessage = (selectedMessage: string) => {
+    form.setValue("message", selectedMessage) // ✅ خليه يتحط جوا الفورم
+    toast.info("Predefined message selected", {
+      autoClose: 3000,
+      closeOnClick: true,
+    })
+  }
+
 
   return (
     <Form {...form}>
@@ -241,32 +262,28 @@ export function SendNotificationForm() {
                   className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
                   <div
-                    className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-                      watchRecipientType === "student"
-                        ? "border-[#007acc] bg-[#f0f7ff]"
-                        : "border-gray-200 bg-white hover:border-[#c7e5ff]"
-                    }`}
+                    className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${watchRecipientType === "student"
+                      ? "border-[#007acc] bg-[#f0f7ff]"
+                      : "border-gray-200 bg-white hover:border-[#c7e5ff]"
+                      }`}
                   >
                     <div className="absolute top-2 right-2">
                       <RadioGroupItem value="student" id="student" className="sr-only" />
                       <div
-                        className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                          watchRecipientType === "student" ? "border-[#007acc] bg-[#007acc]" : "border-gray-300"
-                        }`}
+                        className={`h-4 w-4 rounded-full border flex items-center justify-center ${watchRecipientType === "student" ? "border-[#007acc] bg-[#007acc]" : "border-gray-300"
+                          }`}
                       >
                         {watchRecipientType === "student" && <div className="h-2 w-2 rounded-full bg-white"></div>}
                       </div>
                     </div>
                     <Label htmlFor="student" className="flex flex-col items-center p-6 cursor-pointer">
                       <UserCheck
-                        className={`h-10 w-10 mb-3 ${
-                          watchRecipientType === "student" ? "text-[#007acc]" : "text-gray-400"
-                        }`}
+                        className={`h-10 w-10 mb-3 ${watchRecipientType === "student" ? "text-[#007acc]" : "text-gray-400"
+                          }`}
                       />
                       <span
-                        className={`font-medium ${
-                          watchRecipientType === "student" ? "text-[#007acc]" : "text-gray-700"
-                        }`}
+                        className={`font-medium ${watchRecipientType === "student" ? "text-[#007acc]" : "text-gray-700"
+                          }`}
                       >
                         Individual Student
                       </span>
@@ -275,27 +292,24 @@ export function SendNotificationForm() {
                   </div>
 
                   <div
-                    className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-                      watchRecipientType === "track"
-                        ? "border-[#007acc] bg-[#f0f7ff]"
-                        : "border-gray-200 bg-white hover:border-[#c7e5ff]"
-                    }`}
+                    className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${watchRecipientType === "track"
+                      ? "border-[#007acc] bg-[#f0f7ff]"
+                      : "border-gray-200 bg-white hover:border-[#c7e5ff]"
+                      }`}
                   >
                     <div className="absolute top-2 right-2">
                       <RadioGroupItem value="track" id="track" className="sr-only" />
                       <div
-                        className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                          watchRecipientType === "track" ? "border-[#007acc] bg-[#007acc]" : "border-gray-300"
-                        }`}
+                        className={`h-4 w-4 rounded-full border flex items-center justify-center ${watchRecipientType === "track" ? "border-[#007acc] bg-[#007acc]" : "border-gray-300"
+                          }`}
                       >
                         {watchRecipientType === "track" && <div className="h-2 w-2 rounded-full bg-white"></div>}
                       </div>
                     </div>
                     <Label htmlFor="track" className="flex flex-col items-center p-6 cursor-pointer">
                       <UsersRound
-                        className={`h-10 w-10 mb-3 ${
-                          watchRecipientType === "track" ? "text-[#007acc]" : "text-gray-400"
-                        }`}
+                        className={`h-10 w-10 mb-3 ${watchRecipientType === "track" ? "text-[#007acc]" : "text-gray-400"
+                          }`}
                       />
                       <span
                         className={`font-medium ${watchRecipientType === "track" ? "text-[#007acc]" : "text-gray-700"}`}
@@ -432,7 +446,8 @@ export function SendNotificationForm() {
           )}
         />
 
-        <div className="pt-4">
+
+        {/* <div className="pt-4">
           <Button
             type="submit"
             className="w-full bg-[#007acc] hover:bg-[#0069b4] text-white font-medium h-12 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-base"
@@ -450,8 +465,52 @@ export function SendNotificationForm() {
               </>
             )}
           </Button>
+        </div> */}
+
+
+        {/* Predefined Messages Section */}
+        <PredefinedMessages onSelectMessage={handleSelectPredefinedMessage} />
+
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Message</h3>
+            <Controller
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <Textarea
+                  placeholder="Enter your message here..."
+                  className="min-h-[150px]"
+                  {...field}
+                />
+              )}
+            />
+
+          </div>
         </div>
+
+        <Button type="submit" disabled={isSubmitting} className="w-full bg-[#007acc] hover:bg-[#0062a3] text-white py-2.5">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending notification...
+            </>
+          ) : (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Send Notification
+            </>
+          )}
+        </Button>
+
+
+
       </form>
+      <ToastContainer position="bottom-right" />
+
+
     </Form>
+
+
   )
 }

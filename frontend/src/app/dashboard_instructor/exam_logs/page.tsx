@@ -234,7 +234,7 @@ export default function ExamLogsIndexPage() {
   }, []);
 
   return (
-    <div className="container mx-auto py-10 px-4  text-white">
+    <div className="container mx-auto py-10 px-4  text-white bg-white">
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
       <div>
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-blue-400">
@@ -267,7 +267,7 @@ export default function ExamLogsIndexPage() {
         {exams.map((exam) => (
           <Card
             key={exam.temp_exam_id}
-            className="bg-[#1f2937] border border-gray-700 hover:shadow-lg transition-shadow duration-300"
+            className="border border-gray-700 hover:shadow-lg transition-shadow duration-300"
           >
             <CardHeader className="bg-[#111827] pb-4">
               <div>

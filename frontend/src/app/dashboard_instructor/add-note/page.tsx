@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { SendNotificationForm } from "../../../components/dashboard_instructor/SendNotificationForm"
 import "react-toastify/dist/ReactToastify.css"
 
+
 export const metadata: Metadata = {
   title: "Send Notifications",
   description: "Send notifications to students",

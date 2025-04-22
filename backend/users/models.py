@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Permission
 from django.db import models
 import secrets
+from datetime import timedelta
+from django.utils import timezone
 
 # 🔹 User Manager 
 class UserManager(BaseUserManager):
@@ -123,5 +125,4 @@ class Student(models.Model):
 
     def __str__(self):
         return f"Student: {self.user.username} - Track: {self.track.name if self.track else 'No Track'}"
-
 
