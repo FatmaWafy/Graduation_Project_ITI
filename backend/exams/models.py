@@ -64,7 +64,7 @@ class language(models.TextChoices):
     CSS = "css", _("CSS")
     JSON = "json", _("JSON")
     XML = "xml", _("XML")
-    # SQL = "sql", _("SQL")
+    SQL = "sql", _("SQL")
     JAVA = "java", _("Java")
     C = "c", _("C")
     CPP = "cpp", _("C++")
