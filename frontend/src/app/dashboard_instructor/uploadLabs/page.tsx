@@ -84,37 +84,41 @@ export default function LabsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [tracks, setTracks] = useState<{ id: number; name: string }[]>([]);
+  const [submissionLink, setSubmissionLink] = useState("");
 
   const fetchTracks = async () => {
     try {
-      const token = Cookies.get("token")
+      const token = Cookies.get("token");
       if (!token) {
-        throw new Error("No authentication token found")
+        throw new Error("No authentication token found");
       }
-  
-      const response = await fetch("http://127.0.0.1:8000/users/instructors/instructor_data/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-  
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/users/instructors/instructor_data/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch tracks: ${response.status}`)
+        throw new Error(`Failed to fetch tracks: ${response.status}`);
       }
-  
-      const data = await response.json()
-      console.log("Instructor tracks data:", data)
-      setTracks(data.tracks || [])
+
+      const data = await response.json();
+      console.log("Instructor tracks data:", data);
+      setTracks(data.tracks || []);
     } catch (error) {
-      console.error("Error fetching tracks:", error)
+      console.error("Error fetching tracks:", error);
       toast({
         title: "Error",
         description: "Failed to load tracks. Please refresh the page.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const fetchLabs = async () => {
     setIsLoading(true);
@@ -222,6 +226,7 @@ export default function LabsPage() {
     formData.append("file", file);
     formData.append("track", track);
     formData.append("name", file.name);
+    formData.append("submission_link", submissionLink);
 
     const selectedTrack = tracks.find((t) => t.id.toString() === track);
     formData.append(
@@ -475,6 +480,18 @@ export default function LabsPage() {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='submission_link'>
+                    Google Drive Submission Link  
+                  </Label>
+                  <Input
+                    id='submission_link'
+                    type='url'
+                    placeholder='https://drive.google.com/...'
+                    onChange={(e) => setSubmissionLink(e.target.value)}
+                  />
                 </div>
 
                 <div className='space-y-2'>

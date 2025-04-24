@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'exams',
     'labs',
-    'social_django'
+    'social_django',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
