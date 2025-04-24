@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getClientSideToken } from "@/lib/cookies";
 import { Input } from "@/components/ui/input";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 interface Answer {
   questionId: string;
@@ -96,7 +98,7 @@ export default function StudentAnswersPage() {
         }
 
         const response = await fetch(
-          `http://127.0.0.1:8000/exam/student-exam-answers/get_answers/?exam_instance_id=${examInstanceId}&student_name=${encodeURIComponent(
+          `${origin}/exam/student-exam-answers/get_answers/?exam_instance_id=${examInstanceId}&student_name=${encodeURIComponent(
             studentName
           )}`,
           {

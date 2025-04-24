@@ -15,6 +15,7 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import { Button } from "../ui/button";
 import {
@@ -125,7 +126,7 @@ export function SendNotificationForm() {
           return;
         }
         const response = await fetch(
-          "http://127.0.0.1:8000/users/instructors/instructor_students/",
+          `${origin}/users/instructors/instructor_students/`,
           {
             method: "GET",
             headers: {
@@ -151,13 +152,13 @@ export function SendNotificationForm() {
         console.log("User ID from token:", userId);
         if (!userId) throw new Error("User ID not found in token.");
         const res = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}`
+          `${origin}/users/instructors/${userId}`
         );
         const instructorData = await res.json();
         const instructorId = instructorData.id;
         console.log("Instructor ID:", instructorId);
         const trackRes = await fetch(
-          `http://127.0.0.1:8000/users/instructor/${instructorId}/tracks/`
+          `${origin}/users/instructor/${instructorId}/tracks/`
         );
         const trackData = await trackRes.json();
         console.log("Tracks for instructor:", trackData);
@@ -188,7 +189,7 @@ export function SendNotificationForm() {
       console.log("User ID from token:", userId);
       if (!userId) throw new Error("User ID not found in token.");
       const res = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}`
+        `${origin}/users/instructors/${userId}`
       );
       const data = await res.json();
       console.log("Data from student API:", data);

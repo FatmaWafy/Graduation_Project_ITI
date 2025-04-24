@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "react-toastify";
 import { Loader2, Plus, MessageSquare } from "lucide-react";
 import Cookies from "js-cookie";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface PredefinedMessage {
   id: number;
@@ -38,7 +39,7 @@ export function PredefinedMessages({
       }
 
       const response = await fetch(
-        "http://localhost:8000/notifications/predefined/",
+        `${origin}/notifications/predefined/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -78,7 +79,7 @@ export function PredefinedMessages({
       console.log("Sending body:", JSON.stringify({ message: newMessage }));
 
       const response = await fetch(
-        "http://localhost:8000/notifications/predefined/",
+        `${origin}/notifications/predefined/`,
         {
           method: "POST",
           headers: {

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ExamLogsHeader } from "../../../../components/exam-logs-header";
 import { ExamLogsTable } from "../../../../components/exam-logs-table";
 import { ExamLog } from "@/lib/types";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface ExamLogsPageProps {
   params: Promise<{ id: string }>;
@@ -59,7 +60,7 @@ function ExamLogsContent({ examId }: { examId: string }) {
       const fetchLogs = async () => {
         try {
           const res = await fetch(
-            `http://127.0.0.1:8000/exam/exams/logs/${examId}/`,
+            `${origin}/exam/exams/logs/${examId}/`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,

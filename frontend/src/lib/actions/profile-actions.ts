@@ -1,6 +1,7 @@
 "use server"
 
 import { getClientSideToken } from "@/lib/cookies"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function uploadProfileImage(userId: number, imageFile: File) {
   try {
@@ -14,7 +15,7 @@ export async function uploadProfileImage(userId: number, imageFile: File) {
 
     console.log(`Uploading profile image for user ID: ${userId}`)
 
-    const response = await fetch(`http://127.0.0.1:8000/users/upload-profile-image/${userId}/`, {
+    const response = await fetch(`${origin}/users/upload-profile-image/${userId}/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

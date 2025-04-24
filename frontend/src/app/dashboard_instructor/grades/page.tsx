@@ -44,6 +44,7 @@ interface StudentGrade {
   branch?: string;
   track?: string;
 }
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function GradesPage() {
   const [grades, setGrades] = useState<StudentGrade[]>([]);
@@ -74,7 +75,7 @@ export default function GradesPage() {
 
         // Fetch grades data
         const response = await fetch(
-          "http://127.0.0.1:8000/exam/student-exam-answers/get_all_student_scores/",
+          `${origin}/exam/student-exam-answers/get_all_student_scores/`,
           {
             method: "GET",
             headers: {

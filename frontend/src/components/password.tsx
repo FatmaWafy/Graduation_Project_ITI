@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 export default function PasswordChangeSection() {
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +39,7 @@ export default function PasswordChangeSection() {
 
     try {
       const res = await axios.post(
-        `http://localhost:8000/users/change-password/`,
+        `${origin}/users/change-password/`,
         student_id: studentData.id,
         currentPassword: passwordValues.currentPassword,
         newPassword: passwordValues.newPassword,

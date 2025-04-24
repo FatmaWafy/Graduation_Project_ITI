@@ -27,6 +27,8 @@ interface Notification {
   read: boolean
   is_track_notification?: boolean
 }
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 export function NotificationsDropdown() {
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -45,7 +47,7 @@ export function NotificationsDropdown() {
         return
       }
 
-      const response = await axios.get("http://127.0.0.1:8000/notifications/notes/", {
+      const response = await axios.get(`${origin}/notifications/notes/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -73,7 +75,7 @@ export function NotificationsDropdown() {
         // Add hardcoded test notification for "Exam 33"
         const testNotification = {
           message: 'A new exam "Exam 33" has been scheduled for you at 4/20/2025, 3:07:00 AM.',
-          instructor: "System",
+          instructor: undefined, // Adjusted to match the expected type
         }
         processNotification(testNotification)
 
@@ -125,7 +127,7 @@ export function NotificationsDropdown() {
       }
 
       await axios.patch(
-        `http://127.0.0.1:8000/notifications/notes/${id}/`,
+        `${origin}/notifications/notes/${id}/`,
         { read: true },
         {
           headers: {
@@ -161,7 +163,7 @@ export function NotificationsDropdown() {
       }
 
       await axios.patch(
-        "http://127.0.0.1:8000/notifications/mark-all-read/",
+        `${origin}/notifications/mark-all-read/`,
         { read: true },
         {
           headers: {

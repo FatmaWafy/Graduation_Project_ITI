@@ -1,6 +1,7 @@
 // Types
 
 import { addHours } from "date-fns"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 
 export type Assignment = {
@@ -210,7 +211,7 @@ export type Exam = {
 }
 export async function getExams(token: string, userId: string): Promise<Exam[]> {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/exam/temp-exams-by-student/${userId}/`, {
+    const response = await fetch(`${origin}/exam/temp-exams-by-student/${userId}/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

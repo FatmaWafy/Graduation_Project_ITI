@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useStudents } from "../students/hooks/use-students"
 import { getClientSideToken } from "@/lib/cookies"
 import type { Student } from "../students/types"
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 interface LeetCodeSubmission {
   title: string
@@ -60,7 +62,7 @@ export default function ScrappingPage() {
       const statsPromises = students.map(async (student) => {
         try {
           const response = await fetch(
-            `http://127.0.0.1:8000/users/students/external-stats/by-student-id/${student.id}/`,
+            `${origin}/users/students/external-stats/by-student-id/${student.id}/`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -184,7 +186,7 @@ export default function ScrappingPage() {
         return
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/users/students/external-stats/by-student-id/${studentId}/`, {
+      const response = await fetch(`${origin}/users/students/external-stats/by-student-id/${studentId}/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

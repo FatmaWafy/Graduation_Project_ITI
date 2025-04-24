@@ -46,6 +46,7 @@ import { useToast } from "@/components/ui/use-toast";
 import Cookies from "js-cookie";
 import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
 import { jwtDecode } from "jwt-decode";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = Cookies.get("token");
@@ -94,7 +95,7 @@ export default function LabsPage() {
       }
 
       const response = await fetch(
-        "http://127.0.0.1:8000/users/instructors/instructor_data/",
+        `${origin}/users/instructors/instructor_data/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -128,7 +129,7 @@ export default function LabsPage() {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(`${origin}/labs/`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -250,7 +251,7 @@ export default function LabsPage() {
         });
       }, 200);
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(`${origin}/labs/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -288,7 +289,7 @@ export default function LabsPage() {
         if (!userId) throw new Error("User ID not found in token.");
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}`
+          `${origin}/users/instructors/${userId}`
         );
         if (!res.ok) throw new Error("Failed to fetch instructor ID");
 
@@ -341,7 +342,7 @@ export default function LabsPage() {
       }
 
       const response = await fetch(
-        `http://127.0.0.1:8000/labs/${lab.id}/download/`,
+        `${origin}/labs/${lab.id}/download/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -386,7 +387,7 @@ export default function LabsPage() {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/labs/${labId}/`, {
+      const response = await fetch(`${origin}/labs/${labId}/`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

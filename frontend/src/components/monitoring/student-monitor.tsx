@@ -6,6 +6,7 @@ import axios from "axios"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import * as faceapi from "face-api.js"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface StudentMonitorProps {
   examId: string
@@ -311,7 +312,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
       if (token) {
         try {
           await axios.post(
-            "http://127.0.0.1:8000/exam/exams/logs/",
+            `${origin}/exam/exams/logs/`,
             {
               exam_id: examId,
               reason,

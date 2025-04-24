@@ -387,6 +387,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGoogleLogin } from "@react-oauth/google";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 export default function SignupPage() {
   const router = useRouter();
@@ -408,7 +410,7 @@ export default function SignupPage() {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/users/branches/");
+        const res = await fetch(`${origin}/users/branches/`);
         const data = await res.json();
         if (Array.isArray(data)) {
           setBranches(data);
@@ -427,7 +429,7 @@ export default function SignupPage() {
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/users/get-tracks/");
+        const res = await fetch(`${origin}/users/get-tracks/`);
         const data = await res.json();
         if (Array.isArray(data)) {
           setTracks(data);
@@ -486,7 +488,7 @@ export default function SignupPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("http://127.0.0.1:8000/users/register/", {
+      const response = await fetch(`${origin}/users/register/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -517,7 +519,7 @@ export default function SignupPage() {
           return;
         }
 
-        const res = await fetch("http://127.0.0.1:8000/users/google/login/", {
+        const res = await fetch(`${origin}/users/google/login/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

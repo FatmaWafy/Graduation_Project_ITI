@@ -2,9 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { Student, ApiError } from "../types"
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 // API base URL - using your specific endpoint
-const API_URL = "http://localhost:8000/users/students"
+const API_URL = `${origin}/users/students`
 
 // Helper function to get auth headers from cookies
 
@@ -28,7 +30,7 @@ const getAuthHeaders = () => {
 async function fetchStudents(): Promise<Student[]> {
   // console.log("Fetching students with headers:", getAuthHeaders())
 
-  const response = await fetch(`http://127.0.0.1:8000/users/instructors/instructor_students/`, {
+  const response = await fetch(`${origin}/users/instructors/instructor_students/`, {
     headers: getAuthHeaders(),
   })
 
@@ -132,7 +134,7 @@ export const useStudentById = (studentId: number) => {
   return useQuery({
     queryKey: ["student", studentId],
     queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:8000/users/students/by-id/${studentId}/`)
+      const res = await fetch(`${origin}/users/students/by-id/${studentId}/`)
       if (!res.ok) {
         throw new Error("Failed to fetch student")
       }

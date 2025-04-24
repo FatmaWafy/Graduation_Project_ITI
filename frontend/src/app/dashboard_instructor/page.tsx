@@ -23,6 +23,7 @@ import {
   BarChart3,
   Layers,
 } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import { useRouter } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
@@ -57,7 +58,7 @@ export default function InstructorDashboard() {
   
           console.log("User ID from token in Dashboard:", userId)
   
-          const res = await fetch(`http://127.0.0.1:8000/users/instructors/${userId}/`)
+          const res = await fetch(`${origin}/users/instructors/${userId}/`)
           if (!res.ok) throw new Error("Failed to fetch student data")
   
           const data = await res.json()
