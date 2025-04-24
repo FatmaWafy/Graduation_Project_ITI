@@ -91,22 +91,7 @@ interface Course {
 }
 
 export default function AddExamPage() {
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: Date.now(),
-      type: "mcq",
-      question_text: "",
-      option_a: "",
-      option_b: "",
-      option_c: "",
-      option_d: "",
-      correct_option: "A",
-      difficulty: "Easy",
-      source: "exam_ui",
-      points: 1.0,
-      language: "python",
-    },
-  ]);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -777,22 +762,7 @@ export default function AddExamPage() {
       toast.success("Exam created successfully!");
       setExamTitle("");
       setExamDuration(60);
-      setQuestions([
-        {
-          id: Date.now(),
-          type: "mcq",
-          question_text: "",
-          option_a: "",
-          option_b: "",
-          option_c: "",
-          option_d: "",
-          correct_option: "A",
-          difficulty: "Easy",
-          source: "exam_ui",
-          points: 1.0,
-          language: "python",
-        },
-      ]);
+      setQuestions([]);
       setSelectedQuestions([]);
       setCodedQuestions([]);
       setShowCreateQuestion(false);
@@ -1318,469 +1288,484 @@ export default function AddExamPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 p-6">
-                <Accordion
-                  type="multiple"
-                  className="w-full"
-                  defaultValue={["question-0"]}
-                >
-                  {questions.map((question, index) => (
-                    <AccordionItem
-                      key={index}
-                      value={`question-${index}`}
-                      className={`border rounded-lg px-2 mb-4 ${
-                        question.type === "mcq"
-                          ? "border-l-4 border-l-[#007acc]"
-                          : "border-l-4 border-l-green-500"
-                      }`}
+                {questions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 bg-[#f0f7ff] rounded-md border border-[#c7e5ff]">
+                    <p className="text-muted-foreground mb-4">
+                      No questions created yet.
+                    </p>
+                    <Button
+                      onClick={addQuestion}
+                      className="bg-[#007acc] hover:bg-[#007abc] text-white"
                     >
-                      <div className="flex items-center justify-between py-4">
-                        <AccordionTrigger className="hover:no-underline">
-                          <span
-                            className={`font-medium ${
-                              question.type === "mcq"
-                                ? "text-[#007acc]"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {question.type === "mcq"
-                              ? "Multiple Choice Question"
-                              : "Coding Question"}{" "}
-                            {index + 1}
-                          </span>
-                        </AccordionTrigger>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeQuestion(index);
-                          }}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
-                      </div>
-                      <AccordionContent className="pb-4 space-y-4">
-                        <div className="space-y-4">
-                          <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
-                            <Label className="text-[#007acc] font-medium">
-                              Question Type
-                            </Label>
-                            <Select
-                              value={question.type}
-                              onValueChange={(value) =>
-                                handleTypeChange(index, value as "mcq" | "code")
-                              }
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Question
+                    </Button>
+                  </div>
+                ) : (
+                  <Accordion
+                    type="multiple"
+                    className="w-full"
+                    defaultValue={[]}
+                  >
+                    {questions.map((question, index) => (
+                      <AccordionItem
+                        key={index}
+                        value={`question-${index}`}
+                        className={`border rounded-lg px-2 mb-4 ${
+                          question.type === "mcq"
+                            ? "border-l-4 border-l-[#007acc]"
+                            : "border-l-4 border-l-green-500"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between py-4">
+                          <AccordionTrigger className="hover:no-underline">
+                            <span
+                              className={`font-medium ${
+                                question.type === "mcq"
+                                  ? "text-[#007acc]"
+                                  : "text-green-600"
+                              }`}
                             >
-                              <SelectTrigger className="border-[#c7e5ff]">
-                                <SelectValue placeholder="Select question type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="mcq">
-                                  Multiple Choice Question
-                                </SelectItem>
-                                <SelectItem value="code">
-                                  Coding Question
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-[#007acc] font-medium">
                               {question.type === "mcq"
-                                ? "Question Text"
-                                : "Question Title"}
-                            </Label>
-                            <Input
-                              placeholder={
-                                question.type === "mcq"
-                                  ? "Enter the question"
-                                  : "Enter the title"
-                              }
-                              value={
-                                question.type === "mcq"
-                                  ? question.question_text
-                                  : question.title || ""
-                              }
-                              onChange={(e) =>
-                                handleQuestionChange(index, e.target.value)
-                              }
-                              className="border-[#c7e5ff]"
-                            />
-                          </div>
-
-                          {question.type === "code" && (
+                                ? "Multiple Choice Question"
+                                : "Coding Question"}{" "}
+                              {index + 1}
+                            </span>
+                          </AccordionTrigger>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeQuestion(index);
+                            }}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Remove</span>
+                          </Button>
+                        </div>
+                        <AccordionContent className="pb-4 space-y-4">
+                          <div className="space-y-4">
                             <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
                               <Label className="text-[#007acc] font-medium">
-                                Description
-                              </Label>
-                              <Textarea
-                                placeholder="Enter the question description"
-                                className="min-h-[100px] border-[#c7e5ff]"
-                                value={question.description || ""}
-                                onChange={(e) =>
-                                  handleDescriptionChange(index, e.target.value)
-                                }
-                              />
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label className="text-[#007acc] font-medium">
-                                Difficulty
+                                Question Type
                               </Label>
                               <Select
-                                value={question.difficulty}
+                                value={question.type}
                                 onValueChange={(value) =>
-                                  handleDifficultyChange(
+                                  handleTypeChange(
                                     index,
-                                    value as "Easy" | "Medium" | "Hard"
+                                    value as "mcq" | "code"
                                   )
                                 }
                               >
                                 <SelectTrigger className="border-[#c7e5ff]">
-                                  <SelectValue placeholder="Select difficulty" />
+                                  <SelectValue placeholder="Select question type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Easy">Easy</SelectItem>
-                                  <SelectItem value="Medium">Medium</SelectItem>
-                                  <SelectItem value="Hard">Hard</SelectItem>
+                                  <SelectItem value="mcq">
+                                    Multiple Choice Question
+                                  </SelectItem>
+                                  <SelectItem value="code">
+                                    Coding Question
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
 
                             <div className="space-y-2">
                               <Label className="text-[#007acc] font-medium">
-                                Language
+                                {question.type === "mcq"
+                                  ? "Question Text"
+                                  : "Question Title"}
                               </Label>
-                              <Select
+                              <Input
+                                placeholder={
+                                  question.type === "mcq"
+                                    ? "Enter the question"
+                                    : "Enter the title"
+                                }
                                 value={
-                                  languageMapForDisplay[question.language] ||
-                                  question.language
+                                  question.type === "mcq"
+                                    ? question.question_text
+                                    : question.title || ""
                                 }
-                                onValueChange={(value) =>
-                                  handleLanguageChange(index, value)
+                                onChange={(e) =>
+                                  handleQuestionChange(index, e.target.value)
                                 }
-                              >
-                                <SelectTrigger className="border-[#c7e5ff]">
-                                  <SelectValue placeholder="Select language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(languageMapForDisplay).map(
-                                    ([backendValue, displayValue]) => (
-                                      <SelectItem
-                                        key={backendValue}
-                                        value={displayValue}
-                                      >
-                                        {displayValue}
-                                      </SelectItem>
-                                    )
-                                  )}
-                                </SelectContent>
-                              </Select>
+                                className="border-[#c7e5ff]"
+                              />
                             </div>
-                          </div>
 
-                          {question.type === "mcq" && (
-                            <>
-                              <div className="space-y-4 bg-[#f0f7ff] p-4 rounded-md">
-                                <Label className="text-[#007acc] font-medium">
-                                  Options
-                                </Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-a-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option A
-                                    </Label>
-                                    <Input
-                                      id={`option-a-${index}`}
-                                      placeholder="Enter option A"
-                                      value={question.option_a || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_a",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-b-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option B
-                                    </Label>
-                                    <Input
-                                      id={`option-b-${index}`}
-                                      placeholder="Enter option B"
-                                      value={question.option_b || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_b",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-c-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option C
-                                    </Label>
-                                    <Input
-                                      id={`option-c-${index}`}
-                                      placeholder="Enter option C"
-                                      value={question.option_c || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_c",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label
-                                      htmlFor={`option-d-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      Option D
-                                    </Label>
-                                    <Input
-                                      id={`option-d-${index}`}
-                                      placeholder="Enter option D"
-                                      value={question.option_d || ""}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          index,
-                                          "option_d",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="border-[#c7e5ff]"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-
+                            {question.type === "code" && (
                               <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
                                 <Label className="text-[#007acc] font-medium">
-                                  Correct Answer
-                                </Label>
-                                <RadioGroup
-                                  value={question.correct_option}
-                                  onValueChange={(value) =>
-                                    handleCorrectAnswerChange(index, value)
-                                  }
-                                  className="grid grid-cols-4 gap-4"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="A"
-                                      id={`A-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`A-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      A
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="B"
-                                      id={`B-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`B-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      B
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="C"
-                                      id={`C-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`C-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      C
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <RadioGroupItem
-                                      value="D"
-                                      id={`D-${index}`}
-                                    />
-                                    <Label
-                                      htmlFor={`D-${index}`}
-                                      className="text-[#007acc]"
-                                    >
-                                      D
-                                    </Label>
-                                  </div>
-                                </RadioGroup>
-                              </div>
-                            </>
-                          )}
-
-                          {question.type === "code" && (
-                            <>
-                              <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
-                                <Label className="text-[#007acc] font-medium">
-                                  Starter Code
+                                  Description
                                 </Label>
                                 <Textarea
-                                  placeholder="Enter starter code (optional)"
-                                  className="min-h-[100px] font-mono border-[#c7e5ff]"
-                                  value={question.starter_code || ""}
+                                  placeholder="Enter the question description"
+                                  className="min-h-[100px] border-[#c7e5ff]"
+                                  value={question.description || ""}
                                   onChange={(e) =>
-                                    handleCodeChange(index, e.target.value)
+                                    handleDescriptionChange(
+                                      index,
+                                      e.target.value
+                                    )
                                   }
                                 />
                               </div>
+                            )}
 
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-[#007acc] font-medium">
+                                  Difficulty
+                                </Label>
+                                <Select
+                                  value={question.difficulty}
+                                  onValueChange={(value) =>
+                                    handleDifficultyChange(
+                                      index,
+                                      value as "Easy" | "Medium" | "Hard"
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="border-[#c7e5ff]">
+                                    <SelectValue placeholder="Select difficulty" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Easy">Easy</SelectItem>
+                                    <SelectItem value="Medium">
+                                      Medium
+                                    </SelectItem>
+                                    <SelectItem value="Hard">Hard</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-[#007acc] font-medium">
+                                  Language
+                                </Label>
+                                <Select
+                                  value={
+                                    languageMapForDisplay[question.language] ||
+                                    question.language
+                                  }
+                                  onValueChange={(value) =>
+                                    handleLanguageChange(index, value)
+                                  }
+                                >
+                                  <SelectTrigger className="border-[#c7e5ff]">
+                                    <SelectValue placeholder="Select language" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(languageMapForDisplay).map(
+                                      ([backendValue, displayValue]) => (
+                                        <SelectItem
+                                          key={backendValue}
+                                          value={displayValue}
+                                        >
+                                          {displayValue}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {question.type === "mcq" && (
+                              <>
+                                <div className="space-y-4 bg-[#f0f7ff] p-4 rounded-md">
                                   <Label className="text-[#007acc] font-medium">
-                                    Test Cases
+                                    Options
                                   </Label>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleAddTestCase(index)}
-                                    className="border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Test Case
-                                  </Button>
-                                </div>
-                                {question.test_cases?.map(
-                                  (testCase, tcIndex) => (
-                                    <div
-                                      key={tcIndex}
-                                      className="border rounded-md p-4 bg-[#f0f7ff] space-y-4 relative"
-                                    >
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() =>
-                                          handleRemoveTestCase(index, tcIndex)
-                                        }
-                                        className="absolute top-2 right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label
+                                        htmlFor={`option-a-${index}`}
+                                        className="text-[#007acc]"
                                       >
-                                        <X className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Remove test case
-                                        </span>
-                                      </Button>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`input-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Input
-                                          </Label>
-                                          <Input
-                                            id={`input-${index}-${tcIndex}`}
-                                            placeholder="Enter input data"
-                                            value={testCase.input_data}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "input_data",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`output-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Expected Output
-                                          </Label>
-                                          <Input
-                                            id={`output-${index}-${tcIndex}`}
-                                            placeholder="Enter expected output"
-                                            value={testCase.expected_output}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "expected_output",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label
-                                            htmlFor={`function-name-${index}-${tcIndex}`}
-                                            className="text-[#007acc]"
-                                          >
-                                            Function Name (Optional)
-                                          </Label>
-                                          <Input
-                                            id={`function-name-${index}-${tcIndex}`}
-                                            placeholder="Enter function name"
-                                            value={testCase.function_name || ""}
-                                            onChange={(e) =>
-                                              handleTestCaseChange(
-                                                index,
-                                                tcIndex,
-                                                "function_name",
-                                                e.target.value
-                                              )
-                                            }
-                                            className="border-[#c7e5ff]"
-                                          />
+                                        Option A
+                                      </Label>
+                                      <Input
+                                        id={`option-a-${index}`}
+                                        placeholder="Enter option A"
+                                        value={question.option_a || ""}
+                                        onChange={(e) =>
+                                          handleOptionChange(
+                                            index,
+                                            "option_a",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="border-[#c7e5ff]"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label
+                                        htmlFor={`option-b-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        Option B
+                                      </Label>
+                                      <Input
+                                        id={`option-b-${index}`}
+                                        placeholder="Enter option B"
+                                        value={question.option_b || ""}
+                                        onChange={(e) =>
+                                          handleOptionChange(
+                                            index,
+                                            "option_b",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="border-[#c7e5ff]"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label
+                                        htmlFor={`option-c-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        Option C
+                                      </Label>
+                                      <Input
+                                        id={`option-c-${index}`}
+                                        placeholder="Enter option C"
+                                        value={question.option_c || ""}
+                                        onChange={(e) =>
+                                          handleOptionChange(
+                                            index,
+                                            "option_c",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="border-[#c7e5ff]"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label
+                                        htmlFor={`option-d-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        Option D
+                                      </Label>
+                                      <Input
+                                        id={`option-d-${index}`}
+                                        placeholder="Enter option D"
+                                        value={question.option_d || ""}
+                                        onChange={(e) =>
+                                          handleOptionChange(
+                                            index,
+                                            "option_d",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="border-[#c7e5ff]"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
+                                  <Label className="text-[#007acc] font-medium">
+                                    Correct Answer
+                                  </Label>
+                                  <RadioGroup
+                                    value={question.correct_option}
+                                    onValueChange={(value) =>
+                                      handleCorrectAnswerChange(index, value)
+                                    }
+                                    className="grid grid-cols-4 gap-4"
+                                  >
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="A"
+                                        id={`A-${index}`}
+                                      />
+                                      <Label
+                                        htmlFor={`A-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        A
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="B"
+                                        id={`B-${index}`}
+                                      />
+                                      <Label
+                                        htmlFor={`B-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        B
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="C"
+                                        id={`C-${index}`}
+                                      />
+                                      <Label
+                                        htmlFor={`C-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        C
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="D"
+                                        id={`D-${index}`}
+                                      />
+                                      <Label
+                                        htmlFor={`D-${index}`}
+                                        className="text-[#007acc]"
+                                      >
+                                        D
+                                      </Label>
+                                    </div>
+                                  </RadioGroup>
+                                </div>
+                              </>
+                            )}
+
+                            {question.type === "code" && (
+                              <>
+                                <div className="space-y-2 bg-[#f0f7ff] p-4 rounded-md">
+                                  <Label className="text-[#007acc] font-medium">
+                                    Starter Code
+                                  </Label>
+                                  <Textarea
+                                    placeholder="Enter starter code (optional)"
+                                    className="min-h-[100px] font-mono border-[#c7e5ff]"
+                                    value={question.starter_code || ""}
+                                    onChange={(e) =>
+                                      handleCodeChange(index, e.target.value)
+                                    }
+                                  />
+                                </div>
+
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-[#007acc] font-medium">
+                                      Test Cases
+                                    </Label>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleAddTestCase(index)}
+                                      className="border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]"
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add Test Case
+                                    </Button>
+                                  </div>
+                                  {question.test_cases?.map(
+                                    (testCase, tcIndex) => (
+                                      <div
+                                        key={tcIndex}
+                                        className="border rounded-md p-4 bg-[#f0f7ff] space-y-4 relative"
+                                      >
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() =>
+                                            handleRemoveTestCase(index, tcIndex)
+                                          }
+                                          className="absolute top-2 right-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                          <X className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Remove test case
+                                          </span>
+                                        </Button>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="space-y-2">
+                                            <Label
+                                              htmlFor={`input-${index}-${tcIndex}`}
+                                              className="text-[#007acc]"
+                                            >
+                                              Input
+                                            </Label>
+                                            <Input
+                                              id={`input-${index}-${tcIndex}`}
+                                              placeholder="Enter input data"
+                                              value={testCase.input_data}
+                                              onChange={(e) =>
+                                                handleTestCaseChange(
+                                                  index,
+                                                  tcIndex,
+                                                  "input_data",
+                                                  e.target.value
+                                                )
+                                              }
+                                              className="border-[#c7e5ff]"
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label
+                                              htmlFor={`output-${index}-${tcIndex}`}
+                                              className="text-[#007acc]"
+                                            >
+                                              Expected Output
+                                            </Label>
+                                            <Input
+                                              id={`output-${index}-${tcIndex}`}
+                                              placeholder="Enter expected output"
+                                              value={testCase.expected_output}
+                                              onChange={(e) =>
+                                                handleTestCaseChange(
+                                                  index,
+                                                  tcIndex,
+                                                  "expected_output",
+                                                  e.target.value
+                                                )
+                                              }
+                                              className="border-[#c7e5ff]"
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label
+                                              htmlFor={`function-name-${index}-${tcIndex}`}
+                                              className="text-[#007acc]"
+                                            >
+                                              Function Name (Optional)
+                                            </Label>
+                                            <Input
+                                              id={`function-name-${index}-${tcIndex}`}
+                                              placeholder="Enter function name"
+                                              value={
+                                                testCase.function_name || ""
+                                              }
+                                              onChange={(e) =>
+                                                handleTestCaseChange(
+                                                  index,
+                                                  tcIndex,
+                                                  "function_name",
+                                                  e.target.value
+                                                )
+                                              }
+                                              className="border-[#c7e5ff]"
+                                            />
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-
-                <div className="flex justify-between">
-                  <Button
-                    onClick={addQuestion}
-                    className="bg-[#007acc] hover:bg-[#007abc] text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Another Question
-                  </Button>
-                </div>
+                                    )
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
