@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { extractExamDateFromMessage, formatDateForCalendar } from "../lib/utils/data-parser"
 import Cookies from "js-cookie"
 import axios from "axios"
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 interface Notification {
   id: string
@@ -45,7 +47,7 @@ export function useExamCalendar() {
         throw new Error("Token not found in cookies")
       }
 
-      const response = await axios.get("http://127.0.0.1:8000/notifications/notes/", {
+      const response = await axios.get(`${origin}/notifications/notes/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

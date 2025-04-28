@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getClientSideToken } from "@/lib/cookies";
 import { jwtDecode } from "jwt-decode";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import {
   BookOpen,
@@ -79,7 +80,7 @@ export default function DashboardLayout({
         console.log("User ID from token in Dashboard:", userId);
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`
+          `${origin}/users/students/${userId}/`
         );
         if (!res.ok) throw new Error("Failed to fetch student data");
 
@@ -164,7 +165,7 @@ export default function DashboardLayout({
                     studentData.profile_image?.startsWith("http")
                       ? studentData.profile_image
                       : studentData.profile_image
-                      ? `http://127.0.0.1:8000${studentData.profile_image}`
+                      ? `${origin}${studentData.profile_image}`
                       : ""
                   }
                   alt={studentData.username}

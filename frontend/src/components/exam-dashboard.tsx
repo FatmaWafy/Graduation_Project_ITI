@@ -13,6 +13,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Trophy } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 // Import our improved components
 import ExamHeader from "./exam-header";
@@ -126,10 +128,10 @@ export default function ExamDashboard() {
         setLoading(true);
 
         const [tempExamRes, questionsRes] = await Promise.all([
-          fetch(`http://127.0.0.1:8000/exam/temp-exams/${id}/`, {
+          fetch(`${origin}/exam/temp-exams/${id}/`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`http://127.0.0.1:8000/exam/exam/temp-exams/${id}/questions/`, {
+          fetch(`${origin}/exam/exam/temp-exams/${id}/questions/`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -146,7 +148,7 @@ export default function ExamDashboard() {
         let examDuration = tempExamData.duration;
         if (!examDuration && tempExamData.exam) {
           const examRes = await fetch(
-            `http://127.0.0.1:8000/exam/exams/${tempExamData.exam}`,
+            `${origin}/exam/exams/${tempExamData.exam}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -567,7 +569,7 @@ conn.close()
       });
 
       const response = await fetch(
-        `http://127.0.0.1:8000/exam/exam-answers/submit-answer/`,
+        `${origin}/exam/exam-answers/submit-answer/`,
         {
           method: "POST",
           headers: {

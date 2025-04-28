@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = document.cookie
@@ -167,7 +168,7 @@ export default function SetExamPage() {
       const userId = decoded.user_id;
 
       const response = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}/`,
+        `${origin}/users/instructors/${userId}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -196,7 +197,7 @@ export default function SetExamPage() {
     try {
       const token = Cookies.get("token");
       const response = await fetch(
-        "http://127.0.0.1:8000/users/instructors/instructor_data/",
+        `${origin}/users/instructors/instructor_data/`,
         {
           method: "GET",
           headers: {
@@ -235,7 +236,7 @@ export default function SetExamPage() {
   const fetchExams = async () => {
     try {
       const token = Cookies.get("token");
-      const response = await fetch("http://127.0.0.1:8000/exam/exams/", {
+      const response = await fetch(`${origin}/exam/exams/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -257,7 +258,7 @@ export default function SetExamPage() {
     try {
       const token = Cookies.get("token");
       const response = await fetch(
-        "http://127.0.0.1:8000/users/instructors/instructor_students/",
+        `${origin}/users/instructors/instructor_students/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -438,7 +439,7 @@ export default function SetExamPage() {
         if (!userId) throw new Error("User ID not found in token.");
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}`
+          `${origin}/users/instructors/${userId}`
         );
         if (!res.ok) throw new Error("Failed to fetch instructor ID");
 
@@ -460,7 +461,7 @@ export default function SetExamPage() {
 
       console.log("Submitting exam data with instructor ID:", submitData);
 
-      const response = await fetch("http://127.0.0.1:8000/exam/temp-exams/", {
+      const response = await fetch(`${origin}/exam/temp-exams/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

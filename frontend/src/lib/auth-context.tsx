@@ -5,6 +5,8 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import Cookies from "js-cookie"
 import { jwtDecode } from "jwt-decode"
 import axios from "axios"
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 type User = {
   id: string
@@ -64,7 +66,7 @@ const login = async (email: string, password: string, rememberMe = false) => {
   setLoading(true)
   try {
     // 1. Send login request to backend
-    const response = await axios.post("http://localhost:8000/api/token/", {
+    const response = await axios.post(`${origin}/api/token/`, {
       email,
       password,
     })
@@ -78,7 +80,7 @@ const login = async (email: string, password: string, rememberMe = false) => {
     console.log("Decoded user_id:", userId)
 
     // 3. Fetch user data using user_id
-    const userRes = await axios.get(`http://localhost:8000/users/students/${userId}/`)
+    const userRes = await axios.get(`${origin}/users/students/${userId}/`)
     console.log("User data received:", userRes.data)
 
     const userData: User = {

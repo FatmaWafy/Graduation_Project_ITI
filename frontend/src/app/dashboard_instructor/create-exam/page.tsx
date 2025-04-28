@@ -56,6 +56,7 @@ import {
   Database,
   Lightbulb,
 } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface TestCase {
   input_data: string;
@@ -190,7 +191,7 @@ export default function AddExamPage() {
         throw new Error("No authentication token found in cookies");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/users/courses/", {
+      const response = await fetch(`${origin}/users/courses/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -236,8 +237,8 @@ export default function AddExamPage() {
 
       const baseUrl =
         questionType === "mcq"
-          ? "http://127.0.0.1:8000/exam/mcq-filter/"
-          : "http://127.0.0.1:8000/exam/coding-filter/";
+          ? `${origin}/exam/mcq-filter/`
+          : `${origin}/exam/coding-filter/`;
 
       let url = baseUrl;
       if (selectedLanguage !== "all") {
@@ -605,7 +606,7 @@ export default function AddExamPage() {
         for (const mcq of newMCQs) {
           try {
             const mcqResponse = await fetch(
-              "http://127.0.0.1:8000/exam/mcq-questions/",
+              `${origin}/exam/mcq-questions/`,
               {
                 method: "POST",
                 headers: {
@@ -652,7 +653,7 @@ export default function AddExamPage() {
 
           try {
             const codingResponse = await fetch(
-              "http://127.0.0.1:8000/exam/code-questions/",
+              `${origin}/exam/code-questions/`,
               {
                 method: "POST",
                 headers: {
@@ -685,7 +686,7 @@ export default function AddExamPage() {
               for (const testCase of originalQuestion.test_cases) {
                 try {
                   const testCaseResponse = await fetch(
-                    "http://127.0.0.1:8000/exam/test-cases/",
+                    `${origin}/exam/test-cases/`,
                     {
                       method: "POST",
                       headers: {
@@ -745,7 +746,7 @@ export default function AddExamPage() {
         ],
       };
 
-      const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
+      const examResponse = await fetch(`${origin}/exam/exams/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

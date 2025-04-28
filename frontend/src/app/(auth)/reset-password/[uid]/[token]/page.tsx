@@ -302,6 +302,8 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -329,7 +331,7 @@ export default function ResetPasswordPage() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/users/reset-password/",
+        `${origin}/users/reset-password/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -23,6 +23,7 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<{ type: 'bot' | 'user'; text: string }[]>([]);
   const [showQuestions, setShowQuestions] = useState(true);
   const [inputValue, setInputValue] = useState(''); // حالة جديدة لتخزين قيمة الـ input
+  const origin = process.env.NEXT_PUBLIC_API_URL;
 
   // جلب بيانات الشات بوت بناءً على الدور
   useEffect(() => {
@@ -38,7 +39,7 @@ const Chatbot: React.FC = () => {
           return;
         }
 
-        const response = await axios.get('http://127.0.0.1:8000/chatbot/questions/', {
+        const response = await axios.get(`${origin}/chatbot/questions/`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         console.log('Chatbot Data:', response.data);

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the results to your Django backend
-    const response = await fetch("http://127.0.0.1:8000/exam/submit-code-results/", {
+    const response = await fetch(`${origin}/exam/submit-code-results/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -18,6 +18,7 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import {
   Card,
@@ -48,7 +49,7 @@ export default function GradesPage() {
         if (!token) throw new Error("Token not found");
 
         const res = await fetch(
-          "http://127.0.0.1:8000/exam/student-exam-answers/get_user_exams_scores/",
+          `${origin}/exam/student-exam-answers/get_user_exams_scores/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

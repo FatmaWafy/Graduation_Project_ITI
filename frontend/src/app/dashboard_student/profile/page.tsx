@@ -38,6 +38,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface Track {
   id: number;
@@ -104,7 +105,7 @@ export default function ProfilePage() {
     if (studentData?.user?.profile_image) {
       const imageUrl = studentData.user.profile_image.startsWith("http")
         ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
-        : `http://127.0.0.1:8000${studentData.user.profile_image
+        : `${origin}${studentData.user.profile_image
         }?t=${new Date().getTime()}`;
       setProfileImage(imageUrl);
     }
@@ -113,7 +114,7 @@ export default function ProfilePage() {
   const fetchTracks = async () => {
     try {
       const token = getClientSideToken();
-      const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+      const response = await fetch(`${origin}/users/get-tracks/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -147,7 +148,7 @@ export default function ProfilePage() {
 
       const userId = Number(decoded.user_id);
       const res = await fetch(
-        `http://127.0.0.1:8000/users/students/${userId}/`,
+        `${origin}/users/students/${userId}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -208,7 +209,7 @@ export default function ProfilePage() {
       }
 
       const res = await axios.post(
-        "http://localhost:8000/users/change-password/",
+        `${origin}/users/change-password/`,
         {
           student_id: studentData.id,
           currentPassword: passwordValues.currentPassword,
@@ -289,7 +290,7 @@ export default function ProfilePage() {
       const userId = Number(decoded.user_id);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/users/students/${userId}/update/`,
+        `${origin}/users/students/${userId}/update/`,
         {
           method: "PATCH",
           headers: {
@@ -310,7 +311,7 @@ export default function ProfilePage() {
         formData.append("profile_image", imageFile);
 
         const imageResponse = await fetch(
-          `http://127.0.0.1:8000/users/upload-profile-image/${studentData.id}/`,
+          `${origin}/users/upload-profile-image/${studentData.id}/`,
           {
             method: "POST",
             headers: {
@@ -326,7 +327,7 @@ export default function ProfilePage() {
         }
 
         const updatedImageResponse = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`,
+          `${origin}/users/students/${userId}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -340,7 +341,7 @@ export default function ProfilePage() {
             "http"
           )
             ? updatedData.user.profile_image
-            : `http://127.0.0.1:8000${updatedData.user.profile_image}`;
+            : `${origin}${updatedData.user.profile_image}`;
           setProfileImage(newImageUrl);
         }
       }
