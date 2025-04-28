@@ -228,7 +228,8 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # ✅ السماح بإرسال الكوكيز بين الـ Backend والـ Frontend
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # ضيفي عنوان الـ Frontend هنا
+    "http://localhost:3000",
+    "https://examsystem-psi.vercel.app",  # ضيفي عنوان الـ Frontend هنا
 ]
 
 # Media files (uploads)
