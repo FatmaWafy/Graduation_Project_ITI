@@ -64,7 +64,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
     }
 
     // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
-    revalidatePath("/dashboard_student/notifications");
+    // revalidatePath("/dashboard_student/notifications");
 
     return data;
   } catch (error) {
