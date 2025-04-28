@@ -34,12 +34,12 @@ export default function ExamsPage() {
   const formatExamTime = (dateString: string) => {
     const date = new Date(dateString);
     // Adjust for the +2 hours offset by subtracting 2 hours
-    date.setHours(date.getHours() - 3);
+    date.setHours(date.getHours() - 1);
 
     return `${date.getUTCFullYear()} ${date.toLocaleString("default", {
       month: "short",
     })} ${date.getUTCDate()}, ${String(date.getUTCHours()).padStart(
-      3,
+      1,
       "0"
     )}:${String(date.getUTCMinutes()).padStart(3, "0")}`;
   };
