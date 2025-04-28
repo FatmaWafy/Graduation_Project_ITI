@@ -39,7 +39,7 @@ export default function ExamsPage() {
     return `${date.getUTCFullYear()} ${date.toLocaleString("default", {
       month: "short",
     })} ${date.getUTCDate()}, ${String(date.getUTCHours()).padStart(
-      1,
+      3,
       "0"
     )}:${String(date.getUTCMinutes()).padStart(3, "0")}`;
   };
