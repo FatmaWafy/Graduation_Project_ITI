@@ -41,13 +41,13 @@ export default function ExamsPage() {
     })} ${date.getUTCDate()}, ${String(date.getUTCHours()).padStart(
       1,
       "0"
-    )}:${String(date.getUTCMinutes()).padStart(4, "0")}`;
+    )}:${String(date.getUTCMinutes()).padStart(3, "0")}`;
   };
 
   const isExamInProgress = (exam: Exam) => {
     const now = Date.now();
     const examDate = new Date(exam.date);
-    examDate.setHours(examDate.getHours() - 4); // Adjust for +2 offset
+    examDate.setHours(examDate.getHours() - 3); // Adjust for +2 offset
     const examStartTime = examDate.getTime();
     const examEndTime = examStartTime + exam.duration * 60000;
     return now >= examStartTime && now <= examEndTime;
@@ -55,14 +55,14 @@ export default function ExamsPage() {
 
   const isExamFinished = (exam: Exam) => {
     const examDate = new Date(exam.date);
-    examDate.setHours(examDate.getHours() - 4); // Adjust for +2 offset
+    examDate.setHours(examDate.getHours() - 3); // Adjust for +2 offset
     const examEndTime = examDate.getTime() + exam.duration * 60000;
     return Date.now() > examEndTime;
   };
 
   const isExamUpcoming = (exam: Exam) => {
     const examDate = new Date(exam.date);
-    examDate.setHours(examDate.getHours() - 4); // Adjust for +2 offset
+    examDate.setHours(examDate.getHours() - 3); // Adjust for +2 offset
     return Date.now() < examDate.getTime();
   };
 
@@ -118,7 +118,7 @@ export default function ExamsPage() {
         upcomingExams.forEach((exam) => {
           toast.info(
             `Upcoming: ${exam.title || exam.id} — Start at ${new Date(
-              new Date(exam.date).getTime() - 4 * 60 * 60 * 1000
+              new Date(exam.date).getTime() - 3 * 60 * 60 * 1000
             ).toLocaleString()}`,
             { autoClose: 8000 }
           );
@@ -231,7 +231,7 @@ export default function ExamsPage() {
                     <span className="text-sm">
                       {" "}
                       {new Date(
-                        new Date(exam.date).getTime() - 4 * 60 * 60 * 1000
+                        new Date(exam.date).getTime() - 3 * 60 * 60 * 1000
                       ).toLocaleString()}{" "}
                       • {exam.duration} minutes
                     </span>
@@ -254,7 +254,7 @@ export default function ExamsPage() {
                     <Button variant="outline" disabled className="w-full">
                       Starts{" "}
                       {new Date(
-                        new Date(exam.date).getTime() - 4 * 60 * 60 * 1000
+                        new Date(exam.date).getTime() - 3 * 60 * 60 * 1000
                       ).toLocaleString()}
                     </Button>
                   ) : (
