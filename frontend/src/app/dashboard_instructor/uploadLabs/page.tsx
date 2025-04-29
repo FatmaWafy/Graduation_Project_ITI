@@ -44,10 +44,50 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import Cookies from "js-cookie";
-import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
+// import { sendNotification } from "../../../lib/actions/notification-actions"; // Adjust the path as needed
 import { jwtDecode } from "jwt-decode";
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
+export async function sendNotification(params: any): Promise<any> {
+  try {
+    console.log(origin)
+    const response = await fetch(`${origin}/notifications/send-note/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        `Failed to send notification: ${response.status} ${response.statusText}${
+          errorData ? ` - ${JSON.stringify(errorData)}` : ""
+        }`
+      );
+    }
+
+    // التحقق من حالة الاستجابة فقط
+    const data = await response.json();
+
+    // طباعة الاستجابة في الـ console
+    console.log("Notification sent:", data);
+
+    // إذا كانت الحالة 200، نعرض رسالة النجاح
+    if (response.status === 200) {
+      alert("Notification sent successfully!");
+    }
+
+    // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
+    // revalidatePath("/dashboard_student/notifications");
+
+    return data;
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    throw error;
+  }
+}
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = Cookies.get("token");
   console.log("Token from cookie:", token);
