@@ -16,7 +16,6 @@ import { Trophy } from "lucide-react";
 import StudentMonitor from "./monitoring/student-monitor";
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
-
 // Import our improved components
 import ExamHeader from "./exam-header";
 import QuestionNavigator from "./question-navigator";
@@ -626,20 +625,20 @@ conn.close()
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-8 w-40 bg-muted rounded-md mb-4"></div>
-          <div className="h-4 w-24 bg-muted rounded-md"></div>
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='animate-pulse flex flex-col items-center'>
+          <div className='h-8 w-40 bg-muted rounded-md mb-4'></div>
+          <div className='h-4 w-24 bg-muted rounded-md'></div>
         </div>
       </div>
     );
 
   if (!exam)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Exam not found</h2>
-          <p className="text-muted-foreground mb-4">
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold mb-2'>Exam not found</h2>
+          <p className='text-muted-foreground mb-4'>
             The exam you are looking for is not available
           </p>
           <Button onClick={() => router.push("/dashboard_student")}>
@@ -653,10 +652,10 @@ conn.close()
 
   if (!currentQuestion)
     return (
-      <div className="flex justify-center items-center h-screen bg-background text-foreground">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">No questions available</h2>
-          <p className="text-muted-foreground mb-4">
+      <div className='flex justify-center items-center h-screen bg-background text-foreground'>
+        <div className='text-center'>
+          <h2 className='text-xl font-semibold mb-2'>No questions available</h2>
+          <p className='text-muted-foreground mb-4'>
             This exam doesn't have any questions
           </p>
           <Button onClick={() => router.push("/dashboard_student")}>
@@ -667,8 +666,8 @@ conn.close()
     );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 pb-4">
+    <div className='min-h-screen bg-background'>
+      <div className='container mx-auto px-4 pb-4'>
         <ExamHeader
           title={exam.title}
           timeLeft={formatTime(timeLeft)}
@@ -677,9 +676,9 @@ conn.close()
         />
 
         {/* Question Progress */}
-        <div className="mt-4">
+        <div className='mt-4'>
           {questions.length > 0 && (
-            <div className="w-full mb-3">
+            <div className='w-full mb-3'>
               {/* @ts-ignore */}
               <QuestionProgressBar
                 currentQuestion={currentQuestionIndex}
@@ -690,7 +689,7 @@ conn.close()
           )}
         </div>
 
-        <div className="flex gap-4 mt-2">
+        <div className='flex gap-4 mt-2'>
           {/* Question Navigator */}
           <QuestionNavigator
             questions={questions}
@@ -700,15 +699,15 @@ conn.close()
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 bg-background rounded-xl overflow-hidden border border-border">
-            <div className="border-b border-border bg-muted/20 p-4">
-              <div className="flex items-center justify-between">
+          <div className='flex-1 bg-background rounded-xl overflow-hidden border border-border'>
+            <div className='border-b border-border bg-muted/20 p-4'>
+              <div className='flex items-center justify-between'>
                 <div>
-                  <div className="flex items-center">
-                    <span className="inline-flex items-center justify-center bg-primary/10 text-primary w-7 h-7 rounded-full text-sm font-semibold mr-2">
+                  <div className='flex items-center'>
+                    <span className='inline-flex items-center justify-center bg-primary/10 text-primary w-7 h-7 rounded-full text-sm font-semibold mr-2'>
                       {currentQuestionIndex + 1}
                     </span>
-                    <h2 className="text-xl font-bold text-foreground">
+                    <h2 className='text-xl font-bold text-foreground'>
                       {currentQuestion.title}
                     </h2>
                     <span
@@ -724,15 +723,15 @@ conn.close()
                     </span>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className='text-sm text-muted-foreground'>
                   Question {currentQuestionIndex + 1} of {questions.length}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row">
+            <div className='flex flex-col lg:flex-row'>
               {/* Left side: Question content */}
-              <div className="w-full lg:w-1/2 border-r border-border lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto">
+              <div className='w-full lg:w-1/2 border-r border-border lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto'>
                 {currentQuestion.type === "multiple-choice" ? (
                   <MultipleChoiceQuestion
                     key={currentQuestion.id} // Add unique key
@@ -755,26 +754,26 @@ conn.close()
                     onPrevQuestion={handlePrevQuestion}
                   />
                 ) : (
-                  <div className="p-6">
+                  <div className='p-6'>
                     <div
-                      className="prose max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground"
+                      className='prose max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground'
                       dangerouslySetInnerHTML={{
                         __html: currentQuestion.description,
                       }}
                     />
-                    <div className="flex justify-between pt-4 mt-6 border-t border-border">
+                    <div className='flex justify-between pt-4 mt-6 border-t border-border'>
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={handlePrevQuestion}
                         disabled={currentQuestionIndex === 0}
-                        className="gap-1"
+                        className='gap-1'
                       >
                         Previous
                       </Button>
                       <Button
                         onClick={handleNextQuestion}
                         disabled={currentQuestionIndex === questions.length - 1}
-                        className="gap-1"
+                        className='gap-1'
                       >
                         Next
                       </Button>
@@ -784,7 +783,7 @@ conn.close()
               </div>
 
               {/* Right side: Code editor (only for coding questions) */}
-              <div className="w-full lg:w-1/2">
+              <div className='w-full lg:w-1/2'>
                 {currentQuestion.type === "coding" ? (
                   <CodingQuestion
                     question={currentQuestion as any}
@@ -809,15 +808,15 @@ conn.close()
                     }
                   />
                 ) : (
-                  <div className="hidden lg:flex flex-col justify-center items-center p-12 h-full bg-muted/20">
-                    <div className="text-center">
-                      <div className="mb-4 p-4 rounded-full bg-muted/50 inline-block">
-                        <Trophy className="h-12 w-12 text-primary opacity-60" />
+                  <div className='hidden lg:flex flex-col justify-center items-center p-12 h-full bg-muted/20'>
+                    <div className='text-center'>
+                      <div className='mb-4 p-4 rounded-full bg-muted/50 inline-block'>
+                        <Trophy className='h-12 w-12 text-primary opacity-60' />
                       </div>
-                      <h3 className="text-lg font-medium mb-2">
+                      <h3 className='text-lg font-medium mb-2'>
                         Multiple Choice Question
                       </h3>
-                      <p className="text-muted-foreground max-w-md">
+                      <p className='text-muted-foreground max-w-md'>
                         Select your answer from the options on the left. The
                         code editor is only available for programming questions.
                       </p>
@@ -831,18 +830,18 @@ conn.close()
       </div>
 
       <AlertDialog open={showScoreAlert} onOpenChange={setShowScoreAlert}>
-        <AlertDialogContent className="bg-background">
+        <AlertDialogContent className='bg-background'>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+            <AlertDialogTitle className='flex items-center gap-2'>
+              <Trophy className='h-5 w-5 text-yellow-500' />
               Exam Completed
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="text-center">
-                <span className="block font-medium text-lg">
+              <div className='text-center'>
+                <span className='block font-medium text-lg'>
                   {score} Points
                 </span>
-                <span className="block text-muted-foreground mt-1">
+                <span className='block text-muted-foreground mt-1'>
                   Your exam has been submitted successfully
                 </span>
               </div>
@@ -850,7 +849,7 @@ conn.close()
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              className="bg-primary"
+              className='bg-primary'
               onClick={() => router.push("/dashboard_student")}
             >
               Return to Dashboard
@@ -858,7 +857,7 @@ conn.close()
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-       {/* {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}  */}
+      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}
     </div>
   );
 }
