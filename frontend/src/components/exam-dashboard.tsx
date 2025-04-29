@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Trophy } from "lucide-react";
+import StudentMonitor from "./monitoring/student-monitor";
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -857,7 +858,7 @@ conn.close()
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-       {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} 
+       {/* {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}  */}
     </div>
   );
 }
