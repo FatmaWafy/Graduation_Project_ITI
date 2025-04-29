@@ -2,8 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +55,6 @@ import {
   Database,
   Lightbulb,
 } from "lucide-react";
-const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface TestCase {
   input_data: string;
@@ -93,7 +91,6 @@ interface Course {
 
 export default function AddExamPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
-
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +108,7 @@ export default function AddExamPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(false);
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
 
   const languageMapForDisplay: Record<string, string> = {
     python: "Python",
@@ -191,7 +189,7 @@ export default function AddExamPage() {
         throw new Error("No authentication token found in cookies");
       }
 
-      const response = await fetch(`${origin}/users/courses/`, {
+      const response = await fetch("http://127.0.0.1:8000/users/courses/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -237,8 +235,8 @@ export default function AddExamPage() {
 
       const baseUrl =
         questionType === "mcq"
-          ? `${origin}/exam/mcq-filter/`
-          : `${origin}/exam/coding-filter/`;
+          ? "http://127.0.0.1:8000/exam/mcq-filter/"
+          : "http://127.0.0.1:8000/exam/coding-filter/";
 
       let url = baseUrl;
       if (selectedLanguage !== "all") {
@@ -268,13 +266,13 @@ export default function AddExamPage() {
             type: "code",
             question_text: q.title || q.question_text || "",
             description: q.description || "",
-            language: q.language, // Keep backend value
+            language: q.language,
           };
         } else {
           return {
             ...q,
             type: "mcq",
-            language: q.language, // Keep backend value
+            language: q.language,
           };
         }
       });
@@ -454,6 +452,7 @@ export default function AddExamPage() {
         language: "python",
       },
     ]);
+    setAllExpanded(true);
   };
 
   const removeQuestion = (index: number) => {
@@ -606,7 +605,7 @@ export default function AddExamPage() {
         for (const mcq of newMCQs) {
           try {
             const mcqResponse = await fetch(
-              `${origin}/exam/mcq-questions/`,
+              "http://127.0.0.1:8000/exam/mcq-questions/",
               {
                 method: "POST",
                 headers: {
@@ -653,7 +652,7 @@ export default function AddExamPage() {
 
           try {
             const codingResponse = await fetch(
-              `${origin}/exam/code-questions/`,
+              "http://127.0.0.1:8000/exam/code-questions/",
               {
                 method: "POST",
                 headers: {
@@ -686,7 +685,7 @@ export default function AddExamPage() {
               for (const testCase of originalQuestion.test_cases) {
                 try {
                   const testCaseResponse = await fetch(
-                    `${origin}/exam/test-cases/`,
+                    "http://127.0.0.1:8000/exam/test-cases/",
                     {
                       method: "POST",
                       headers: {
@@ -746,7 +745,7 @@ export default function AddExamPage() {
         ],
       };
 
-      const examResponse = await fetch(`${origin}/exam/exams/`, {
+      const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -806,18 +805,6 @@ export default function AddExamPage() {
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-
       <div className="flex flex-col space-y-8">
         <div className="flex flex-col space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-[#007acc]">
@@ -1289,24 +1276,49 @@ export default function AddExamPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 p-6">
+                <div className="flex justify-between mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAllExpanded(!allExpanded)}
+                    className="border-[#007acc] text-[#007acc] hover:bg-[#c7e5ff]"
+                  >
+                    {allExpanded ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2" />
+                        Collapse All
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-2" />
+                        Expand All
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={addQuestion}
+                    className="bg-[#007acc] hover:bg-[#007abc] text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Another Question
+                  </Button>
+                </div>
+
                 {questions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 bg-[#f0f7ff] rounded-md border border-[#c7e5ff]">
                     <p className="text-muted-foreground mb-4">
-                      No questions created yet.
+                      No questions created yet. Click the button above to add
+                      your first question.
                     </p>
-                    <Button
-                      onClick={addQuestion}
-                      className="bg-[#007acc] hover:bg-[#007abc] text-white"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Question
-                    </Button>
                   </div>
                 ) : (
                   <Accordion
                     type="multiple"
                     className="w-full"
-                    defaultValue={[]}
+                    value={
+                      allExpanded
+                        ? questions.map((_, index) => `question-${index}`)
+                        : []
+                    }
                   >
                     {questions.map((question, index) => (
                       <AccordionItem
