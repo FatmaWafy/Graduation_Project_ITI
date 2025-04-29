@@ -35,6 +35,7 @@ interface Notification {
  
 export async function sendNotification(params: SendNotificationParams): Promise<NotificationResponse> {
   try {
+    console.log(origin)
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
