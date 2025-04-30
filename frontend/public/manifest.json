@@ -1,0 +1,12 @@
+{
+  "name": "ITI Examination System",
+  "short_name": "ITI Exam",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007acc",
+  "icons": [
+    { "src": "/favicon.png" },
+    { "src": "/favicon.png" }
+  ]
+}
