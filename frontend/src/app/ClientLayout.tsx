@@ -33,11 +33,25 @@ export default function ClientLayout({
   }, [pathname, pageTitle]);
 
   useEffect(() => {
+    if ("Notification" in window && "serviceWorker" in navigator) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          console.log("👍 المستخدم وافق على الإشعارات");
+        } else if (permission === "denied") {
+          console.log("👎 المستخدم رفض الإشعارات");
+        }
+      });
+    }
+  
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then((reg) => console.log("Service Worker مسجل", reg))
-        .catch((err) => console.error("فشل تسجيل Service Worker", err));
+        .then((reg) => {
+          console.log("✅ Service Worker مسجل بنجاح", reg);
+        })
+        .catch((err) => {
+          console.error("❌ فشل تسجيل Service Worker", err);
+        });
     }
   }, []);
 
