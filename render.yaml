@@ -3,7 +3,8 @@ services:
     name: exam-backend
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn backend.backend.wsgi:application --chdir backend"
+    startCommand: "gunicorn backend.wsgi:application --chdir backend"
+    postbuild: "python backend/manage.py collectstatic --noinput"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: backend.settings
