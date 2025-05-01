@@ -23,6 +23,7 @@ import MultipleChoiceQuestion from "./multiple-choice-question";
 import CodingQuestion from "./coding-question";
 import QuestionProgressBar from "./question-progress-bar";
 import axios from "axios";
+import StudentMonitor from "./monitoring/student-monitor";
 
 // Runtime support mapping for Piston - must match coding-question.tsx
 const PISTON_LANGUAGE_RUNTIME = {
@@ -857,7 +858,7 @@ conn.close()
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />}
+       {id && <StudentMonitor examId={Array.isArray(id) ? id[0] : id} />} 
     </div>
   );
 }
