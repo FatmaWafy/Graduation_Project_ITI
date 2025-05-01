@@ -233,7 +233,7 @@ export default function DashboardLayout({
               </h1>
             </div>
             <div className='flex-1 overflow-auto py-2'>
-              <nav className='grid gap-6 px-2 py-2'>
+              <nav className='grid gap-2 px-2 py-2'>
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
