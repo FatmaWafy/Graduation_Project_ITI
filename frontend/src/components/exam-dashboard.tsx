@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Trophy } from "lucide-react";
-import StudentMonitor from "./monitoring/student-monitor";
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
 // Import our improved components
