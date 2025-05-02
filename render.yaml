@@ -1,11 +1,11 @@
 services:
   - type: web
-    name: exam-backend
+    name: graduation-backend
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn backend.backend.wsgi:application --chdir backend"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn backend.backend.wsgi:application --bind 0.0.0.0:10000
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: backend.settings
+        value: backend.backend.settings
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.12

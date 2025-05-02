@@ -12,6 +12,7 @@ django-cors-headers==4.7.0
 djangorestframework==3.15.2
 djangorestframework_simplejwt==5.5.0
 et_xmlfile==2.0.0
+gunicorn==21.2.0
 h11==0.14.0
 idna==3.10
 numpy==2.2.4
@@ -48,5 +49,5 @@ urllib3==2.3.0
 webdriver-manager==4.0.2
 websocket-client==1.8.0
 wheel==0.45.1
+whitenoise==6.9.0
 wsproto==1.2.0
-gunicorn==21.2.0
