@@ -1,13 +1,11 @@
 services:
   - type: web
-    name: django-backend
+    name: exam-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn projectname.wsgi:application
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn backend.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: projectname.settings
-      - key: SECRET_KEY
-        value: your-secret-key
-      - key: DEBUG
-        value: False
+        value: backend.settings
+      - key: PYTHON_VERSION
+        value: 3.11
