@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -6,7 +8,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${origin}/api/:path*`,
       },
     ];
   },
