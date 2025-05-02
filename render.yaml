@@ -11,10 +11,10 @@ services:
       - key: SECRET_KEY
         sync: false
       - key: DATABASE_URL
-      
+
         sync: false
       - key: PYTHON_VERSION
-        value: 3.12
+        value: 3.12.0
       - key: DEBUG
         value: False
       - key: ALLOWED_HOSTS
