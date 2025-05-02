@@ -103,6 +103,18 @@ export function NotificationsDropdown() {
     }
   }, [open, isLoading])
 
+
+  // تحديث تلقائي عند استلام Push Notification
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "push-received") {
+          fetchNotifications(); // تحديث الإشعارات عند وصول Push Notification
+        }
+      });
+    }
+  }, [fetchNotifications]);
+
   // Periodic fetch when dropdown is closed
   useEffect(() => {
     if (!open) {

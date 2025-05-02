@@ -1,11 +1,21 @@
 services:
   - type: web
-    name: graduation-backend
+    name: django-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.backend.wsgi:application --bind 0.0.0.0:10000
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn backend.wsgi:application --chdir backend"
+    postbuild: "python manage.py collectstatic --noinput"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: backend.backend.settings
+        value: backend.settings
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+      
+        sync: false
       - key: PYTHON_VERSION
         value: 3.12
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: your-app-name.onrender.com

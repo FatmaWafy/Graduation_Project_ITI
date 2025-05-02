@@ -49,6 +49,7 @@
     "dayjs": "^1.11.13",
     "encoding": "^0.1.13",
     "face-api.js": "^0.22.2",
+    "firebase": "^11.6.1",
     "fs": "^0.0.1-security",
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
