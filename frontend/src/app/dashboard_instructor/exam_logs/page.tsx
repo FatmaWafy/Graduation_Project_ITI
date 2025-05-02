@@ -14,6 +14,8 @@ import {
 import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
 
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 interface InstructorData {
   id: number;
 }
@@ -41,7 +43,7 @@ export default function ExamLogsIndexPage() {
 
       // Fetch instructor data
       const instructorResponse = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}/`,
+        `${origin}/users/instructors/${userId}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -62,7 +64,7 @@ export default function ExamLogsIndexPage() {
       setUser({ instructor_id: instructorData.id });
 
       // Fetch exams
-      const examsUrl = `http://127.0.0.1:8000/exam/temp-exams/get_exam_info/?instructor_id=${instructorData.id}`;
+      const examsUrl = `${origin}/exam/temp-exams/get_exam_info/?instructor_id=${instructorData.id}`;
       const examsResponse = await fetch(examsUrl, {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -39,7 +39,6 @@ User = get_user_model()
 class RegisterInstructorAPIView(APIView):
     permission_classes = [AllowAny]
 
-    # قائمة البرانشات المعتمدة
     valid_branches = [
         "Smart Village", "New Capital", "Cairo University", "Alexandria", "Assiut", 
         "Aswan", "Beni Suef", "Fayoum", "Ismailia", "Mansoura", "Menofia", "Minya", 
@@ -51,44 +50,71 @@ class RegisterInstructorAPIView(APIView):
         data = request.data.copy()
         data["role"] = "instructor"
 
+        print(f"Request data: {data}")
+
         # Check if the email is already used
         if User.objects.filter(email=data["email"]).exists():
+            print("Email already in use")
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if branch is provided and valid
         if "branch" not in data:
+            print("Branch is missing")
             return Response({"error": "Branch is required."}, status=status.HTTP_400_BAD_REQUEST)
         
         if data["branch"] not in self.valid_branches:
+            print(f"Invalid branch: {data['branch']}")
             return Response({"error": f"The branch '{data['branch']}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Initialize the serializer with the necessary data
+        # Initialize the serializer
         serializer = InstructorSerializer(
-            data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]})
+            data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]}
+        )
 
-        # Validate the serializer and save the data
+        print("Checking serializer validity...")
         if serializer.is_valid():
-            # Create the instructor
+            print("Serializer is valid")
             instructor = serializer.save()
+            print(f"Instructor created: {instructor}, Email: {instructor.user.email}")
 
-            # Handle track assignment
-            track_name = data.get("track_name")
-            track, created = Track.objects.get_or_create(name=track_name)
-            track.instructors.add(instructor)  # Add the instructor to the track
+            # Send welcome email
+            email_subject = "Welcome to the Platform"
+            email_message = f"""
+Hi {instructor.user.username},
 
-            track.save()  # Save the track with the updated instructor list
+You have been registered as an instructor.
+
+Please complete your profile and start using the platform by visiting the following link:
+http://localhost:3000/signup
+
+Best regards,
+Your Admin Team
+"""
+            try:
+                print(f"Sending email to {instructor.user.email}...")
+                send_mail(
+                    subject=email_subject,
+                    message=email_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[instructor.user.email],
+                    fail_silently=False,
+                )
+                print("Email sent successfully")
+            except Exception as e:
+                print(f"Failed to send email: {str(e)}")
+                # يمكنك اختيار متابعة التنفيذ أو إرجاع خطأ
+                # return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(instructor.user)
-
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
                 "user": serializer.data
             }, status=status.HTTP_201_CREATED)
 
+        print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 

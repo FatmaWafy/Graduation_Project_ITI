@@ -6,7 +6,7 @@ class Command(BaseCommand):
     help = "Delete notes older than a certain period"
 
     def handle(self, *args, **kwargs):
-        days_to_keep = 0   
+        days_to_keep = 2
         threshold_date = now() - timedelta(days=days_to_keep)
 
         expired_notes = Note.objects.filter(created_at__lte=threshold_date)

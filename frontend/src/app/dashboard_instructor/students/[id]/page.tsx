@@ -34,6 +34,7 @@ import { StudentModal } from "../components/student-modal";
 import { useStudentById } from "../hooks/use-students";
 import StudentProgress from "../components/StudentProgress";
 import { getClientSideToken } from "@/lib/cookies";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface Track {
   id: number;
@@ -62,7 +63,7 @@ export default function StudentDetailPage() {
           console.error("No token found");
           return;
         }
-        const response = await fetch("http://127.0.0.1:8000/users/branches/", {
+        const response = await fetch(`${origin}/users/branches/`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -87,7 +88,7 @@ export default function StudentDetailPage() {
       try {
         const token = getClientSideToken();
         const response = await fetch(
-          "http://127.0.0.1:8000/users/get-tracks/",
+          `${origin}/users/get-tracks/`,
           {
             method: "GET",
             headers: {

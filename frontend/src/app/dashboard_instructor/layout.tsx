@@ -251,6 +251,7 @@ import { Button } from "@/components/ui/button";
 import { jwtDecode } from "jwt-decode";
 import { getClientSideToken } from "@/lib/cookies";
 import Chatbot from "@/components/Chatbot";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function InstructorLayout({
   children,
@@ -300,7 +301,7 @@ export default function InstructorLayout({
         console.log("User ID from token in Dashboard:", userId);
 
         const res = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}/`,
+          `${origin}/users/instructors/${userId}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -434,7 +435,7 @@ export default function InstructorLayout({
                     instructorData.profile_image?.startsWith("http")
                       ? instructorData.profile_image
                       : instructorData.profile_image
-                      ? `http://127.0.0.1:8000${instructorData.profile_image}`
+                      ? `${origin}${instructorData.profile_image}`
                       : ""
                   }
                   alt={instructorData.username}

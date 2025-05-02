@@ -9,6 +9,7 @@ import { Upload, FileSpreadsheet, Info, CheckCircle } from "lucide-react"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AddStudentPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -27,7 +28,7 @@ export default function AddStudentPage() {
           return
         }
 
-        const response = await fetch("http://127.0.0.1:8000/users/get-tracks/", {
+        const response = await fetch(`${origin}/users/get-tracks/`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
 
@@ -103,7 +104,7 @@ export default function AddStudentPage() {
       setUploadProgress(10)
 
       const xhr = new XMLHttpRequest()
-      xhr.open("POST", "http://127.0.0.1:8000/users/register-students-excel/", true)
+      xhr.open("POST", `${origin}/users/register-students-excel/`, true)
       xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`)
 
       xhr.upload.onprogress = (e) => {

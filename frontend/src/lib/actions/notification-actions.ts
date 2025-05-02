@@ -1,6 +1,7 @@
 "use server"
 import Cookies from "js-cookie"
 import { revalidatePath } from "next/cache"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 interface BaseNotificationParams {
   instructor_id: number
@@ -34,7 +35,8 @@ interface Notification {
  
 export async function sendNotification(params: SendNotificationParams): Promise<NotificationResponse> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/notifications/send-note/", {
+    console.log(origin)
+    const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -63,7 +65,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
     }
 
     // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
-    revalidatePath("/dashboard_student/notifications");
+    // revalidatePath("/dashboard_student/notifications");
 
     return data;
   } catch (error) {
@@ -76,7 +78,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
  
 export async function getStudentNotifications(): Promise<Notification[]> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/notifications/notes/", {
+    const response = await fetch(`${origin}/notifications/notes/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

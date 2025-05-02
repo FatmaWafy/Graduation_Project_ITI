@@ -15,6 +15,51 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
+
+ 
+export async function sendNotification(params: any): Promise<any> {
+  try {
+    console.log(origin)
+    const response = await fetch(`${origin}/notifications/send-note/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        `Failed to send notification: ${response.status} ${response.statusText}${
+          errorData ? ` - ${JSON.stringify(errorData)}` : ""
+        }`
+      );
+    }
+
+    // التحقق من حالة الاستجابة فقط
+    const data = await response.json();
+
+    // طباعة الاستجابة في الـ console
+    console.log("Notification sent:", data);
+
+    // إذا كانت الحالة 200، نعرض رسالة النجاح
+    if (response.status === 200) {
+      alert("Notification sent successfully!");
+    }
+
+    // إعادة التحقق من الصفحة (إذا كان لديك حاجة لذلك)
+    // revalidatePath("/dashboard_student/notifications");
+
+    return data;
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    throw error;
+  }
+}
+
 
 import { Button } from "../ui/button";
 import {
@@ -34,7 +79,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { sendNotification } from "../../lib/actions/notification-actions";
+// import { sendNotification } from "../../lib/actions/notification-actions";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import Cookies from "js-cookie";
@@ -125,7 +170,7 @@ export function SendNotificationForm() {
           return;
         }
         const response = await fetch(
-          "http://127.0.0.1:8000/users/instructors/instructor_students/",
+          `${origin}/users/instructors/instructor_students/`,
           {
             method: "GET",
             headers: {
@@ -151,13 +196,13 @@ export function SendNotificationForm() {
         console.log("User ID from token:", userId);
         if (!userId) throw new Error("User ID not found in token.");
         const res = await fetch(
-          `http://127.0.0.1:8000/users/instructors/${userId}`
+          `${origin}/users/instructors/${userId}`
         );
         const instructorData = await res.json();
         const instructorId = instructorData.id;
         console.log("Instructor ID:", instructorId);
         const trackRes = await fetch(
-          `http://127.0.0.1:8000/users/instructor/${instructorId}/tracks/`
+          `${origin}/users/instructor/${instructorId}/tracks/`
         );
         const trackData = await trackRes.json();
         console.log("Tracks for instructor:", trackData);
@@ -188,7 +233,7 @@ export function SendNotificationForm() {
       console.log("User ID from token:", userId);
       if (!userId) throw new Error("User ID not found in token.");
       const res = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}`
+        `${origin}/users/instructors/${userId}`
       );
       const data = await res.json();
       console.log("Data from student API:", data);

@@ -211,6 +211,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -227,7 +228,7 @@ export default function ForgotPassword() {
 
     try {
       const res = await fetch(
-        "http://127.0.0.1:8000/users/reset-password-request/",
+        `${origin}/users/reset-password-request/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

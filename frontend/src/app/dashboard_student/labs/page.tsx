@@ -9,6 +9,7 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +62,7 @@ export default function StudentLabsPage() {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/labs/", {
+      const response = await fetch(`${origin}/labs/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -119,7 +120,7 @@ export default function StudentLabsPage() {
       }
 
       const response = await fetch(
-        `http://127.0.0.1:8000/labs/${lab.id}/download/`,
+        `${origin}/labs/${lab.id}/download/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

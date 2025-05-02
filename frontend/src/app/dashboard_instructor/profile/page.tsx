@@ -26,6 +26,8 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@radix-ui/react-switch";
 // import PasswordChangeSection from "@/components/password";
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 
 interface InstructorData {
   address: string;
@@ -74,7 +76,7 @@ export default function ProfilePage() {
 
       const imageUrl = instructorData.user.profile_image.startsWith("http")
         ? `${instructorData.user.profile_image}?t=${Date.now()}`
-        : `http://127.0.0.1:8000${
+        : `${origin}${
             instructorData.user.profile_image
           }?t=${Date.now()}`;
       setProfileImage(imageUrl);
@@ -95,7 +97,7 @@ export default function ProfilePage() {
 
       const userId = Number(decoded.user_id);
       const res = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}/`,
+        `${origin}/users/instructors/${userId}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -151,7 +153,7 @@ export default function ProfilePage() {
         passwordValues.currentPassword
       );
       const res = await axios.post(
-        "http://localhost:8000/users/instructor/change-password/",
+        `${origin}/users/instructor/change-password/`,
         {
           instructor_id: instructorData.id, // أهم تعديل هنا
           currentPassword: passwordValues.currentPassword,
@@ -227,7 +229,7 @@ export default function ProfilePage() {
       const userId = Number(decoded.user_id);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/users/instructors/${userId}/update/`,
+        `${origin}/users/instructors/${userId}/update/`,
         {
           method: "PATCH",
           headers: {
@@ -248,7 +250,7 @@ export default function ProfilePage() {
         formData.append("profile_image", imageFile);
 
         const imageResponse = await fetch(
-          `http://127.0.0.1:8000/users/upload-profile-image/${instructorData.id}/`,
+          `${origin}/users/upload-profile-image/${instructorData.id}/`,
           {
             method: "POST",
             headers: {
@@ -264,7 +266,7 @@ export default function ProfilePage() {
         }
 
         const updatedImageResponse = await fetch(
-          `http://127.0.0.1:8000/users/students/${userId}/`,
+          `${origin}/users/students/${userId}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -278,7 +280,7 @@ export default function ProfilePage() {
             "http"
           )
             ? updatedData.user.profile_image
-            : `http://127.0.0.1:8000${updatedData.user.profile_image}`;
+            : `${origin}${updatedData.user.profile_image}`;
           setProfileImage(newImageUrl);
         }
       }

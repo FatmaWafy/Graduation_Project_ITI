@@ -10,6 +10,7 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { getClientSideToken } from "@/lib/cookies"
 import { jwtDecode } from "jwt-decode"
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 import {
   type Assignment,
@@ -51,7 +52,7 @@ export default function DashboardPage() {
       const decoded: any = jwtDecode(token)
       const userId = decoded.user_id
 
-      const res = await fetch(`http://127.0.0.1:8000/users/students/${userId}/external-stats/`)
+      const res = await fetch(`${origin}/users/students/${userId}/external-stats/`)
       if (!res.ok) throw new Error("Failed to fetch external stats")
 
       const data = await res.json()
@@ -67,7 +68,7 @@ export default function DashboardPage() {
       const token = getClientSideToken()
       if (!token) throw new Error("Token not found")
 
-      const res = await fetch("http://127.0.0.1:8000/exam/student-exam-answers/get_user_exams_scores/", {
+      const res = await fetch(`${origin}/exam/student-exam-answers/get_user_exams_scores/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -150,7 +151,7 @@ export default function DashboardPage() {
         const decoded: any = jwtDecode(token)
         const userId = decoded.user_id
 
-        const res = await fetch(`http://127.0.0.1:8000/users/students/${userId}/`)
+        const res = await fetch(`${origin}/users/students/${userId}/`)
         if (!res.ok) throw new Error("Failed to fetch student data")
 
         const data = await res.json()

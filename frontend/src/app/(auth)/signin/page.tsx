@@ -308,6 +308,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { googleLogout, useGoogleLogin } from "@react-oauth/google";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -321,8 +322,9 @@ export default function LoginPage() {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/users/google/login/", {
+        const res = await fetch(`${origin}/users/google/login/`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             token: tokenResponse.access_token,
@@ -371,7 +373,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/users/login/", {
+      const res = await fetch(`${origin}/users/login/`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Github, Code, ExternalLink, Award } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
 type ExternalStats = {
   github_repos: number | null;
@@ -33,9 +34,9 @@ export default function StudentProgress({ studentId }: { studentId: number }) {
       try {
         const [statsRes, profileRes] = await Promise.all([
           fetch(
-            `http://127.0.0.1:8000/users/students/external-stats/by-student-id/${studentId}/`
+            `${origin}/users/students/external-stats/by-student-id/${studentId}/`
           ),
-          fetch(`http://127.0.0.1:8000/users/students/by-id/${studentId}/`),
+          fetch(`${origin}/users/students/by-id/${studentId}/`),
         ]);
 
         if (!statsRes.ok || !profileRes.ok)
