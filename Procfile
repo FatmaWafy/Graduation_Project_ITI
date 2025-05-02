@@ -1,1 +1,1 @@
-web: gunicorn backend.wsgi:application --chdir backend
+gunicorn backend.backend.wsgi:application --bind 0.0.0.0:10000
