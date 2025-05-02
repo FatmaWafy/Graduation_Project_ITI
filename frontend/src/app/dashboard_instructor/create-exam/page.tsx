@@ -1832,7 +1832,7 @@ export default function AddExamPage() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 ">
           <Button
             type="submit"
             onClick={handleSubmit}

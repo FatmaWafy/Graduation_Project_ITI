@@ -673,23 +673,25 @@ export default function SetExamPage() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button
-                      variant={
-                        selectedExam?.id === exam.id ? "default" : "secondary"
-                      }
-                      className="w-full bg-[#007acc] hover:bg-[#007acc]"
-                    >
-                      {selectedExam?.id === exam.id
-                        ? "Selected"
-                        : "Select Exam"}
-                    </Button>
-                    <Button
-                      onClick={(e) => handleExportPDF(exam.id, exam.title, e)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Exam (PDF)
-                    </Button>
+                    <div className="flex w-full gap-2">
+                      <Button
+                        variant={
+                          selectedExam?.id === exam.id ? "default" : "secondary"
+                        }
+                        className="w-full bg-[#007acc] hover:bg-[#007acc]"
+                      >
+                        {selectedExam?.id === exam.id
+                          ? "Selected"
+                          : "Select Exam"}
+                      </Button>
+                      <Button
+                        onClick={(e) => handleExportPDF(exam.id, exam.title, e)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export Exam (PDF)
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
               ))
