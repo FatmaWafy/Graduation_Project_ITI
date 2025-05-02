@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, BookOpen, FileText } from "lucide-react";
+import { Clock, BookOpen, FileText, Download } from "lucide-react";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,7 +24,7 @@ const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function sendNotification(params: any): Promise<any> {
   try {
-    console.log(origin)
+    console.log(origin);
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
@@ -36,9 +36,9 @@ export async function sendNotification(params: any): Promise<any> {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        `Failed to send notification: ${response.status} ${response.statusText}${
-          errorData ? ` - ${JSON.stringify(errorData)}` : ""
-        }`
+        `Failed to send notification: ${response.status} ${
+          response.statusText
+        }${errorData ? ` - ${JSON.stringify(errorData)}` : ""}`
       );
     }
 
@@ -207,14 +207,11 @@ export default function SetExamPage() {
       const decoded: any = jwtDecode(token);
       const userId = decoded.user_id;
 
-      const response = await fetch(
-        `${origin}/users/instructors/${userId}/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${origin}/users/instructors/${userId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) throw new Error("Failed to fetch instructor data");
 
@@ -478,9 +475,7 @@ export default function SetExamPage() {
 
         if (!userId) throw new Error("User ID not found in token.");
 
-        const res = await fetch(
-          `${origin}/users/instructors/${userId}`
-        );
+        const res = await fetch(`${origin}/users/instructors/${userId}`);
         if (!res.ok) throw new Error("Failed to fetch instructor ID");
 
         const data = await res.json();
@@ -553,7 +548,57 @@ export default function SetExamPage() {
       setLoading((prev) => ({ ...prev, submitting: false }));
     }
   };
+  const handleExportPDF = async (
+    examId: number,
+    examTitle: string,
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    // Prevent the click from bubbling up to the card and selecting the exam
+    e.stopPropagation();
 
+    try {
+      const token = Cookies.get("token");
+      if (!token) {
+        toast.error("Token not found");
+        return;
+      }
+
+      const response = await fetch(
+        `${origin}/exam/export-bubble-sheet/${examId}/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to export Exam");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const exportExamTitle = examTitle || "exam";
+      link.download = `${exportExamTitle}_id(${examId}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Exam exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error(
+        `Error exporting Exam: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
   if (loading.exams || loading.tracks || loading.branches || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -637,6 +682,13 @@ export default function SetExamPage() {
                       {selectedExam?.id === exam.id
                         ? "Selected"
                         : "Select Exam"}
+                    </Button>
+                    <Button
+                      onClick={(e) => handleExportPDF(exam.id, exam.title, e)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Exam (PDF)
                     </Button>
                   </CardFooter>
                 </Card>
