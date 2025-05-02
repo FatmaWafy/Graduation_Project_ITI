@@ -30,7 +30,7 @@ CODE_EXECUTION_TEMP_DIR = '../backend/exams/temp'  # Temporary directory for cod
 SECRET_KEY = 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-0i33=-)0e8n)*z_du4bw7lcf'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 

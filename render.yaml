@@ -7,6 +7,6 @@ services:
     postbuild: "python backend/manage.py collectstatic --noinput"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: backend.settings
+        value: backend.backend.settings  # Updated to match wsgi.py
       - key: PYTHON_VERSION
         value: 3.11
