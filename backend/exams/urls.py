@@ -1,7 +1,7 @@
 from django.urls import path, include
 
 from .views import (
-    CheatingLogView, CodingQuestionViewSet, ExamListCreateView, ExamDetailView, ExportBubbleSheetView, StudentExamAnswerViewSet, TempExamViewSet, MCQQuestionViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent, CodingtestCaseViewSet,FilteredCodingQuestionListView, get_cheating_logs, run_code, submit_code_results)
+    CheatingLogView, CodingQuestionViewSet, ExamListCreateView, ExamDetailView, StudentExamAnswerViewSet, TempExamViewSet, MCQQuestionViewSet ,FilteredMCQQuestionListView,GetTempExamByTrack,GetTempExamByStudent, CodingtestCaseViewSet,FilteredCodingQuestionListView, get_cheating_logs, run_code, submit_code_results)
 from rest_framework.routers import DefaultRouter
 
 # إنشاء الراوتر وتسجيل الـ ViewSets
@@ -30,7 +30,5 @@ urlpatterns = [
     # path('run-code/', StudentExamAnswerViewSet.as_view(), name='run_code'),
     path('submit-code-results/', submit_code_results, name='submit_code_results'),
     path('run-code/', run_code, name='run_code'),
-    path('export-bubble-sheet/<int:exam_id>/', ExportBubbleSheetView.as_view(), name='export_bubble_sheet'),
-
     # path('student-exam-answers/get_student_answers/', StudentExamAnswerViewSet.as_view({'get': 'get_student_answers'}), name='get_student_answers'),
 ]
