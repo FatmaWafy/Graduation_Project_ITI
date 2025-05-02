@@ -27,7 +27,7 @@ CODE_EXECUTION_TEMP_DIR = '../backend/exams/temp'  # Temporary directory for cod
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-0i33=-)0e8n)*z_du4bw7lcf'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-0i33=-)0e8n)*z_du4bw7lcf')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'

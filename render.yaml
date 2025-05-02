@@ -2,12 +2,27 @@ services:
   - type: web
     name: django-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.backend.wsgi:application --chdir backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn backend.wsgi:application --chdir backend"
+    postbuild: "python backend/manage.py collectstatic --noinput"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: backend.settings
+        value: backend.backend.settings  # عدّلنا من backend.settings لـ backend.backend.settings
       - key: SECRET_KEY
         sync: false
       - key: DATABASE_URL
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: your-app-name.onrender.com,localhost
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        sync: false
+      - key: SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
         sync: false
