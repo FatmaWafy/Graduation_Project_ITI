@@ -2,9 +2,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, MouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, BookOpen, FileText } from "lucide-react";
+import { Clock, BookOpen, FileText, Download } from "lucide-react";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -554,6 +554,57 @@ export default function SetExamPage() {
     }
   };
 
+  const handleExportPDF = async (
+    examId: number,
+    examTitle: string,
+    e: MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    // Prevent the click from bubbling up to the card and selecting the exam
+    e.stopPropagation();
+
+    try {
+      const token = Cookies.get("token");
+      if (!token) {
+        toast.error("Token not found");
+        return;
+      }
+
+      const response = await fetch(
+        `http://127.0.0.1:8000/exam/export-bubble-sheet/${examId}/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to export Exam");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const exportExamTitle = examTitle || "exam";
+      link.download = `${exportExamTitle}_id(${examId}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Exam exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error(
+        `Error exporting Exam: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
   if (loading.exams || loading.tracks || loading.branches || loading.students) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -637,6 +688,13 @@ export default function SetExamPage() {
                       {selectedExam?.id === exam.id
                         ? "Selected"
                         : "Select Exam"}
+                    </Button>
+                    <Button
+                      onClick={(e) => handleExportPDF(exam.id, exam.title, e)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Exam (PDF)
                     </Button>
                   </CardFooter>
                 </Card>

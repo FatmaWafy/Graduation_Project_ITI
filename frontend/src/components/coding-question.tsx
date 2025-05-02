@@ -136,6 +136,7 @@ export default function CodingQuestion({
   );
 
   useEffect(() => {
+    console.log("Current theme:", theme);
     setEditorTheme(theme === "dark" ? "vs-dark" : "light");
   }, [theme]);
 

@@ -54,6 +54,7 @@ import {
   PenTool,
   Database,
   Lightbulb,
+  Download,
 } from "lucide-react";
 
 interface TestCase {
@@ -109,6 +110,8 @@ export default function AddExamPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(false);
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
+  const [createdExamId, setCreatedExamId] = useState<number | null>(null);
+  const [createdExamTitle, setCreatedExamTitle] = useState<string>("");
 
   const languageMapForDisplay: Record<string, string> = {
     python: "Python",
@@ -758,6 +761,9 @@ export default function AddExamPage() {
         const errorData = await examResponse.json();
         throw new Error(errorData.message || "Failed to create exam");
       }
+      const createdExam = await examResponse.json();
+      setCreatedExamId(createdExam.id); // Store the exam ID
+      setCreatedExamTitle(createdExam.title); // Store the exam title
 
       toast.success("Exam created successfully!");
       setExamTitle("");
@@ -802,7 +808,53 @@ export default function AddExamPage() {
         return <Badge>{difficulty}</Badge>;
     }
   };
+  const handleExportPDF = async () => {
+    if (!createdExamId) {
+      toast.error("No exam created yet. Please create an exam first.");
+      return;
+    }
+    console.log("Exporting PDF for exam ID:", createdExamId);
+    try {
+      const token = getTokenFromCookies();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
+      const response = await fetch(
+        `http://127.0.0.1:8000/exam/export-bubble-sheet/${createdExamId}/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to export Exam");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const exportExamTitle = createdExamTitle || "exam";
+      link.download = `${exportExamTitle}_id(${createdExamId}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Exam exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error(
+        `Error exporting Exam: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
       <div className="flex flex-col space-y-8">
@@ -1784,7 +1836,7 @@ export default function AddExamPage() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end space-x-4">
           <Button
             type="submit"
             onClick={handleSubmit}
@@ -1803,6 +1855,15 @@ export default function AddExamPage() {
               </>
             )}
           </Button>
+          {createdExamId && (
+            <Button
+              onClick={handleExportPDF}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Exam (pdf)
+            </Button>
+          )}
         </div>
 
         {debugInfo && (
