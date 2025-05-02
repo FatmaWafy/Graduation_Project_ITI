@@ -257,3 +257,9 @@ SOCIAL_AUTH_URL_NAMESPACE = 'social'
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/dashboard/'  # سيتم توضيح هذا لاحقًا
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/signin/'
 SOCIAL_AUTH_USER_MODEL = 'users.User'
+
+
+ 
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
+VAPID_EMAIL = os.getenv("VAPID_EMAIL")
