@@ -131,13 +131,15 @@ export default function CodingQuestion({
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const { theme } = useTheme();
-  const [editorTheme, setEditorTheme] = useState(
-    theme === "dark" ? "vs-dark" : "light"
-  );
+  // const [editorTheme, setEditorTheme] = useState(
+  //   theme === "dark" ? "vs-dark" : "light"
+  // );
+
+  const [editorTheme, setEditorTheme] = useState("vs-dark");
 
   useEffect(() => {
-    setEditorTheme(theme === "dark" ? "vs-dark" : "light");
-  }, [theme]);
+    setEditorTheme("vs-dark");
+  }, [theme]); // still runs when theme change
 
   useEffect(() => {
     setTestResults({});
