@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import json
 import subprocess
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from numpy import convolve
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
@@ -982,3 +982,322 @@ def run_code(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+    
+class ExportBubbleSheetView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, exam_id):
+        try:
+            exam = Exam.objects.get(id=exam_id)
+            file_path = generate_bubble_sheet(exam)
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f"bubble_sheet_exam_{exam_id}.pdf")
+        except Exam.DoesNotExist:
+            return Response({"error": "Exam not found"}, status=404)
+
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from datetime import datetime
+
+# def generate_bubble_sheet(exam):
+#     file_path = f"bubble_sheet_exam_{exam.id}.pdf"
+#     c = canvas.Canvas(file_path, pagesize=A4)
+#     width, height = A4
+
+#     c.setFont("Helvetica-Bold", 14)
+#     c.drawString(50, height - 50, f"Bubble Sheet for Exam: {exam.title}")
+
+#     y = height - 80
+#     # Adding MCQ Questions
+#     for index, question in enumerate(exam.MCQQuestions.all(), start=1):
+#         c.setFont("Helvetica", 12)
+#         c.drawString(50, y, f"{index}. {question.question_text[:80]}...")
+
+#         choices = ['A', 'B', 'C', 'D']
+#         for i, choice in enumerate(choices):
+#             c.circle(70 + i*40, y - 10, 5)
+#             c.drawString(75 + i*40, y - 12, choice)
+#         y -= 40
+
+#         if y < 100:
+#             c.showPage()
+#             y = height - 80
+
+#     # Adding Coding Questions
+#     for index, question in enumerate(exam.CodingQuestions.all(), start=1):
+#         c.setFont("Helvetica", 12)
+#         c.drawString(50, y, f"Code Question {index}: {question.title[:80]}...")
+#         c.drawString(50, y - 30, f"Language: {question.description}")
+#         c.drawString(50, y - 20, f"Starter Code: {question.starter_code[:80]}...")
+
+#         y -= 40
+#         c.setFont("Helvetica", 10)
+#         c.drawString(50, y, "Answer:")
+#         y -= 20
+#         c.rect(50, y - 10, 500, 60)  # Draw a box to indicate the area for the code answer
+
+#         y -= 80  # Leave space for coding answer box
+
+#         if y < 100:
+#             c.showPage()
+#             y = height - 80
+
+#     c.save()
+#     return file_path
+#     # title = models.CharField(max_length=255)
+#     # description = models.TextField()
+#     # starter_code = models.TextField(default="None")
+    
+
+def generate_bubble_sheet(exam):
+    file_path = f"exams/media/exams/exam_{exam.title}_id_{exam.id}.pdf"
+    c = canvas.Canvas(file_path, pagesize=A4)
+    width, height = A4
+    margin = 20 * mm
+    styles = getSampleStyleSheet()
+
+    # Custom styles
+    title_style = ParagraphStyle(
+        name="Title",
+        parent=styles["Title"],
+        fontSize=16,
+        spaceAfter=10,
+        textColor=colors.purple,
+        alignment=0,  # Left alignment
+    )
+    heading_style = ParagraphStyle(
+        name="Heading",
+        parent=styles["Heading2"],
+        fontSize=14,
+        spaceAfter=8,
+        textColor=colors.purple,
+    )
+    normal_style = ParagraphStyle(
+        name="Normal",
+        parent=styles["Normal"],
+        fontSize=10,
+        leading=12,
+        spaceAfter=6,
+    )
+    instruction_style = ParagraphStyle(
+        name="Instruction",
+        parent=styles["Italic"],
+        fontSize=10,
+        spaceAfter=10,
+        textColor=colors.darkgrey,
+        leading=14,
+    )
+    code_style = ParagraphStyle(
+        name="Code",
+        parent=styles["Normal"],
+        fontName="Courier",
+        fontSize=9,
+        leading=12,
+    )
+
+    def draw_header(title=None):
+        """Draw the header section of the page"""
+        # Use the exam title or a provided override title
+        sheet_title = title if title else exam.title
+        
+        # Create paragraph for title to handle longer titles better
+        title_para = Paragraph(f"<b>{sheet_title}</b>", title_style)
+        title_para.wrapOn(c, width - 2 * margin, 20 * mm)
+        title_para.drawOn(c, margin, height - 25 * mm)  # Moved up by 5mm
+        
+        c.setFont("Helvetica", 10)
+        c.setFillColor(colors.black)
+        course = exam.course.name if hasattr(exam, 'course') and exam.course else "N/A"
+        c.drawString(margin, height - 35 * mm, f"Course: {course}")  # Adjusted positions
+        c.drawString(margin, height - 41 * mm, f"Duration: {exam.duration} minutes")
+        c.drawString(margin, height - 47 * mm, f"Date: {datetime.now().strftime('%Y-%m-%d')}")
+        
+        # Draw a horizontal line
+        c.setLineWidth(0.5)
+        c.line(margin, height - 51 * mm, width - margin, height - 51 * mm)  # Moved up
+
+    def draw_instructions():
+        """Draw the instructions section"""
+        instructions = Paragraph(
+            """
+            <i><b>Instructions:</b><br/>
+            - Use a No. 2 pencil to fill in the bubbles completely.<br/>
+            - For multiple-choice questions, select one answer by filling the corresponding bubble.<br/>
+            - For coding questions, write your code in the provided answer space.<br/>
+            - Do not make stray marks on the sheet.</i>
+            """,
+            instruction_style,
+        )
+        instructions.wrapOn(c, width - 2 * margin, 50 * mm)
+        instructions.drawOn(c, margin, height - 80 * mm)  # Moved closer to title (just below line)
+        return height - 58 * mm - instructions.height - 10 * mm
+
+    def draw_page_number(page_num, total_pages=None):
+        """Draw page numbers at the bottom of the page"""
+        c.setFont("Helvetica", 8)
+        if total_pages:
+            c.drawCentredString(width / 2, 10 * mm, f"Page {page_num} of {total_pages}")
+        else:
+            c.drawCentredString(width / 2, 10 * mm, f"Page {page_num}")
+
+    def draw_mcq_bubbles(x, y, question):
+        choices = [
+            ('A', question.option_a),
+            ('B', question.option_b),
+            ('C', question.option_c),
+            ('D', question.option_d),
+        ]
+        
+        # Grid settings
+        bubble_radius = 3 * mm
+        column_width = 75 * mm  # Increased to allow space for bubble + text
+        row_height = 12 * mm
+
+        positions = [
+            (0, 0),  # A: top-left
+            (1, 0),  # B: top-right
+            (0, 1),  # C: bottom-left
+            (1, 1),  # D: bottom-right
+        ]
+
+        for i, (label, text) in enumerate(choices):
+            col, row = positions[i]
+            pos_x = x + (col * column_width)
+            pos_y = y - (row * row_height)
+
+            # Draw the bubble
+            bubble_center_x = pos_x + bubble_radius
+            bubble_center_y = pos_y + bubble_radius
+            c.setFillColor(colors.white)
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(0.5)
+            c.circle(bubble_center_x, bubble_center_y, bubble_radius, stroke=1, fill=0)
+
+            # Draw the label and text
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.black)
+            text_x = bubble_center_x + 7 * mm
+            c.drawString(text_x, pos_y, f"{label}. {text}")
+
+        return y - (2 * row_height)  # Moved outside the loop
+
+
+    # Calculate total pages (estimate)
+    total_pages = 1
+    mcq_count = exam.MCQQuestions.count() if hasattr(exam, 'MCQQuestions') else 0
+    coding_count = exam.CodingQuestions.count() if hasattr(exam, 'CodingQuestions') else 0
+    
+    # Rough estimation: 4 MCQs per page, 1 coding question per page
+    total_pages += mcq_count // 4
+    total_pages += coding_count
+    
+    # Begin the first page
+    page_num = 1
+    draw_header()
+    y = draw_instructions()
+
+    # Multiple Choice Questions Section
+    if hasattr(exam, 'MCQQuestions') and exam.MCQQuestions.exists():
+        mcq_heading = Paragraph("<b>Multiple Choice Questions</b>", heading_style)
+        mcq_heading.wrapOn(c, width - 2 * margin, 20 * mm)
+        mcq_heading.drawOn(c, margin, y)
+        y -= mcq_heading.height + 10 * mm
+
+        for index, question in enumerate(exam.MCQQuestions.all(), start=1):
+            # Check if there's enough space for the question
+            if y < 80 * mm:
+                draw_page_number(page_num, total_pages)
+                c.showPage()
+                page_num += 1
+                y = height - 30 * mm
+                draw_header()
+                y -= 40 * mm  # Adjust for header space
+
+            # Question text with wrapping
+            question_text = Paragraph(f"{index}. {question.question_text}", normal_style)
+            available_width = width - 2 * margin
+            question_text.wrapOn(c, available_width, 50 * mm)
+            question_text.drawOn(c, margin, y)
+            
+            # Calculate height used by question text
+            text_height = question_text.height
+            y -= text_height + 8 * mm  # Move down after question text
+            
+            # Create a centered position for the bubble grid
+            bubble_x = margin + 0 * mm  # Start position of the grid
+            bubble_y = y
+            
+            # Draw answer options in 2x2 grid
+            bubble_end_y = draw_mcq_bubbles(bubble_x, bubble_y, question)
+
+            
+            # Ensure we move down enough after the bubble grid
+            y = bubble_end_y - 15 * mm  # Extra space after bubbles
+
+    # Coding Questions Section
+    if hasattr(exam, 'CodingQuestions') and exam.CodingQuestions.exists():
+        # Start a new page for coding questions
+        # if page_num > 1 or y < 150 * mm:
+        #     draw_page_number(page_num, total_pages)
+        #     c.showPage()
+        #     page_num += 1
+        #     y = height - 30 * mm
+        #     draw_header()
+        #     y -= 40 * mm  # Adjust for header space
+        
+        # coding_heading = Paragraph("<b>Coding Questions</b>", heading_style)
+        # coding_heading.wrapOn(c, width - 2 * margin, 20 * mm)
+        # coding_heading.drawOn(c, margin, y)
+        # y -= coding_heading.height + 10 * mm
+        
+        for index, question in enumerate(exam.CodingQuestions.all(), start=1):
+            if index > 0 or y < 150 * mm:
+                draw_page_number(page_num, total_pages)
+                c.showPage()
+                page_num += 1
+                y = height - 30 * mm
+                # Use a custom title that includes the coding question info
+                draw_header(f"{exam.title} - Code Question {index}: {question.title}")
+                y -= 40 * mm  # Adjust for header space
+
+            # Language information
+            language = getattr(question, 'language', 'Python').capitalize()
+            c.setFont("Helvetica-Bold", 10)
+            c.setFillColor(colors.black)
+            c.drawString(margin, y, f"Language: {language}")
+            y -= 8 * mm
+
+            # Starter code (if available)
+            if hasattr(question, 'starter_code') and question.starter_code:
+                # Format the starter code with proper monospace font
+                c.setFont("Courier", 9)
+                code_lines = question.starter_code.split('\n')
+                for line in code_lines:
+                    c.drawString(margin, y, line)
+                    y -= 5 * mm
+                y -= 5 * mm  # Extra space after code
+
+            # Answer section
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(margin, y, "Answer:")
+            y -= 8 * mm
+
+            # Draw lined answer space
+            c.setLineWidth(0.3)
+            line_spacing = 8 * mm
+            num_lines = 8  # Increased number of lines for more answer space
+            
+            for i in range(num_lines):
+                c.line(margin, y - i * line_spacing, width - margin, y - i * line_spacing)
+
+            # Move down past the answer space
+            y -= num_lines * line_spacing + 10 * mm
+
+    # Save the final page
+    draw_page_number(page_num, total_pages)
+    c.save()
+    return file_path
