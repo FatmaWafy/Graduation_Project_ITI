@@ -114,11 +114,19 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 load_dotenv()
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600
-    )
+    'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
+print("DATABASE_URL", os.getenv("DATABASE_URL"))
+# DATABASES = {
+#         'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': 'postgres',
+#         'PASSWORD': 'Exam123_',
+#         'HOST': 'examinationsystem.cjki0o2memz5.eu-north-1.rds.amazonaws.com',
+#         'PORT': '5432',
+# }
+# }
 
 # DATABASES = {
 #         'default': {
