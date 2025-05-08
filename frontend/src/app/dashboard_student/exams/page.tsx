@@ -195,9 +195,9 @@ export default function ExamsPage() {
 
             return (
               <Card key={exam.id} className="overflow-hidden flex flex-col">
-                <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                {/* <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center">
                   <FileText className="h-16 w-16 text-gray-400" />
-                </div>
+                </div> */}
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>

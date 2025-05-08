@@ -19,14 +19,17 @@ export default function ExamRulesPage() {
     const videoRef = useRef<HTMLVideoElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    useEffect(() => {
-        const examId = Array.isArray(id) ? id[0] : id
-        const violated = localStorage.getItem(`exam_violated_${examId}`) === "true"
+  useEffect(() => {
+    const examId = Array.isArray(id) ? id[0] : id;
+    const violated = localStorage.getItem(`exam_violated_${examId}`) === "true";
 
-        if (violated) {
-            setIsViolated(true)
-            setViolationReason(localStorage.getItem(`exam_violation_reason_${examId}`) || "Exam rules violation")
-        }
+    if (violated) {
+      setIsViolated(true);
+      setViolationReason(
+        localStorage.getItem(`exam_violation_reason_${examId}`) ||
+          "Exam rules violation"
+      );
+    }
 
         // تشغيل الكاميرا
         navigator.mediaDevices.getUserMedia({ video: true })
@@ -72,23 +75,23 @@ export default function ExamRulesPage() {
         setLoading(false)
     }, [id])
 
-    const startExam = () => {
-        if (isViolated) {
-            alert("You cannot take this exam due to previous violations.")
-            return
-        }
-
-        const examId = Array.isArray(id) ? id[0] : id
-        router.push(`/dashboard_student/exams/exam/${examId}`)
+  const startExam = () => {
+    if (isViolated) {
+      alert("You cannot take this exam due to previous violations.");
+      return;
     }
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-background">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-destructive"></div>
-            </div>
-        )
-    }
+    const examId = Array.isArray(id) ? id[0] : id;
+    router.push(`/dashboard_student/exams/exam/${examId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-destructive"></div>
+      </div>
+    );
+  }
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground p-4 space-y-4">
@@ -119,11 +122,13 @@ export default function ExamRulesPage() {
                 <h1 className="text-2xl font-bold">Exam Rules & Instructions</h1>
             </div>
 
-            <div className="p-4 space-y-8">
-                <div className="text-center mb-6">
-                    <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-2" />
-                    <p className="text-lg font-semibold">Please read all rules carefully before starting the exam</p>
-                </div>
+      <div className="p-4 space-y-8">
+        <div className="text-center mb-6">
+          <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-2" />
+          <p className="text-lg font-semibold">
+            Please read all rules carefully before starting the exam
+          </p>
+        </div>
 
                 <div className="space-y-6">
                     <div className="flex items-start gap-4 p-4 border rounded-lg">
@@ -151,19 +156,22 @@ export default function ExamRulesPage() {
                     </div>
                 </div>
 
-                <div className="bg-secondary p-4 rounded-lg">
-                    <p className="font-medium text-center">
-                        By clicking "Start Exam", you agree to follow all the rules stated above.
-                    </p>
-                </div>
+        <div className="bg-secondary p-4 rounded-lg">
+          <p className="font-medium text-center">
+            By clicking "Start Exam", you agree to follow all the rules stated
+            above.
+          </p>
+        </div>
 
-                {isViolated && (
-                    <div className="bg-destructive/10 border border-destructive text-destructive-foreground p-4 rounded-lg">
-                        <p className="font-bold text-center">You cannot take this exam</p>
-                        <p className="text-center">Reason: {violationReason}</p>
-                    </div>
-                )}
-            </div>
+        {isViolated && (
+          <div className="bg-destructive/10 border border-destructive text-destructive-foreground p-4 rounded-lg">
+            <p className="font-bold text-center text-black ">
+              You cannot take this exam
+            </p>
+            <p className="text-center text-black">Reason: {violationReason}</p>
+          </div>
+        )}
+      </div>
 
             {/* زرار البدء */}
             <div className="p-6 flex justify-center">
@@ -180,3 +188,4 @@ export default function ExamRulesPage() {
         </div>
     )
 }
+

@@ -54,8 +54,9 @@ import {
   PenTool,
   Database,
   Lightbulb,
+  Download,
 } from "lucide-react";
-
+const origin = process.env.NEXT_PUBLIC_API_URL;
 interface TestCase {
   input_data: string;
   expected_output: string;
@@ -109,6 +110,8 @@ export default function AddExamPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [isLoadingCourses, setIsLoadingCourses] = useState<boolean>(false);
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
+  const [createdExamId, setCreatedExamId] = useState<number | null>(null);
+  const [createdExamTitle, setCreatedExamTitle] = useState<string>("");
 
   const languageMapForDisplay: Record<string, string> = {
     python: "Python",
@@ -189,7 +192,7 @@ export default function AddExamPage() {
         throw new Error("No authentication token found in cookies");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/users/courses/", {
+      const response = await fetch(`${origin}/users/courses/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -235,8 +238,8 @@ export default function AddExamPage() {
 
       const baseUrl =
         questionType === "mcq"
-          ? "http://127.0.0.1:8000/exam/mcq-filter/"
-          : "http://127.0.0.1:8000/exam/coding-filter/";
+          ? `${origin}/exam/mcq-filter/`
+          : `${origin}/exam/coding-filter/`;
 
       let url = baseUrl;
       if (selectedLanguage !== "all") {
@@ -604,17 +607,14 @@ export default function AddExamPage() {
       if (newMCQs.length > 0) {
         for (const mcq of newMCQs) {
           try {
-            const mcqResponse = await fetch(
-              "http://127.0.0.1:8000/exam/mcq-questions/",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(mcq),
-              }
-            );
+            const mcqResponse = await fetch(`${origin}/exam/mcq-questions/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(mcq),
+            });
 
             if (!mcqResponse.ok) {
               const errorData = await mcqResponse.json();
@@ -652,7 +652,7 @@ export default function AddExamPage() {
 
           try {
             const codingResponse = await fetch(
-              "http://127.0.0.1:8000/exam/code-questions/",
+              `${origin}/exam/code-questions/`,
               {
                 method: "POST",
                 headers: {
@@ -685,7 +685,7 @@ export default function AddExamPage() {
               for (const testCase of originalQuestion.test_cases) {
                 try {
                   const testCaseResponse = await fetch(
-                    "http://127.0.0.1:8000/exam/test-cases/",
+                    `${origin}/exam/test-cases/`,
                     {
                       method: "POST",
                       headers: {
@@ -745,7 +745,7 @@ export default function AddExamPage() {
         ],
       };
 
-      const examResponse = await fetch("http://127.0.0.1:8000/exam/exams/", {
+      const examResponse = await fetch(`${origin}/exam/exams/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -758,7 +758,9 @@ export default function AddExamPage() {
         const errorData = await examResponse.json();
         throw new Error(errorData.message || "Failed to create exam");
       }
-
+      const createdExam = await examResponse.json();
+      setCreatedExamId(createdExam.id);
+      setCreatedExamTitle(createdExam.title);
       toast.success("Exam created successfully!");
       setExamTitle("");
       setExamDuration(60);
@@ -802,7 +804,53 @@ export default function AddExamPage() {
         return <Badge>{difficulty}</Badge>;
     }
   };
+  const handleExportPDF = async () => {
+    if (!createdExamId) {
+      toast.error("No exam created yet. Please create an exam first.");
+      return;
+    }
+    console.log("Exporting PDF for exam ID:", createdExamId);
+    try {
+      const token = getTokenFromCookies();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
+      const response = await fetch(
+        `${origin}/exam/export-bubble-sheet/${createdExamId}/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to export Exam");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const exportExamTitle = createdExamTitle || "exam";
+      link.download = `${exportExamTitle}_id(${createdExamId}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Exam exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error(
+        `Error exporting Exam: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
       <div className="flex flex-col space-y-8">
@@ -1784,7 +1832,7 @@ export default function AddExamPage() {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 ">
           <Button
             type="submit"
             onClick={handleSubmit}
@@ -1803,6 +1851,15 @@ export default function AddExamPage() {
               </>
             )}
           </Button>
+          {createdExamId && (
+            <Button
+              onClick={handleExportPDF}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Exam (pdf)
+            </Button>
+          )}
         </div>
 
         {debugInfo && (
