@@ -13,8 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useStudents } from "../students/hooks/use-students"
 import { getClientSideToken } from "@/lib/cookies"
 import type { Student } from "../students/types"
-const origin = process.env.NEXT_PUBLIC_API_URL;
-
+const origin = process.env.NEXT_PUBLIC_API_URL
 
 interface LeetCodeSubmission {
   title: string
@@ -61,14 +60,11 @@ export default function ScrappingPage() {
       // Fetch stats for each student
       const statsPromises = students.map(async (student) => {
         try {
-          const response = await fetch(
-            `${origin}/users/students/external-stats/by-student-id/${student.id}/`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+          const response = await fetch(`${origin}/users/students/external-stats/by-student-id/${student.id}/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
             },
-          )
+          })
 
           if (!response.ok) {
             throw new Error(`Failed to fetch stats for student ${student.id}`)
@@ -108,73 +104,79 @@ export default function ScrappingPage() {
   // Filter students based on time filter
   useEffect(() => {
     if (!students || students.length === 0) {
-      console.log("No students available");
-      return setFilteredStudents([]);
+      console.log("No students available")
+      return setFilteredStudents([])
     }
-  
-    console.log("Students:", students.map(s => ({ id: s.id, username: s.user.username })));
-    console.log("StudentStats:", studentStats);
-  
+
+    console.log(
+      "Students:",
+      students.map((s) => ({ id: s.id, username: s.user.username })),
+    )
+    console.log("StudentStats:", studentStats)
+
     if (timeFilter === "all") {
-      setFilteredStudents(students);
-      return;
+      setFilteredStudents(students)
+      return
     }
-  
-    const today = new Date();
-    const yesterday = subDays(today, 1);
-    const threeDaysAgo = subDays(today, 4); // تعديل من 3 إلى 4 لتغطية 14 أبريل
-  
-    yesterday.setHours(0, 0, 0, 0);
-    threeDaysAgo.setHours(0, 0, 0, 0);
-  
-    console.log("Today:", today.toString());
-    console.log("ThreeDaysAgo:", threeDaysAgo.toString());
-  
+
+    const today = new Date()
+    const yesterday = subDays(today, 1)
+    const threeDaysAgo = subDays(today, 4) // تعديل من 3 إلى 4 لتغطية 14 أبريل
+
+    yesterday.setHours(0, 0, 0, 0)
+    threeDaysAgo.setHours(0, 0, 0, 0)
+
+    console.log("Today:", today.toString())
+    console.log("ThreeDaysAgo:", threeDaysAgo.toString())
+
     const filtered = students.filter((student) => {
-      const stats = studentStats[student.id];
+      const stats = studentStats[student.id]
       if (!stats || !stats.leetcode_recent_submissions || stats.leetcode_recent_submissions.length === 0) {
-        console.log(`Student ${student.id} has no submissions`);
-        return timeFilter === "inactive3days" || timeFilter === "inactiveYesterday";
+        console.log(`Student ${student.id} has no submissions`)
+        return timeFilter === "inactive3days" || timeFilter === "inactiveYesterday"
       }
-  
-      const mostRecentSubmission = stats.leetcode_recent_submissions[0];
-      const submissionDate = parseISO(mostRecentSubmission.timestamp);
-  
-      console.log(`Student ${student.id} submissionDate:`, submissionDate.toString());
-  
+
+      const mostRecentSubmission = stats.leetcode_recent_submissions[0]
+      const submissionDate = parseISO(mostRecentSubmission.timestamp)
+
+      console.log(`Student ${student.id} submissionDate:`, submissionDate.toString())
+
       if (timeFilter === "inactive3days") {
-        return differenceInDays(today, submissionDate) > 3;
+        return differenceInDays(today, submissionDate) > 3
       } else if (timeFilter === "yesterday") {
-        const submissionDay = new Date(submissionDate);
-        submissionDay.setHours(0, 0, 0, 0);
-        const yesterdayDay = new Date(yesterday);
-        yesterdayDay.setHours(0, 0, 0, 0);
-        return submissionDay.getTime() === yesterdayDay.getTime();
+        const submissionDay = new Date(submissionDate)
+        submissionDay.setHours(0, 0, 0, 0)
+        const yesterdayDay = new Date(yesterday)
+        yesterdayDay.setHours(0, 0, 0, 0)
+        return submissionDay.getTime() === yesterdayDay.getTime()
       } else if (timeFilter === "last3days") {
         const isActive = isWithinInterval(submissionDate, {
           start: threeDaysAgo,
           end: today,
-        });
+        })
         console.log(`Student ${student.id} isActive in last3days:`, isActive, {
           submissionDate: submissionDate.toString(),
           start: threeDaysAgo.toString(),
           end: today.toString(),
-        });
-        return isActive;
+        })
+        return isActive
       } else if (timeFilter === "inactiveYesterday") {
-        const submissionDay = new Date(submissionDate);
-        submissionDay.setHours(0, 0, 0, 0);
-        const yesterdayDay = new Date(yesterday);
-        yesterdayDay.setHours(0, 0, 0, 0);
-        return submissionDay.getTime() !== yesterdayDay.getTime();
+        const submissionDay = new Date(submissionDate)
+        submissionDay.setHours(0, 0, 0, 0)
+        const yesterdayDay = new Date(yesterday)
+        yesterdayDay.setHours(0, 0, 0, 0)
+        return submissionDay.getTime() !== yesterdayDay.getTime()
       }
-  
-      return false;
-    });
-  
-    console.log("Filtered Students:", filtered.map(s => ({ id: s.id, username: s.user.username })));
-    setFilteredStudents(filtered);
-  }, [students, studentStats, timeFilter]);
+
+      return false
+    })
+
+    console.log(
+      "Filtered Students:",
+      filtered.map((s) => ({ id: s.id, username: s.user.username })),
+    )
+    setFilteredStudents(filtered)
+  }, [students, studentStats, timeFilter])
 
   const handleRefreshStats = async (studentId: number) => {
     setRefreshing((prev) => ({ ...prev, [studentId]: true }))
@@ -308,7 +310,7 @@ export default function ScrappingPage() {
               <SelectItem value="all">All Students</SelectItem>
               <SelectItem value="yesterday">Active Yesterday</SelectItem>
               <SelectItem value="last3days">Active Last 3 Days</SelectItem>
-              <SelectItem value="inactive3days">Inactive > 3 Days</SelectItem>
+              <SelectItem value="inactive3days">Inactive &gt; 3 Days</SelectItem>
               <SelectItem value="inactiveYesterday">Inactive Yesterday</SelectItem> {/* New filter */}
             </SelectContent>
           </Select>
@@ -318,11 +320,7 @@ export default function ScrappingPage() {
             disabled={exportLoading}
             className="border-[#e6f4ff] hover:bg-[#f0f9ff]"
           >
-            {exportLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
+            {exportLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             Export to CSV
           </Button>
         </div>
@@ -340,7 +338,8 @@ export default function ScrappingPage() {
                   ? "No students solved LeetCode problems in the last 3 days."
                   : timeFilter === "inactive3days"
                     ? "No students have been inactive for more than 3 days."
-                    : "No students were inactive yesterday."} {/* Updated message */}
+                    : "No students were inactive yesterday."}{" "}
+              {/* Updated message */}
             </p>
             <Button variant="outline" onClick={() => setTimeFilter("all")} className="mt-4 border-[#e6f4ff]">
               Show All Students
@@ -399,7 +398,15 @@ function StudentCard({ student, stats, isLoading, isRefreshing, onRefresh, onVie
         <div className="flex justify-between items-start">
           <div className="flex flex-col items-center">
             <Avatar className="h-20 w-20 border-4 border-white shadow-sm">
-              <AvatarImage src={student.user.profile_image || ""} alt={username} />
+              <AvatarImage
+                src={student.user.profile_image ? `${origin}${student.user.profile_image}` : ""}
+                alt={username}
+                onError={(e) => {
+                  // When image fails to load, ensure fallback is shown
+                  e.currentTarget.style.display = "none"
+                  console.log("Image failed to load:", student.user.profile_image)
+                }}
+              />
               <AvatarFallback className="bg-[#f0f9ff] text-[#007acc] text-2xl">
                 {username.charAt(0).toUpperCase()}
               </AvatarFallback>

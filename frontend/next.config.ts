@@ -1,6 +1,7 @@
-// import type { NextConfig } from "next";
+import type { NextConfig } from "next";
+const origin = process.env.NEXT_PUBLIC_API_URL;
 
-import { NextConfig } from "next";
+
 
 /** @type {import('next').NextConfig} */
 const withPWA = require('next-pwa')({
@@ -15,7 +16,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${origin}/api/:path*`,
       },
     ];
   },

@@ -63,10 +63,10 @@ export default function ClientLayout({
             const messaging = getMessaging(app);
 
             // الحصول على FCM Token
-            const token = await getToken(messaging, {
-              vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-              serviceWorkerRegistration: registration,
-            });
+            // const token = await getToken(messaging, {
+            //   vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+            //   serviceWorkerRegistration: registration,
+            // });
 
             if (token) {
               console.log("FCM Token:", token);
@@ -91,7 +91,7 @@ export default function ClientLayout({
               if (response.ok) {
                 console.log("FCM token sent to backend:", token);
               } else {
-                console.error("Failed to send FCM token to backend:", responseData);
+                // console.error("Failed to send FCM token to backend:", responseData);
               }
             } else {
               console.error("No FCM token available");

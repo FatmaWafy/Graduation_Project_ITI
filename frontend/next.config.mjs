@@ -1,4 +1,6 @@
 let userConfig = undefined;
+const origin = process.env.NEXT_PUBLIC_API_URL;
+
 try {
   userConfig = await import('./v0-user-next.config');
 } catch (e) {
@@ -25,7 +27,7 @@ const nextConfig = {
     return [
       {
         source: '/media/:path*',
-        destination: 'http://localhost:8000/media/:path*', // رابط الـ backend
+        destination: `${origin}/media/:path*`, // رابط الـ backend
       },
     ];
   },
