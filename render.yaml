@@ -11,7 +11,6 @@ services:
       - key: SECRET_KEY
         sync: false
       - key: DATABASE_URL
-
         sync: false
       - key: PYTHON_VERSION
         value: 3.11.0
