@@ -34,87 +34,87 @@ export default function ClientLayout({
     console.log("Current pathname:", pathname);
   }, [pathname, pageTitle]);
 
-  useEffect(() => {
-    if ("serviceWorker" in navigator && "Notification" in window) {
-      const registerServiceWorker = async () => {
-        try {
-          const registration = await navigator.serviceWorker.register("/sw.js", {
-            scope: "/",
-          });
-          console.log("Service Worker registered:", registration);
+  // useEffect(() => {
+  //   if ("serviceWorker" in navigator && "Notification" in window) {
+  //     const registerServiceWorker = async () => {
+  //       try {
+  //         const registration = await navigator.serviceWorker.register("/sw.js", {
+  //           scope: "/",
+  //         });
+  //         console.log("Service Worker registered:", registration);
 
-          // طلب إذن الإشعارات
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            console.log("👍 المستخدم وافق على الإشعارات");
+  //         // طلب إذن الإشعارات
+  //         const permission = await Notification.requestPermission();
+  //         if (permission === "granted") {
+  //           console.log("👍 المستخدم وافق على الإشعارات");
 
-            // تهيئة Firebase
-            const firebaseConfig = {
-              apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-              authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
-              projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-              storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-              messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-              appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
-              measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
-            };
+  //           // تهيئة Firebase
+  //           const firebaseConfig = {
+  //             apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
+  //             authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
+  //             projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
+  //             storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+  //             messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+  //             appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  //             measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
+  //           };
 
-            const app = initializeApp(firebaseConfig);
-            const messaging = getMessaging(app);
+  //           const app = initializeApp(firebaseConfig);
+  //           const messaging = getMessaging(app);
 
-            // الحصول على FCM Token
-            // const token = await getToken(messaging, {
-            //   vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-            //   serviceWorkerRegistration: registration,
-            // });
+  //           // الحصول على FCM Token
+  //           // const token = await getToken(messaging, {
+  //           //   vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
+  //           //   serviceWorkerRegistration: registration,
+  //           // });
 
-            if (token) {
-              console.log("FCM Token:", token);
+  //           if (token) {
+  //             console.log("FCM Token:", token);
 
-              // إرسال التوكن للـ Backend
-              const authToken = Cookies.get("token");
-              if (!authToken) {
-                console.error("No token found, user might not be logged in");
-                return;
-              }
+  //             // إرسال التوكن للـ Backend
+  //             const authToken = Cookies.get("token");
+  //             if (!authToken) {
+  //               console.error("No token found, user might not be logged in");
+  //               return;
+  //             }
 
-              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/subscribe/`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ token }), // إرسال التوكن كـ string
-              });
+  //             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/subscribe/`, {
+  //               method: "POST",
+  //               headers: {
+  //                 "Content-Type": "application/json",
+  //                 Authorization: `Bearer ${authToken}`,
+  //               },
+  //               body: JSON.stringify({ token }), // إرسال التوكن كـ string
+  //             });
 
-              const responseData = await response.json();
-              if (response.ok) {
-                console.log("FCM token sent to backend:", token);
-              } else {
-                // console.error("Failed to send FCM token to backend:", responseData);
-              }
-            } else {
-              console.error("No FCM token available");
-            }
-          } else {
-            console.log("👎 المستخدم رفض الإشعارات");
-          }
-        } catch (error) {
-          console.error("Service Worker registration or FCM setup failed:", error);
-        }
-      };
+  //             const responseData = await response.json();
+  //             if (response.ok) {
+  //               console.log("FCM token sent to backend:", token);
+  //             } else {
+  //               // console.error("Failed to send FCM token to backend:", responseData);
+  //             }
+  //           } else {
+  //             console.error("No FCM token available");
+  //           }
+  //         } else {
+  //           console.log("👎 المستخدم رفض الإشعارات");
+  //         }
+  //       } catch (error) {
+  //         console.error("Service Worker registration or FCM setup failed:", error);
+  //       }
+  //     };
 
-      // التحقق من التوكن وتشغيل الـ Service Worker
-      const token = Cookies.get("token");
-      if (token) {
-        registerServiceWorker();
-      } else {
-        console.log("Waiting for user to log in before registering service worker");
-      }
-    } else {
-      console.log("Service Worker or Notifications not supported in this browser");
-    }
-  }, []);
+  //     // التحقق من التوكن وتشغيل الـ Service Worker
+  //     const token = Cookies.get("token");
+  //     if (token) {
+  //       registerServiceWorker();
+  //     } else {
+  //       console.log("Waiting for user to log in before registering service worker");
+  //     }
+  //   } else {
+  //     console.log("Service Worker or Notifications not supported in this browser");
+  //   }
+  // }, []);
 
 
   return (
