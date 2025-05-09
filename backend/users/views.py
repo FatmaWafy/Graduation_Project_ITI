@@ -122,22 +122,21 @@ class LoginAPIView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not user.check_password(password):
+        # استخدام authenticate بدل User.objects.get
+        user = authenticate(request, email=email, password=password)
+        if not user:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # إنشاء التوكين باستخدام SimpleJWT
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "role": user.role
-        }, status=status.HTTP_200_OK)
-
+        try:
+            # إنشاء التوكين
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "role": getattr(user, "role", "student")  # استخدام fallback لو role مش موجود
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class ResetPasswordRequestAPIView(APIView):
     permission_classes = [AllowAny]
 
