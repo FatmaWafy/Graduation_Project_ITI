@@ -33,8 +33,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
 
-ALLOWED_HOSTS = ['graduationprojectiti-production.up.railway.app', 'localhost', '127.0.0.1']
-
+ALLOWED_HOSTS = [
+    'graduation_project_iti.railway.internal',
+    'localhost',
+    '127.0.0.1',
+    'graduationprojectiti-production.up.railway.app', 
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
