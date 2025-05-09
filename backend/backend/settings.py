@@ -32,7 +32,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+
+ALLOWED_HOSTS = ['graduation-project-iti-gi8z.onrender.com', 'localhost', '127.0.0.1']
+
 
 
 # Application definition
