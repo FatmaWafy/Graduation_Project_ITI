@@ -106,3 +106,25 @@ class LabViewSet(viewsets.ModelViewSet):
                 {"error": "Track not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+            
+# labs/views.py
+
+from django.http import JsonResponse
+from utils.supabase import upload_media
+
+def upload_lab_file(request):
+    if request.method == 'POST':
+        file = request.FILES['file']  # تأكدي إن اسمه "file" في الفورم أو الريكوست
+        track = request.POST.get('track')  # التراك بييجي من الفورم أو الريكوست
+
+        if not track:
+            return JsonResponse({'error': 'Track is required'}, status=400)
+
+        file_path = f"labs/{track}/{file.name}"  # المسار حسب التراك واسم الملف
+
+        response = upload_media(file, file_path)
+
+        if response:
+            url = f"https://xxx.supabase.co/storage/v1/object/public/media/{file_path}"
+            return JsonResponse({'url': url})
+        return JsonResponse({'error': 'Upload failed'}, status=400)
