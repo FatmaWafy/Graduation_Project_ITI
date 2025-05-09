@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-7m3bfv6q0j2nb67s*c2^quz+^-
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
 
-ALLOWED_HOSTS = ['graduation-project-iti-gi8z.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['graduationprojectiti-production.up.railway.app', 'localhost', '127.0.0.1']
 
 
 
@@ -245,13 +245,13 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://examsystem-psi.vercel.app", 
-    "https://graduation-project-iti-gi8z.onrender.com",
+   
 ]
 
 CORS_ORIGIN_WHITELIST = [
     "https://examsystem-psi.vercel.app",
     "http://localhost:3000",
-    "https://graduation-project-iti-gi8z.onrender.com",
+   
 ]
 
 
