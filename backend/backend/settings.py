@@ -78,7 +78,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': [], 
@@ -118,7 +118,7 @@ load_dotenv()
 DATABASES = {
     'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
-print("DATABASE_URL", os.getenv("DATABASE_URL"))
+# print("DATABASE_URL", os.getenv("DATABASE_URL"))
 # DATABASES = {
 #         'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -240,13 +240,20 @@ CSRF_COOKIE_HTTPONLY = False  # اجعليها True إذا كنتِ ستستخد
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-# ✅ السماح بإرسال الكوكيز بين الـ Backend والـ Frontend
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://examsystem-psi.vercel.app", 
     "https://graduation-project-iti-gi8z.onrender.com",
 ]
+
+CORS_ORIGIN_WHITELIST = [
+    "https://examsystem-psi.vercel.app",
+    "http://localhost:3000",
+    "https://graduation-project-iti-gi8z.onrender.com",
+]
+
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
