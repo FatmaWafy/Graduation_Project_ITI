@@ -40,7 +40,7 @@ ALLOWED_HOSTS = [
     'graduationprojectiti-production.up.railway.app', 
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
@@ -190,15 +190,15 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny', # for login
-        'rest_framework.permissions.IsAuthenticated',       # ✅ This ensures public access
-    ],
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework_simplejwt.authentication.JWTAuthentication',
+#     ],
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.AllowAny', # for login
+#         'rest_framework.permissions.IsAuthenticated',       # ✅ This ensures public access
+#     ],
+# }
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -248,18 +248,18 @@ CSRF_COOKIE_SAMESITE = "Lax"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://examsystem-psi.vercel.app", 
-   
-]
-
-CORS_ORIGIN_WHITELIST = [
     "https://examsystem-psi.vercel.app",
-    "http://localhost:3000",
-   
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # افتراضيًا، كل الـ endpoints محمية
+    ],
+}
 
 
-# Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
