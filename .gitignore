@@ -9,7 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 next-env.d.ts
-
+.commands.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
