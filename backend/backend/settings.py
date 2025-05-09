@@ -36,7 +36,7 @@ from os import getenv
 ALLOWED_HOSTS = ['graduationprojectiti-production.up.railway.app', 'localhost', '127.0.0.1']
 
 
-
+CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
