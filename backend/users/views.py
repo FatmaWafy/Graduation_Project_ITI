@@ -1292,20 +1292,4 @@ class GoogleLoginAPIView(APIView):
             print("Exception occurred:", str(e))
             return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-# users/views.py
-
-from django.http import JsonResponse
-from .forms import ProfileImageForm  # لو عندك فورم
-from utils.supabase import upload_media
-
-def upload_profile_image(request):
-    if request.method == 'POST':
-        file = request.FILES['image']
-        file_path = f"profile_images/{file.name}"  # ديناميكي حسب اسم الصورة
-        
-        response = upload_media(file, file_path)
-
-        if response:
-            url = f"https://xxx.supabase.co/storage/v1/object/public/media/{file_path}"
-            return JsonResponse({'url': url})
-        return JsonResponse({'error': 'Upload failed'}, status=400)
+ 
