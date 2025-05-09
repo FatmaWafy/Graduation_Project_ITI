@@ -36,7 +36,7 @@ export default function LoginPage() {
       try {
         const res = await fetch(`${origin}/users/google/login/`, {
           method: "POST",
-          // credentials: "include",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             token: tokenResponse.access_token,
@@ -83,18 +83,21 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const res = await fetch(`${origin}/users/login/`, {
         method: "POST",
-        // credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // أضيفي ده لو الـ backend بيستخدم cookies
       });
-
+  
+      console.log("Login response status:", res.status);
       const data = await res.json();
+      console.log("Login response data:", data);
+  
       if (!res.ok) throw new Error(data.error || "Login failed");
-
+  
       if (data.access) {
         Cookies.set("token", data.access, {
           expires: 7,
@@ -104,7 +107,7 @@ export default function LoginPage() {
       } else {
         throw new Error("Token is missing");
       }
-
+  
       if (data.role) {
         Cookies.set("role", data.role, {
           expires: 7,
@@ -120,6 +123,7 @@ export default function LoginPage() {
         throw new Error("Role is missing");
       }
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message);
     }
   };
