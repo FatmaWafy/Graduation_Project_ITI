@@ -36,6 +36,6 @@ __pycache__/
 Thumbs.db
 
 # === Misc ===
-*.txt
+# *.txt
 
 .env.local
