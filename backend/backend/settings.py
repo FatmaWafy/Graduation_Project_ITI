@@ -244,7 +244,8 @@ CSRF_COOKIE_SAMESITE = "Lax"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://examsystem-psi.vercel.app",  # ضيفي عنوان الـ Frontend هنا
+    "https://examsystem-psi.vercel.app", 
+    "https://graduation-project-iti-gi8z.onrender.com",
 ]
 
 # Media files (uploads)
