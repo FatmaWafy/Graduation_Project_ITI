@@ -33,6 +33,12 @@ from social_django.utils import psa
 from social_django.utils import load_strategy, load_backend
 from django.contrib.auth import get_user_model
 
+import os
+from supabase import create_client, Client
+supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+from dotenv import load_dotenv # type: ignore
+load_dotenv()
+
 token_generator = PasswordResetTokenGenerator()
 User = get_user_model()
 
@@ -796,58 +802,126 @@ Your Team
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+# class UploadUserProfileImage(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def post(self, request, user_id):
+#         try:
+#             # Try to find the student
+#             student = Student.objects.filter(id=user_id).first()
+#             if student:
+#                 user = student.user
+#             else:
+#                 # If not a student, try instructor
+#                 instructor = Instructor.objects.filter(id=user_id).first()
+#                 if instructor:
+#                     user = instructor.user
+#                 else:
+#                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         # Check if there's a file in the request
+#         if 'profile_image' not in request.FILES:
+#             return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         image_file = request.FILES['profile_image']
+
+#         # Delete old image if exists
+#         if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
+#             try:
+#                 os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
+#                 print(f"Deleted old profile image: {user.profile_image}")
+#             except Exception as e:
+#                 print(f"Error deleting old profile image: {e}")
+
+#         # Update the profile image
+#         serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             user_instance = serializer.save()
+
+#             # Create image URL
+#             if user_instance.profile_image:
+#                 host = request.get_host()
+#                 protocol = 'https' if request.is_secure() else 'http'
+#                 image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
+
+#                 return Response({
+#                     "message": "Profile image uploaded successfully",
+#                     "profile_image": image_url
+#                 }, status=status.HTTP_200_OK)
+
+#             return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, user_id):
         try:
-            # Try to find the student
+            # إعداد Supabase Client
+            supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+            print("Supabase client initialized successfully")  # Logging
+
+            # تحديد المستخدم (طالب أو مدرس)
+            print(f"Looking for user with ID: {user_id}")  # Logging
             student = Student.objects.filter(id=user_id).first()
             if student:
                 user = student.user
+                print(f"Found student: {student.id}")  # Logging
             else:
-                # If not a student, try instructor
                 instructor = Instructor.objects.filter(id=user_id).first()
                 if instructor:
                     user = instructor.user
+                    print(f"Found instructor: {instructor.id}")  # Logging
                 else:
+                    print("User not found")  # Logging
                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            # التحقق من وجود ملف صورة
+            if 'profile_image' not in request.FILES:
+                print("No image file provided")  # Logging
+                return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+            image_file = request.FILES['profile_image']
+            print(f"Image file received: {image_file.name}")  # Logging
+
+            # حذف الصورة القديمة من Supabase لو موجودة
+            if user.profile_image:
+                old_image_path = user.profile_image.split('/')[-1]  # استخراج اسم الملف من الرابط
+                print(f"Deleting old image: {user.id}/{old_image_path}")  # Logging
+                response = supabase.storage.from_('profileimages').remove([f"{user.id}/{old_image_path}"])
+                print(f"Delete response: {response}")  # Logging
+
+            # رفع الصورة الجديدة لـ Supabase
+            file_path = f"{user.id}/{image_file.name}"  # مسار: user_id/اسم_الملف
+            print(f"Uploading new image to: {file_path}")  # Logging
+            response = supabase.storage.from_('profileimages').upload(file_path, image_file.read(), {
+                'content-type': image_file.content_type,
+            })
+            print(f"Upload response: {response}")  # Logging
+            if response.status_code != 200:
+                raise Exception(f"Failed to upload image to Supabase: {response}")
+
+            # جيبي الرابط العام للصورة
+            image_url = supabase.storage.from_('profileimages').get_public_url(file_path)
+            print(f"Public URL: {image_url}")  # Logging
+
+            # تحديث حقل profile_image في قاعدة البيانات بالرابط
+            user.profile_image = image_url
+            user.save()
+            print("User profile_image updated successfully")  # Logging
+
+            return Response({
+                "message": "Profile image uploaded successfully",
+                "profile_image": image_url
+            }, status=status.HTTP_200_OK)
+
         except Exception as e:
+            print(f"Error: {str(e)}")  # Logging
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Check if there's a file in the request
-        if 'profile_image' not in request.FILES:
-            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-        image_file = request.FILES['profile_image']
-
-        # Delete old image if exists
-        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
-            try:
-                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
-                print(f"Deleted old profile image: {user.profile_image}")
-            except Exception as e:
-                print(f"Error deleting old profile image: {e}")
-
-        # Update the profile image
-        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            user_instance = serializer.save()
-
-            # Create image URL
-            if user_instance.profile_image:
-                host = request.get_host()
-                protocol = 'https' if request.is_secure() else 'http'
-                image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
-
-                return Response({
-                    "message": "Profile image uploaded successfully",
-                    "profile_image": image_url
-                }, status=status.HTTP_200_OK)
-
-            return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
@@ -1292,4 +1366,3 @@ class GoogleLoginAPIView(APIView):
             print("Exception occurred:", str(e))
             return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
- 
