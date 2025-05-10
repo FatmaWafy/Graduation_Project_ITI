@@ -10,15 +10,17 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "role", "profile_image", "phone_number", "address"]
+        fields = ["id", "username", "email", "password", "role","profile_image", "phone_number", "address"]
         extra_kwargs = {"password": {"write_only": True}}
+
 
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = User.objects.create(**validated_data)
-        user.set_password(password)
+        user.set_password(password)  # 🔹 استخدام set_password() لضمان تشفير كلمة المرور
         user.save()
         return user
+
 
 class InstructorSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
@@ -29,19 +31,11 @@ class InstructorSerializer(serializers.ModelSerializer):
         model = Instructor
         fields = "__all__"
 
-    def validate_track_name(self, value):
-        value = value.strip()  # Remove extra spaces
-        if not Track.objects.filter(name=value).exists():
-            raise serializers.ValidationError(f"Track with name '{value}' does not exist.")
-        return value
-
     def create(self, validated_data):
         try:
             user_data = validated_data.pop("user")
             track_name = validated_data.pop("track_name")
             branch_name = validated_data.pop("branch")
-
-            print(f"Received track_name: {track_name}")  # Debug
 
             user_data["role"] = "instructor"
             user = User.objects.create_user(**user_data)
@@ -49,16 +43,15 @@ class InstructorSerializer(serializers.ModelSerializer):
             branch, _ = Branch.objects.get_or_create(name=branch_name)
             instructor = Instructor.objects.create(user=user, branch=branch, **validated_data)
 
-            track = Track.objects.get(name=track_name)  # Use get instead of get_or_create
-            track.instructors.add(instructor)
-
-            print(f"Instructor {instructor.user.username} linked to track: {track_name}")  # Debug
+            track, _ = Track.objects.get_or_create(name=track_name)
+            track.instructors.add(instructor)  # ✅ Add the instructor to the M2M relation
 
             return instructor
 
         except Exception as e:
             print(f"Error in InstructorSerializer.create: {str(e)}")
             raise serializers.ValidationError(f"Failed to create instructor: {str(e)}")
+
 class StudentSerializer(serializers.ModelSerializer):
     user = RegisterSerializer()
     track = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all(), required=False, allow_null=True)
