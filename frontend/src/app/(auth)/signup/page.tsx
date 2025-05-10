@@ -482,9 +482,11 @@ export default function SignupPage() {
       username: name,
       email,
       password,
-      track_name,
+      track_name: track_name.trim(),
       branch: branch_name,
     };
+
+    console.log("Sending payload:", payload);
 
     try {
       setIsSubmitting(true);

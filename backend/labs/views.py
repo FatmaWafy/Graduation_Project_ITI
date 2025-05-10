@@ -138,7 +138,7 @@ from django.http import JsonResponse
 from .models import Lab
 from .serializers import LabSerializer
 from users.models import Track, Student
-from utils.supabase import upload_media, delete_media
+# from utils.supabase import upload_media, delete_media
 
 class LabViewSet(viewsets.ModelViewSet):
     queryset = Lab.objects.all()

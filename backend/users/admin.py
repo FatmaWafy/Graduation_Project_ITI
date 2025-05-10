@@ -33,15 +33,15 @@ class InstructorAdmin(admin.ModelAdmin):
 
 
 class TrackAdmin(admin.ModelAdmin):
-    list_display = ("name", "get_instructor", "get_students_count")
-    search_fields = ("name", "instructor__user__username")
+    list_display = ("name", "get_instructors", "get_students_count")
+    # search_fields = ("name", "instructors__user__username")  # ده هيعمل Error مع ManyToMany
 
-    def get_instructor(self, obj):
-        return obj.instructor.user.username if obj.instructor else "No Instructor"
-    get_instructor.short_description = "Instructor"
+    def get_instructors(self, obj):
+        return ", ".join([i.user.username for i in obj.instructors.all()]) if obj.instructors.exists() else "No Instructors"
+    get_instructors.short_description = "Instructors"
 
     def get_students_count(self, obj):
-        return obj.students.count()  # ✅ استخدمي related_name الصحيح
+        return obj.students.count()
     get_students_count.short_description = "Students Count"
 
 admin.site.register(User, CustomUserAdmin)
