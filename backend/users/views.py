@@ -87,6 +87,8 @@ class RegisterInstructorAPIView(APIView):
 
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -558,6 +560,125 @@ class TrackListAPIView(APIView):
 
 
 
+# class RegisterStudentsFromExcelAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         if request.user.role != "instructor":
+#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+#         if 'file' not in request.FILES:
+#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         file = request.FILES['file']
+
+#         try:
+#             file_data = file.read().decode("utf-8").splitlines()
+#             csv_reader = csv.reader(file_data, delimiter=',')
+#             header = next(csv_reader, None)  # Skip header
+#             if not header or len(header) < 8:
+#                 return Response({"error": "Invalid CSV header."}, status=status.HTTP_400_BAD_REQUEST)
+#         except Exception as e:
+#             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         instructor = Instructor.objects.get(user=request.user)
+
+#         if instructor.tracks.count() == 0:
+#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         track_names = [track.name.lower() for track in instructor.tracks.all()]
+#         branch = instructor.branch
+
+#         students_added = 0
+#         duplicates = []
+#         for row in csv_reader:
+#             if len(row) < 8:
+#                 duplicates.append(f"Row {row} - Insufficient columns")
+#                 continue
+
+#             username, email, track_name = row[0], row[1], row[2]
+#             university = row[3]
+#             graduation_year = int(row[4]) if row[4].isdigit() else 2024  # Default if invalid
+#             college = row[5]
+#             leetcode_profile = row[6]
+#             github_profile = row[7]
+
+#             if track_name.lower() not in track_names:
+#                 duplicates.append(f"{username} ({email}) - Invalid track '{track_name}'")
+#                 continue
+
+#             if User.objects.filter(Q(email=email) | Q(username=username)).exists():
+#                 duplicates.append(f"{username} ({email}) - Already exists")
+#                 continue
+
+#             password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+
+#             try:
+#                 user_instance = User.objects.create_user(
+#                     email=email,
+#                     username=username,
+#                     password=password,
+#                     role='student'
+#                 )
+
+#                 track = Track.objects.get(name__iexact=track_name)
+
+#                 student = Student.objects.create(
+#                     user=user_instance,
+#                     track=track,
+#                     branch=branch,
+#                     university=university,
+#                     graduation_year=graduation_year,
+#                     college=college,
+#                     leetcode_profile=leetcode_profile,
+#                     github_profile=github_profile,
+#                     inrollment_date=date.today(),
+#                 )
+
+#                 # Send email
+#                 email_subject = "Your Student Account Credentials"
+#                 email_message = f"""
+# Hi {student.user.username},
+
+# Your student account has been created successfully.
+
+# Track: {student.track.name}
+# Email: {student.user.email}
+# Password: {password}
+
+# Please change your password after logging in.
+
+# Best regards,
+# Your Team
+#                 """
+
+#                 send_mail(
+#                     subject=email_subject,
+#                     message=email_message,
+#                     from_email=settings.DEFAULT_FROM_EMAIL,
+#                     recipient_list=[student.user.email],
+#                     fail_silently=False,
+#                 )
+
+#                 students_added += 1
+
+#             except Exception as e:
+#                 duplicates.append(f"{username} ({email}) - Failed to create: {str(e)}")
+#                 continue
+
+#         response_data = {
+#             "message": f"{students_added} students added successfully.",
+#             "duplicates": duplicates  
+#         }
+
+
+#         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+
+
+
+
 class RegisterStudentsFromExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -573,7 +694,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
         try:
             file_data = file.read().decode("utf-8").splitlines()
             csv_reader = csv.reader(file_data, delimiter=',')
-            header = next(csv_reader, None)  # Skip header
+            header = next(csv_reader, None)
             if not header or len(header) < 8:
                 return Response({"error": "Invalid CSV header."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -581,47 +702,92 @@ class RegisterStudentsFromExcelAPIView(APIView):
 
         instructor = Instructor.objects.get(user=request.user)
 
-        if instructor.tracks.count() == 0:
-            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+        if not instructor.branch:
+            return Response({"error": "Instructor has no assigned branch."}, status=status.HTTP_400_BAD_REQUEST)
 
-        track_names = [track.name.lower() for track in instructor.tracks.all()]
         branch = instructor.branch
 
         students_added = 0
         duplicates = []
+
         for row in csv_reader:
+            print("🔄 Processing row:", row)
+
             if len(row) < 8:
+                print("❌ Row skipped: insufficient columns")
                 duplicates.append(f"Row {row} - Insufficient columns")
                 continue
 
-            username, email, track_name = row[0], row[1], row[2]
-            university = row[3]
-            graduation_year = int(row[4]) if row[4].isdigit() else 2024  # Default if invalid
-            college = row[5]
-            leetcode_profile = row[6]
-            github_profile = row[7]
+            username, email, track_name = row[0].strip(), row[1].strip(), row[2].strip()
+            university = row[3].strip()
+            graduation_year = int(row[4]) if row[4].isdigit() else 2024
+            college = row[5].strip()
+            leetcode_profile = row[6].strip()
+            github_profile = row[7].strip()
 
-            if track_name.lower() not in track_names:
-                duplicates.append(f"{username} ({email}) - Invalid track '{track_name}'")
-                continue
+            if track_name.lower() == "unknown":
+                print(f"ℹ️ Replacing 'unknown' with 'PHP' for {username}")
+                track_name = "PHP"
 
-            if User.objects.filter(Q(email=email) | Q(username=username)).exists():
-                duplicates.append(f"{username} ({email}) - Already exists")
-                continue
-
-            password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+            print(f"➡️ Trying: {username} - {email} - Track: {track_name}")
 
             try:
-                user_instance = User.objects.create_user(
-                    email=email,
-                    username=username,
-                    password=password,
-                    role='student'
-                )
-
                 track = Track.objects.get(name__iexact=track_name)
+            except Track.DoesNotExist:
+                print(f"❌ Track '{track_name}' does not exist in the system")
+                duplicates.append(f"{username} ({email}) - Track '{track_name}' not found")
+                continue
 
-                student = Student.objects.create(
+            existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
+
+            if existing_user:
+                if Student.objects.filter(user=existing_user).exists():
+                    print(f"❌ User already exists: {username} / {email}")
+                    duplicates.append(f"{username} ({email}) - Already exists")
+                    continue
+                else:
+                    print(f"ℹ️ User exists but not student: {username} / {email}")
+                    user_instance = existing_user
+            else:
+                password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+                try:
+                    user_instance = User.objects.create_user(
+                        email=email,
+                        username=username,
+                        password=password,
+                        role='student'
+                    )
+
+                    email_subject = "Your Student Account Credentials"
+                    email_message = f"""
+Hi {username},
+
+Your student account has been created successfully.
+
+Track: {track_name}
+Email: {email}
+Password: {password}
+
+Please change your password after logging in.
+
+Best regards,
+Your Team
+                    """
+
+                    send_mail(
+                        subject=email_subject,
+                        message=email_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"❌ Error creating user: {str(e)}")
+                    duplicates.append(f"{username} ({email}) - Failed to create user: {str(e)}")
+                    continue
+
+            try:
+                Student.objects.create(
                     user=user_instance,
                     track=track,
                     branch=branch,
@@ -632,44 +798,20 @@ class RegisterStudentsFromExcelAPIView(APIView):
                     github_profile=github_profile,
                     inrollment_date=date.today(),
                 )
-
-                # Send email
-                email_subject = "Your Student Account Credentials"
-                email_message = f"""
-Hi {student.user.username},
-
-Your student account has been created successfully.
-
-Track: {student.track.name}
-Email: {student.user.email}
-Password: {password}
-
-Please change your password after logging in.
-
-Best regards,
-Your Team
-                """
-
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[student.user.email],
-                    fail_silently=False,
-                )
-
                 students_added += 1
-
+                print(f"✅ Student added: {username}")
             except Exception as e:
-                duplicates.append(f"{username} ({email}) - Failed to create: {str(e)}")
-                continue
+                print(f"❌ Error creating student: {str(e)}")
+                duplicates.append(f"{username} ({email}) - Failed to create student: {str(e)}")
 
         response_data = {
             "message": f"{students_added} students added successfully.",
-            "duplicates": duplicates if duplicates else []
+            "duplicates": duplicates
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
