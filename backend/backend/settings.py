@@ -289,3 +289,8 @@ SOCIAL_AUTH_USER_MODEL = 'users.User'
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY")
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 VAPID_EMAIL = os.getenv("VAPID_EMAIL")
+
+
+# Supabase configuration
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

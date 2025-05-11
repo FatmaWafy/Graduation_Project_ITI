@@ -91,7 +91,7 @@ class LabSerializer(serializers.ModelSerializer):
             'id', 'name', 'file', 'description', 'track', 'track_name',
             'instructor', 'instructor_name', 'created_at', 'size', 'submission_link'
         ]
-        read_only_fields = ['instructor', 'created_at', 'size', 'file']  # <--- Add 'file' here
+        read_only_fields = ['instructor', 'created_at', 'size', 'file']  # 'file' as read-only
 
     def get_instructor_name(self, obj):
         return obj.instructor.username if obj.instructor else None
@@ -100,14 +100,12 @@ class LabSerializer(serializers.ModelSerializer):
         return obj.track.name if obj.track else None
 
     def validate(self, data):
-        # Handle file manually in perform_create, so no need to validate here
         request = self.context.get('request')
         file = request.FILES.get('file') if request else None
 
         if not file:
             raise serializers.ValidationError({"file": "No file was submitted"})
 
-        # File type and size checks
         if not file.name.endswith('.pdf'):
             raise serializers.ValidationError({"file": "Only PDF files are allowed"})
         if file.size > 10 * 1024 * 1024:
