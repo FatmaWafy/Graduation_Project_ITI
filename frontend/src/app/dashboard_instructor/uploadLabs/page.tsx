@@ -336,7 +336,8 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Upload failed");
+      console.log("Error Response:", errorData);
+      throw new Error(errorData.error || errorData.detail || "Upload failed");
     }
 
     const responseData = await response.json();

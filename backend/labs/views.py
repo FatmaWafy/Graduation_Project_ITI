@@ -139,7 +139,6 @@ from .models import Lab
 from .serializers import LabSerializer
 from users.models import Track, Student
 from utils.supabase import upload_media, delete_media
-from utils.supabase import upload_media, delete_media
 
 class LabViewSet(viewsets.ModelViewSet):
     queryset = Lab.objects.all()
@@ -166,22 +165,16 @@ class LabViewSet(viewsets.ModelViewSet):
                 raise serializers.ValidationError({"file": "No file was submitted"})
 
             size_bytes = file.size
-            if size_bytes < 1024:
-                size_str = f"{size_bytes} B"
-            elif size_bytes < 1024 * 1024:
-                size_str = f"{size_bytes / 1024:.1f} KB"
-            else:
-                size_str = f"{size_bytes / (1024 * 1024):.1f} MB"
+            size_str = f"{size_bytes / (1024 * 1024):.1f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB" if size_bytes >= 1024 else f"{size_bytes} B"
 
             track_id = self.request.data.get('track')
             if not track_id:
                 raise serializers.ValidationError({"track": "Track ID is required"})
 
             track = Track.objects.get(id=track_id)
-
             file_path = f"labs/{track.id}/{file.name}"
-            file.seek(0)  # Reset file pointer
-            public_url = upload_media(file, file_path)  # Function to upload to Supabase
+            file.seek(0)
+            public_url = upload_media(file, file_path)
 
             serializer.save(
                 instructor=self.request.user,
@@ -191,7 +184,8 @@ class LabViewSet(viewsets.ModelViewSet):
                 submission_link=self.request.data.get('submission_link')
             )
         except Exception as e:
-            raise serializers.ValidationError({"error": str(e)})
+            print(f"Error in perform_create: {str(e)}")
+            raise serializers.ValidationError({"error": str(e), "details": "Failed to create lab"})
 
     def perform_destroy(self, instance):
         try:
