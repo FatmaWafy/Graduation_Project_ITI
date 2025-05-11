@@ -8,10 +8,13 @@ from django.utils.crypto import get_random_string
 
 @receiver(post_save, sender=Instructor)
 def send_welcome_email(sender, instance, created, **kwargs):
-    if created and not kwargs.get('raw', False):  # تجاهل إذا كان من migrations أو API
+    print(f"Signal triggered for instructor: {instance.user.username}, created: {created}")
+    if created:  # Only run when a new instructor is created
+        # Generate a random password
         password = get_random_string(length=12)
         instance.user.set_password(password)
         instance.user.save()
+
         email_subject = "Welcome to the Platform"
         email_message = f"""
 Hi {instance.user.username},
@@ -35,5 +38,6 @@ Your Admin Team
                 recipient_list=[instance.user.email],
                 fail_silently=False,
             )
+            print(f"Welcome email sent to {instance.user.email}")
         except Exception as e:
             print(f"Failed to send email: {str(e)}")
