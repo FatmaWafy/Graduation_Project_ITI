@@ -32,7 +32,8 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     email = models.EmailField(unique=True)
     signup_token = models.CharField(max_length=32, blank=True, null=True, unique=True)  
-    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
+    # profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
+    profile_image = models.URLField(max_length=500, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True) 
 
