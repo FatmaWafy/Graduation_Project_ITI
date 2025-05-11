@@ -139,6 +139,7 @@ from .models import Lab
 from .serializers import LabSerializer
 from users.models import Track, Student
 from utils.supabase import upload_media, delete_media
+from utils.supabase import upload_media, delete_media
 
 class LabViewSet(viewsets.ModelViewSet):
     queryset = Lab.objects.all()
@@ -160,12 +161,10 @@ class LabViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         try:
-            # Get the file from the request
             file = self.request.FILES.get('file')
             if not file:
                 raise serializers.ValidationError({"file": "No file was submitted"})
 
-            # Calculate file size
             size_bytes = file.size
             if size_bytes < 1024:
                 size_str = f"{size_bytes} B"
@@ -174,22 +173,16 @@ class LabViewSet(viewsets.ModelViewSet):
             else:
                 size_str = f"{size_bytes / (1024 * 1024):.1f} MB"
 
-            # Check if track exists
             track_id = self.request.data.get('track')
             if not track_id:
                 raise serializers.ValidationError({"track": "Track ID is required"})
 
-            try:
-                track = Track.objects.get(id=track_id)
-            except Track.DoesNotExist:
-                raise serializers.ValidationError({"track": f"Track with ID {track_id} does not exist"})
+            track = Track.objects.get(id=track_id)
 
-            # Upload file to Supabase
             file_path = f"labs/{track.id}/{file.name}"
-            file.seek(0)  # Reset file pointer to the beginning
-            public_url = upload_media(file, file_path)
+            file.seek(0)  # Reset file pointer
+            public_url = upload_media(file, file_path)  # Function to upload to Supabase
 
-            # Save the lab with the Supabase URL
             serializer.save(
                 instructor=self.request.user,
                 size=size_str,
@@ -202,10 +195,8 @@ class LabViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         try:
-            # Delete file from Supabase before deleting the record
             file_path = f"labs/{instance.track.id}/{instance.name}"
-            delete_media(file_path)
-            # Delete the instance
+            delete_media(file_path)  # Function to delete from Supabase
             instance.delete()
         except Exception as e:
             raise serializers.ValidationError({"error": f"Failed to delete file from storage: {str(e)}"})
@@ -219,7 +210,6 @@ class LabViewSet(viewsets.ModelViewSet):
                     {"error": "File URL not found"},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            # Return the public URL for the frontend to handle the download
             return Response({"url": lab.file})
         except Exception as e:
             return Response(

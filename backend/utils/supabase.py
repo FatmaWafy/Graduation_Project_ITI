@@ -1,45 +1,30 @@
-import os
-import requests
+from supabase import create_client, Client
+from django.conf import settings
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://your-project-id.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "your-service-role-key")
-BUCKET_NAME = "media"
+# Initialize Supabase client
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_KEY = settings.SUPABASE_KEY
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def upload_media(file, file_path: str) -> str:
-    """Upload a file to Supabase Storage and return its public URL."""
+def upload_media(file, file_path):
+    """Upload a file to Supabase Storage and return the public URL."""
     try:
-        file_bytes = file.read()
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/pdf",  # Adjust for dynamic MIME types if needed
-        }
+        # Upload the file to Supabase Storage
+        response = supabase.storage.from_("labs").upload(file_path, file)
+        if response.status_code != 200:  # Check for successful upload
+            raise Exception(f"Upload failed: {response.json().get('error', 'Unknown error')}")
 
-        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
-        response = requests.put(url, headers=headers, data=file_bytes)
-
-        if not response.ok:
-            raise Exception(f"Upload failed: {response.status_code} - {response.text}")
-
-        # Public URL
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{file_path}"
+        # Get the public URL
+        public_url = supabase.storage.from_("labs").get_public_url(file_path)
         return public_url
-
     except Exception as e:
-        raise Exception(f"Error uploading to Supabase: {e}")
+        raise Exception(f"Error uploading to Supabase: {str(e)}")
 
-
-def delete_media(file_path: str) -> bool:
+def delete_media(file_path):
     """Delete a file from Supabase Storage."""
     try:
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-        }
-        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
-        response = requests.delete(url, headers=headers)
-
-        return response.status_code == 200
+        response = supabase.storage.from_("labs").remove([file_path])
+        if response.status_code != 200:  # Check for successful deletion
+            raise Exception(f"Delete failed: {response.json().get('error', 'Unknown error')}")
     except Exception as e:
-        raise Exception(f"Error deleting from Supabase: {e}")
+        raise Exception(f"Error deleting from Supabase: {str(e)}")
