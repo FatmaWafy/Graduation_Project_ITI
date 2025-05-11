@@ -85,34 +85,6 @@ class RegisterInstructorAPIView(APIView):
             instructor = serializer.save()
             print(f"Instructor created: {instructor}, Email: {instructor.user.email}")
 
-            # Send welcome email
-            email_subject = "Welcome to the Platform"
-            email_message = f"""
-Hi {instructor.user.username},
-
-You have been registered as an instructor.
-
-Please complete your profile and start using the platform by visiting the following link:
-http://localhost:3000/signup
-
-Best regards,
-Your Admin Team
-"""
-            try:
-                print(f"Sending email to {instructor.user.email}...")
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[instructor.user.email],
-                    fail_silently=False,
-                )
-                print("Email sent successfully")
-            except Exception as e:
-                print(f"Failed to send email: {str(e)}")
-                # يمكنك اختيار متابعة التنفيذ أو إرجاع خطأ
-                # return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             # Generate JWT tokens
             refresh = RefreshToken.for_user(instructor.user)
             return Response({
