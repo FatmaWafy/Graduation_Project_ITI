@@ -347,7 +347,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     setUploadSuccess(true);
 
     const instructorId = await getUserIdFromToken();
-
+    console.log("Instructor ID from token:", instructorId); // Add this to debug
+    
     await sendNotification({
       instructor_id: instructorId,
       track_id: responseData.track,
