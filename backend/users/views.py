@@ -33,6 +33,14 @@ from social_django.utils import psa
 from social_django.utils import load_strategy, load_backend
 from django.contrib.auth import get_user_model
 
+import os
+from supabase import create_client, Client
+supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+from dotenv import load_dotenv # type: ignore
+load_dotenv()
+import time
+
+
 token_generator = PasswordResetTokenGenerator()
 User = get_user_model()
 
@@ -552,10 +560,108 @@ class TrackListAPIView(APIView):
     API endpoint to get all available tracks.
     """
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
+
+# class RegisterStudentsFromExcelAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         if request.user.role != "instructor":
+#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
+
+#         if 'file' not in request.FILES:
+#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         file = request.FILES['file']
+
+#         try:
+#             file_data = file.read().decode("utf-8").splitlines()
+#             csv_reader = csv.reader(file_data)
+#             next(csv_reader)  # Skip header
+#         except Exception as e:
+#             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         instructor = Instructor.objects.get(user=request.user)
+
+#         if instructor.tracks.count() == 0:
+#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         track_names = [track.name for track in instructor.tracks.all()]
+#         branch = instructor.branch
+
+#         students_added = 0
+#         for row in csv_reader:
+#             if len(row) < 8:
+#                 continue
+
+#             username, email, track_name = row[0], row[1], row[2]
+#             university = row[3]
+#             graduation_year = int(row[4]) if row[4].isdigit() else None
+#             college = row[5]
+#             leetcode_profile = row[6]
+#             github_profile = row[7]
+
+#             if track_name not in track_names:
+#                 continue
+
+#             password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+
+#             user_instance = User.objects.create_user(
+#                 email=email,
+#                 username=username,
+#                 password=password,
+#                 role='student'
+#             )
+
+#             track = Track.objects.get(name=track_name)
+
+#             student = Student.objects.create(
+#                 user=user_instance,
+#                 track=track,
+#                 branch=branch,
+#                 university=university,
+#                 graduation_year=graduation_year,
+#                 college=college,
+#                 leetcode_profile=leetcode_profile,
+#                 github_profile=github_profile,
+#                 inrollment_date=date.today(),
+#             )
+
+#     # إرسال البريد الإلكتروني (زي ما هو)
+
+
+#             email_subject = "Your Student Account Credentials"
+#             email_message = f"""
+#             Hi {student.user.username},
+
+#             Your student account has been created successfully.
+
+#             Track: {student.track.name}
+#             Email: {student.user.email}
+#             Password: {password}
+
+#             Please change your password after logging in.
+
+#             Best regards,
+#             Your Team
+#             """
+
+#             send_mail(
+#                 subject=email_subject,
+#                 message=email_message,
+#                 from_email=settings.DEFAULT_FROM_EMAIL,
+#                 recipient_list=[student.user.email],
+#                 fail_silently=False,
+#             )
+
+#             students_added += 1
+
+#         return Response({
+#             "message": f"{students_added} students added successfully.",
+#         }, status=status.HTTP_201_CREATED)
 
 
 
@@ -817,53 +923,70 @@ class UploadUserProfileImage(APIView):
 
     def post(self, request, user_id):
         try:
-            # Try to find the student
+            supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+            print("Supabase client initialized successfully")
+
+            print(f"Looking for user with ID: {user_id}")
             student = Student.objects.filter(id=user_id).first()
             if student:
                 user = student.user
+                print(f"Found student: {student.id}")
             else:
-                # If not a student, try instructor
                 instructor = Instructor.objects.filter(id=user_id).first()
                 if instructor:
                     user = instructor.user
+                    print(f"Found instructor: {instructor.id}")
                 else:
+                    print("User not found")
                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            if 'profile_image' not in request.FILES:
+                print("No image file provided")
+                return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+            image_file = request.FILES['profile_image']
+            print(f"Image file received: {image_file.name}")
+
+            timestamp = int(time.time() * 1000)
+            file_name, file_extension = os.path.splitext(image_file.name)
+            new_file_name = f"{file_name}_{timestamp}{file_extension}"
+            file_path = f"{user.id}/{new_file_name}"
+
+            if user.profile_image:
+                profile_image_str = str(user.profile_image)
+                if profile_image_str.startswith('http'):
+                    # جيب اسم الملف من الرابط مباشرة
+                    old_image_path = profile_image_str.split('/')[-1].split('?')[0]  # بنشيل أي query parameters
+                else:
+                    old_image_path = ""  # لو مش رابط، خليه فاضي
+                print(f"Deleting old image: {user.id}/{old_image_path}")
+                response = supabase.storage.from_('profileimages').remove([f"{user.id}/{old_image_path}"])
+                print(f"Delete response: {response}")
+
+            print(f"Uploading new image to: {file_path}")
+            response = supabase.storage.from_('profileimages').upload(file_path, image_file.read(), {
+                'content-type': image_file.content_type,
+            })
+            print(f"Upload response: {response}")
+            if not response or not response.full_path:
+                raise Exception("Failed to upload image to Supabase")
+
+            image_url = supabase.storage.from_('profileimages').get_public_url(file_path)
+            print(f"Public URL: {image_url}")
+
+            user.profile_image = image_url
+            user.save()
+            print(f"User profile_image updated successfully, new URL: {user.profile_image}")
+
+            return Response({
+                "message": "Profile image uploaded successfully",
+                "profile_image": image_url
+            }, status=status.HTTP_200_OK)
+
         except Exception as e:
+            print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Check if there's a file in the request
-        if 'profile_image' not in request.FILES:
-            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-        image_file = request.FILES['profile_image']
-
-        # Delete old image if exists
-        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
-            try:
-                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
-                print(f"Deleted old profile image: {user.profile_image}")
-            except Exception as e:
-                print(f"Error deleting old profile image: {e}")
-
-        # Update the profile image
-        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            user_instance = serializer.save()
-
-            # Create image URL
-            if user_instance.profile_image:
-                host = request.get_host()
-                protocol = 'https' if request.is_secure() else 'http'
-                image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
-
-                return Response({
-                    "message": "Profile image uploaded successfully",
-                    "profile_image": image_url
-                }, status=status.HTTP_200_OK)
-
-            return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات

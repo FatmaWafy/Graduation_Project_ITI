@@ -659,14 +659,16 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
 
-  useEffect(() => {
-    if (instructorData?.user?.profile_image) {
-      const imageUrl = instructorData.user.profile_image.startsWith("http")
-        ? instructorData.user.profile_image
-        : `${origin}${instructorData.user.profile_image}`;
-      setProfileImage(imageUrl);
-    }
-  }, [instructorData]);
+useEffect(() => {
+  if (instructorData?.user?.profile_image) {
+    const imageUrl = instructorData.user.profile_image.startsWith("http")
+      ? instructorData.user.profile_image
+      : `${origin}${instructorData.user.profile_image}`;
+    setProfileImage(imageUrl);
+  } else {
+    setProfileImage(null); // لو مفيش صورة، نظّف الـ profileImage
+  }
+}, [instructorData]); // يشتغل كل ما instructorData يتغير
 
   const fetchInstructorData = async () => {
     setLoading(true);
@@ -784,109 +786,112 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!instructorData) return;
+  if (!instructorData) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    try {
-      const token = getClientSideToken();
+  try {
+    const token = getClientSideToken();
 
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
+    if (!token) {
+      throw new Error("Authentication token not found");
+    }
 
-      const updatePayload = {
-        id: instructorData.id,
-        user: {
-          username: formState.name,
-          email: formState.email,
-          role: "instructor",
-          phone_number: formState.phone || "",
-          address: formState.address || "",
+    const updatePayload = {
+      id: instructorData.id,
+      user: {
+        username: formState.name,
+        email: formState.email,
+        role: "instructor",
+        phone_number: formState.phone || "",
+        address: formState.address || "",
+      },
+    };
+
+    const decoded = jwtDecode(token) as { user_id?: string };
+    const userId = Number(decoded.user_id);
+
+    const response = await fetch(
+      `${origin}/users/instructors/${userId}/update/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      };
+        body: JSON.stringify(updatePayload),
+      }
+    );
 
-      const decoded = jwtDecode(token) as { user_id?: string };
-      const userId = Number(decoded.user_id);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update profile: ${response.statusText}`);
+    }
 
-      const response = await fetch(
-        `${origin}/users/instructors/${userId}/update/`,
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append("profile_image", imageFile);
+
+      const imageResponse = await fetch(
+        `${origin}/users/upload-profile-image/${instructorData.id}/`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(updatePayload),
+          body: formData,
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update profile: ${response.statusText}`);
+      if (!imageResponse.ok) {
+        const errorText = await imageResponse.text();
+        throw new Error(`Failed to upload profile image: ${errorText}`);
       }
 
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append("profile_image", imageFile);
-
-        const imageResponse = await fetch(
-          `${origin}/users/upload-profile-image/${instructorData.id}/`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
-
-        if (!imageResponse.ok) {
-          const errorText = await imageResponse.text();
-          throw new Error("Failed to upload profile image");
+      // جيبي البيانات المحدثة بعد الرفع
+      const updatedImageResponse = await fetch(
+        `${origin}/users/instructors/${userId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-        // تحديث الرابط من endpoint المدرس
-        const updatedImageResponse = await fetch(
-          `${origin}/users/instructors/${userId}/`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (updatedImageResponse.ok) {
-          const updatedData = await updatedImageResponse.json();
-          const newImageUrl = updatedData.user?.profile_image?.startsWith("http")
-            ? updatedData.user.profile_image
-            : `${origin}${updatedData.user.profile_image}`;
-          setProfileImage(newImageUrl);
-        }
+      if (updatedImageResponse.ok) {
+        const updatedData = await updatedImageResponse.json();
+        const newImageUrl = updatedData.user?.profile_image?.startsWith("http")
+          ? updatedData.user.profile_image
+          : `${origin}${updatedData.user.profile_image}`;
+        setProfileImage(newImageUrl); // تحديث الـ profileImage بسرعة
+        setInstructorData(updatedData); // تحديث البيانات الكلية
+      } else {
+        throw new Error("Failed to fetch updated profile data");
       }
-
-      await fetchInstructorData();
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-
-      setIsEditing(false);
-    } catch (err) {
-      toast({
-        title: "Update failed",
-        description:
-          err instanceof Error ? err.message : "Failed to update profile",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    await fetchInstructorData(); // لتأكيد التحديث الكامل
+
+    toast({
+      title: "Profile updated",
+      description: "Your profile has been updated successfully.",
+    });
+
+    setIsEditing(false);
+  } catch (err) {
+    toast({
+      title: "Update failed",
+      description:
+        err instanceof Error ? err.message : "Failed to update profile",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false); // التأكد إن isSubmitting بيترجع false
+  }
+};
 
   if (loading) {
     return <Skeleton />;
@@ -929,6 +934,7 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
                   <div className="relative">
                     <Avatar className="h-24 w-24">
+                      console.log("Image URL:", profileImage || instructorData.user.profile_image);
                       <AvatarImage
                         src={profileImage || instructorData.user.profile_image}
                         alt={instructorData?.user.username}
