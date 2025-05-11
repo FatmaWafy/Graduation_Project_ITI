@@ -14,8 +14,7 @@ def upload_media(file, file_path):
             "content-type": "application/pdf"
         })
         print(f"Upload response: {response}")
-        if response.get("error"):
-            raise Exception(f"Upload failed: {response['error']['message']}")
+        # No need to check for response.get("error") because if upload fails, an exception will be raised
         public_url = supabase.storage.from_("labs").get_public_url(file_path)
         print(f"Public URL: {public_url}")
         return public_url
@@ -28,8 +27,7 @@ def delete_media(file_path):
         print(f"Deleting file at path: {file_path}")
         response = supabase.storage.from_("labs").remove([file_path])
         print(f"Delete response: {response}")
-        if response.get("error"):
-            raise Exception(f"Delete failed: {response['error']['message']}")
+        # No need to check for response.get("error") here either
     except Exception as e:
         print(f"Error in delete_media: {str(e)}")
         raise Exception(f"Error deleting: {str(e)}")
