@@ -1422,7 +1422,7 @@ class UpdateAdminProfile(APIView):
 # from .serializers import ChangePasswordSerializer
 
 class ChangeAdminPasswordAPIView(APIView):
-    permission_classes = [IsAuthenticated]  # لازم يكون مسجل دخول
+    permission_classes = [AllowAny]  # لازم يكون مسجل دخول
 
     def post(self, request):
         user = request.user
