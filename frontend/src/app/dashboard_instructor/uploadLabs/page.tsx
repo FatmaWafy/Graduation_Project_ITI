@@ -50,7 +50,7 @@ const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function sendNotification(params: any): Promise<any> {
   try {
-    console.log(origin);
+    // console.log(origin);
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
@@ -72,7 +72,7 @@ export async function sendNotification(params: any): Promise<any> {
     const data = await response.json();
 
     // طباعة الاستجابة في الـ console
-    console.log("Notification sent:", data);
+    // console.log("Notification sent:", data);
 
     // إذا كانت الحالة 200، نعرض رسالة النجاح
     if (response.status === 200) {
@@ -90,7 +90,7 @@ export async function sendNotification(params: any): Promise<any> {
 }
 export async function getUserIdFromToken(): Promise<number | null> {
   const token = Cookies.get("token");
-  console.log("Token from cookie:", token);
+  // console.log("Token from cookie:", token);
 
   if (!token) return null;
 
@@ -149,7 +149,7 @@ export default function LabsPage() {
       }
 
       const data = await response.json();
-      console.log("Instructor tracks data:", data);
+      // console.log("Instructor tracks data:", data);
       setTracks(data.tracks || []);
     } catch (error) {
       console.error("Error fetching tracks:", error);
@@ -199,8 +199,7 @@ export default function LabsPage() {
   //   fetchTracks();
   // }, []);
 
-
-const fetchLabs = async () => {
+  const fetchLabs = async () => {
     setIsLoading(true);
     try {
       const token = Cookies.get("token");
@@ -213,7 +212,8 @@ const fetchLabs = async () => {
         },
       });
 
-      if (!response.ok) throw new Error(`Failed to fetch labs: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Failed to fetch labs: ${response.status}`);
 
       const data = await response.json();
       setLabs(data);
@@ -281,70 +281,70 @@ const fetchLabs = async () => {
     }
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!file || !track) {
-    toast({
-      title: "Missing information",
-      description: "Please select a file and track",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setIsUploading(true);
-  setUploadProgress(0);
-  setUploadSuccess(false);
-  setUploadError(null);
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("track", track);
-  formData.append("name", file.name);
-  formData.append("submission_link", submissionLink);
-
-  const selectedTrack = tracks.find((t) => t.id.toString() === track);
-  formData.append(
-    "description",
-    `Lab material for ${selectedTrack ? selectedTrack.name : track}`
-  );
-
-  try {
-    const token = Cookies.get("token");
-    if (!token) throw new Error("No authentication token found");
-
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 5;
+    if (!file || !track) {
+      toast({
+        title: "Missing information",
+        description: "Please select a file and track",
+        variant: "destructive",
       });
-    }, 200);
-
-    const response = await fetch(`${origin}/labs/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    clearInterval(progressInterval);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.log("Error Response:", errorData);
-      throw new Error(errorData.error || errorData.detail || "Upload failed");
+      return;
     }
 
-    const responseData = await response.json();
-    console.log("Upload response:", responseData);
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadSuccess(false);
+    setUploadError(null);
 
-    setUploadProgress(100);
-    setUploadSuccess(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("track", track);
+    formData.append("name", file.name);
+    formData.append("submission_link", submissionLink);
+
+    const selectedTrack = tracks.find((t) => t.id.toString() === track);
+    formData.append(
+      "description",
+      `Lab material for ${selectedTrack ? selectedTrack.name : track}`
+    );
+
+    try {
+      const token = Cookies.get("token");
+      if (!token) throw new Error("No authentication token found");
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 5;
+        });
+      }, 200);
+
+      const response = await fetch(`${origin}/labs/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // console.log("Error Response:", errorData);
+        throw new Error(errorData.error || errorData.detail || "Upload failed");
+      }
+
+      const responseData = await response.json();
+      // console.log("Upload response:", responseData);
+
+      setUploadProgress(100);
+      setUploadSuccess(true);
 
    async function fetchInstructorId(): Promise<number> {
       const userId = await getUserIdFromToken();
@@ -366,24 +366,24 @@ const handleSubmit = async (e: React.FormEvent) => {
       message: `New lab "${responseData.name}" has been uploaded.`,
     });
 
-    toast({
-      title: "Upload successful",
-      description: "The lab has been uploaded and sent to students",
-    });
+      toast({
+        title: "Upload successful",
+        description: "The lab has been uploaded and sent to students",
+      });
 
-    fetchLabs();
+      fetchLabs();
 
-    setTimeout(() => {
-      setFile(null);
-      setUploadProgress(0);
+      setTimeout(() => {
+        setFile(null);
+        setUploadProgress(0);
+        setIsUploading(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setUploadError(error instanceof Error ? error.message : String(error));
       setIsUploading(false);
-    }, 1000);
-  } catch (error) {
-    console.error("Upload error:", error);
-    setUploadError(error instanceof Error ? error.message : String(error));
-    setIsUploading(false);
-  }
-};
+    }
+  };
 
   const handleDownload = async (lab: Lab) => {
     try {
@@ -489,21 +489,21 @@ const handleSubmit = async (e: React.FormEvent) => {
   };
 
   return (
-    <div className='container mx-auto py-6 space-y-6'>
+    <div className="container mx-auto py-6 space-y-6">
       <div>
-        <h1 className='text-3xl font-bold tracking-tight'>Lab Management</h1>
-        <p className='text-muted-foreground'>
+        <h1 className="text-3xl font-bold tracking-tight">Lab Management</h1>
+        <p className="text-muted-foreground">
           Upload and manage lab materials for students
         </p>
       </div>
 
-      <Tabs defaultValue='upload' className='space-y-4'>
+      <Tabs defaultValue="upload" className="space-y-4">
         <TabsList>
-          <TabsTrigger value='upload'>Upload Lab</TabsTrigger>
-          <TabsTrigger value='manage'>Manage Labs</TabsTrigger>
+          <TabsTrigger value="upload">Upload Lab</TabsTrigger>
+          <TabsTrigger value="manage">Manage Labs</TabsTrigger>
         </TabsList>
 
-        <TabsContent value='upload' className='space-y-4'>
+        <TabsContent value="upload" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Upload New Lab</CardTitle>
@@ -513,12 +513,12 @@ const handleSubmit = async (e: React.FormEvent) => {
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className='space-y-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='track'>Select Track</Label>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="track">Select Track</Label>
                   <Select value={track} onValueChange={setTrack}>
                     <SelectTrigger>
-                      <SelectValue placeholder='Select a track' />
+                      <SelectValue placeholder="Select a track" />
                     </SelectTrigger>
                     <SelectContent>
                       {tracks.length > 0 ? (
@@ -528,7 +528,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                           </SelectItem>
                         ))
                       ) : (
-                        <div className='flex items-center justify-center py-2 text-sm text-muted-foreground'>
+                        <div className="flex items-center justify-center py-2 text-sm text-muted-foreground">
                           Loading tracks...
                         </div>
                       )}
@@ -536,20 +536,20 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </Select>
                 </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='submission_link'>
+                <div className="space-y-2">
+                  <Label htmlFor="submission_link">
                     Google Drive Submission Link
                   </Label>
                   <Input
-                    id='submission_link'
-                    type='url'
-                    placeholder='https://drive.google.com/...'
+                    id="submission_link"
+                    type="url"
+                    placeholder="https://drive.google.com/..."
                     onChange={(e) => setSubmissionLink(e.target.value)}
                   />
                 </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='file'>Upload PDF File</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="file">Upload PDF File</Label>
                   <div
                     className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
                       isDragging
@@ -562,22 +562,22 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                   >
-                    <div className='flex flex-col items-center justify-center space-y-3 text-center'>
+                    <div className="flex flex-col items-center justify-center space-y-3 text-center">
                       {file ? (
                         <>
-                          <div className='p-3 rounded-full bg-green-100 bg-[#c7e5ff]'>
-                            <File className='h-6 w-6 text-[#007acc]' />
+                          <div className="p-3 rounded-full bg-green-100 bg-[#c7e5ff]">
+                            <File className="h-6 w-6 text-[#007acc]" />
                           </div>
                           <div>
-                            <p className='font-medium'>{file.name}</p>
-                            <p className='text-sm text-muted-foreground'>
+                            <p className="font-medium">{file.name}</p>
+                            <p className="text-sm text-muted-foreground">
                               {(file.size / (1024 * 1024)).toFixed(2)} MB
                             </p>
                           </div>
                           <Button
-                            type='button'
-                            variant='outline'
-                            size='sm'
+                            type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setFile(null)}
                           >
                             Change File
@@ -585,28 +585,28 @@ const handleSubmit = async (e: React.FormEvent) => {
                         </>
                       ) : (
                         <>
-                          <div className='p-3 rounded-full bg-[#c7e5ff]'>
-                            <Upload className='h-6 w-6 text-[#007acc]' />
+                          <div className="p-3 rounded-full bg-[#c7e5ff]">
+                            <Upload className="h-6 w-6 text-[#007acc]" />
                           </div>
                           <div>
-                            <p className='font-medium'>
+                            <p className="font-medium">
                               Click to upload or drag and drop
                             </p>
-                            <p className='text-sm text-muted-foreground'>
+                            <p className="text-sm text-muted-foreground">
                               PDF files only (max 10MB)
                             </p>
                           </div>
                           <Input
-                            id='file'
-                            type='file'
-                            accept='.pdf'
-                            className='hidden'
+                            id="file"
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
                             onChange={handleFileChange}
                           />
                           <Button
-                            type='button'
-                            variant='outline'
-                            size='sm'
+                            type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() =>
                               document.getElementById("file")?.click()
                             }
@@ -620,12 +620,12 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
 
                 {uploadProgress > 0 && (
-                  <div className='space-y-2'>
-                    <div className='flex justify-between text-sm'>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
                       <span>Uploading...</span>
                       <span>{uploadProgress}%</span>
                     </div>
-                    <div className='h-2 bg-gray-200 rounded-full overflow-hidden'>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${
                           uploadSuccess ? "bg-green-500" : "bg-[#007acc]"
@@ -637,12 +637,12 @@ const handleSubmit = async (e: React.FormEvent) => {
                 )}
 
                 {uploadSuccess && (
-                  <Alert className='bg-green-50 border-green-200'>
-                    <CheckCircle2 className='h-4 w-4 text-green-600' />
-                    <AlertTitle className='text-green-800'>
+                  <Alert className="bg-green-50 border-green-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-800">
                       Upload Successful
                     </AlertTitle>
-                    <AlertDescription className='text-green-700'>
+                    <AlertDescription className="text-green-700">
                       The lab has been uploaded and sent to students in the
                       selected track.
                     </AlertDescription>
@@ -650,8 +650,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 )}
 
                 {uploadError && (
-                  <Alert variant='destructive'>
-                    <AlertCircle className='h-4 w-4' />
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Upload Failed</AlertTitle>
                     <AlertDescription>{uploadError}</AlertDescription>
                   </Alert>
@@ -659,18 +659,18 @@ const handleSubmit = async (e: React.FormEvent) => {
               </CardContent>
               <CardFooter>
                 <Button
-                  type='submit'
-                  className='w-full bg-[#007acc] hover:bg-[#007abc]'
+                  type="submit"
+                  className="w-full bg-[#007acc] hover:bg-[#007abc]"
                   disabled={!file || !track || isUploading}
                 >
                   {isUploading ? (
                     <>
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin bg-[#007acc]' />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin bg-[#007acc]" />
                       Uploading...
                     </>
                   ) : (
                     <>
-                      <FileUp className='mr-2 h-4 w-4 bg-[#007acc]' />
+                      <FileUp className="mr-2 h-4 w-4 bg-[#007acc]" />
                       Upload and Send to Students
                     </>
                   )}
@@ -680,7 +680,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value='manage'>
+        <TabsContent value="manage">
           <Card>
             <CardHeader>
               <CardTitle>Manage Labs</CardTitle>
@@ -690,17 +690,17 @@ const handleSubmit = async (e: React.FormEvent) => {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className='flex justify-center items-center py-8'>
-                  <Loader2 className='h-8 w-8 animate-spin text-primary' />
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : labs.length === 0 ? (
-                <div className='text-center py-8'>
-                  <p className='text-muted-foreground'>
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
                     No labs have been uploaded yet
                   </p>
                 </div>
               ) : (
-                <div className='rounded-md border'>
+                <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -708,38 +708,38 @@ const handleSubmit = async (e: React.FormEvent) => {
                         <TableHead>Track</TableHead>
                         <TableHead>Size</TableHead>
                         <TableHead>Upload Date</TableHead>
-                        <TableHead className='text-right'>Actions</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {labs.map((lab) => (
                         <TableRow key={lab.id}>
-                          <TableCell className='font-medium'>
-                            <div className='flex items-center'>
-                              <File className='h-4 w-4 mr-2 text-muted-foreground' />
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              <File className="h-4 w-4 mr-2 text-muted-foreground" />
                               {lab.name}
                             </div>
                           </TableCell>
                           <TableCell>{lab.track}</TableCell>
                           <TableCell>{lab.size}</TableCell>
                           <TableCell>{formatDate(lab.created_at)}</TableCell>
-                          <TableCell className='text-right'>
-                            <div className='flex justify-end gap-2'>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
                               <Button
-                                variant='outline'
-                                size='sm'
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleDownload(lab)}
                               >
-                                <Download className='h-4 w-4 mr-1' />
+                                <Download className="h-4 w-4 mr-1" />
                                 Download
                               </Button>
                               <Button
-                                variant='outline'
-                                size='sm'
-                                className='text-destructive hover:text-destructive'
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
                                 onClick={() => handleDeleteLab(lab.id)}
                               >
-                                <Trash2 className='h-4 w-4' />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>

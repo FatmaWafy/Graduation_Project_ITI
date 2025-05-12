@@ -82,7 +82,7 @@ async function executeCode(language: string, sourceCode: string) {
         ],
       }),
     })
-    console.log("Response from Piston API:", response)
+    // console.log("Response from Piston API:", response)
 
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}`)

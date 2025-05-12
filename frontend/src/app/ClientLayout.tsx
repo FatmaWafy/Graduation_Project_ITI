@@ -31,7 +31,7 @@ export default function ClientLayout({
 
   useEffect(() => {
     document.title = pageTitle;
-    console.log("Current pathname:", pathname);
+    // console.log("Current pathname:", pathname);
   }, [pathname, pageTitle]);
 
   // useEffect(() => {
@@ -41,12 +41,12 @@ export default function ClientLayout({
   //         const registration = await navigator.serviceWorker.register("/sw.js", {
   //           scope: "/",
   //         });
-  //         console.log("Service Worker registered:", registration);
+  //         // console.log("Service Worker registered:", registration);
 
   //         // طلب إذن الإشعارات
   //         const permission = await Notification.requestPermission();
   //         if (permission === "granted") {
-  //           console.log("👍 المستخدم وافق على الإشعارات");
+  //           // console.log("👍 المستخدم وافق على الإشعارات");
 
   //           // تهيئة Firebase
   //           const firebaseConfig = {
@@ -69,7 +69,7 @@ export default function ClientLayout({
   //           // });
 
   //           if (token) {
-  //             console.log("FCM Token:", token);
+  //             // console.log("FCM Token:", token);
 
   //             // إرسال التوكن للـ Backend
   //             const authToken = Cookies.get("token");
@@ -89,7 +89,7 @@ export default function ClientLayout({
 
   //             const responseData = await response.json();
   //             if (response.ok) {
-  //               console.log("FCM token sent to backend:", token);
+  //               // console.log("FCM token sent to backend:", token);
   //             } else {
   //               // console.error("Failed to send FCM token to backend:", responseData);
   //             }
@@ -97,7 +97,7 @@ export default function ClientLayout({
   //             console.error("No FCM token available");
   //           }
   //         } else {
-  //           console.log("👎 المستخدم رفض الإشعارات");
+  //           // console.log("👎 المستخدم رفض الإشعارات");
   //         }
   //       } catch (error) {
   //         console.error("Service Worker registration or FCM setup failed:", error);
@@ -109,10 +109,10 @@ export default function ClientLayout({
   //     if (token) {
   //       registerServiceWorker();
   //     } else {
-  //       console.log("Waiting for user to log in before registering service worker");
+  //       // console.log("Waiting for user to log in before registering service worker");
   //     }
   //   } else {
-  //     console.log("Service Worker or Notifications not supported in this browser");
+  //     // console.log("Service Worker or Notifications not supported in this browser");
   //   }
   // }, []);
 

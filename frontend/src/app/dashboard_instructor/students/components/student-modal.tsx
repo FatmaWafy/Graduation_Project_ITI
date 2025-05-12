@@ -125,7 +125,7 @@ export function StudentModal({
   }, [student, form]);
 
   const onSubmit = (data: StudentFormValues) => {
-    console.log("Form data to submit:", data);
+    // console.log("Form data to submit:", data);
 
     // Format the data to match API expectations
     const formattedData = {
@@ -212,7 +212,7 @@ export function StudentModal({
         updatePayload.user = userUpdates;
       }
 
-      console.log("Update payload:", updatePayload);
+      // console.log("Update payload:", updatePayload);
 
       updateStudent(updatePayload, {
         onSuccess: () => {
@@ -250,7 +250,7 @@ export function StudentModal({
         track_name: formattedData.track_name,
       };
 
-      console.log("Create payload:", createPayload);
+      // console.log("Create payload:", createPayload);
 
       addStudent(createPayload, {
         onSuccess: () => {
@@ -276,9 +276,9 @@ export function StudentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='sm:max-w-[600px] border-[#e6f4ff] bg-white'>
+      <DialogContent className="sm:max-w-[600px] border-[#e6f4ff] bg-white">
         <DialogHeader>
-          <DialogTitle className='text-[#007acc]'>
+          <DialogTitle className="text-[#007acc]">
             {isEditMode ? "Edit Student" : "Add New Student"}
           </DialogTitle>
           <DialogDescription>
@@ -288,19 +288,19 @@ export function StudentModal({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name='username'
+                name="username"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='Enter student username'
+                        placeholder="Enter student username"
                         {...field}
-                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                        className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -309,15 +309,15 @@ export function StudentModal({
               />
               <FormField
                 control={form.control}
-                name='email'
+                name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='student@example.com'
+                        placeholder="student@example.com"
                         {...field}
-                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                        className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -326,18 +326,18 @@ export function StudentModal({
               />
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name='track_name'
+                name="track_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Track Name</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='Computer Science'
+                        placeholder="Computer Science"
                         {...field}
-                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                        className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -346,7 +346,7 @@ export function StudentModal({
               />
               <FormField
                 control={form.control}
-                name='status'
+                name="status"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
@@ -356,15 +356,15 @@ export function StudentModal({
                       value={field.value || "active"}
                     >
                       <FormControl>
-                        <SelectTrigger className='border-[#e6f4ff] focus:ring-[#007acc]'>
-                          <SelectValue placeholder='Select student status' />
+                        <SelectTrigger className="border-[#e6f4ff] focus:ring-[#007acc]">
+                          <SelectValue placeholder="Select student status" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value='active'>Active</SelectItem>
-                        <SelectItem value='inactive'>Inactive</SelectItem>
-                        <SelectItem value='suspended'>Suspended</SelectItem>
-                        <SelectItem value='graduated'>Graduated</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="graduated">Graduated</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -376,7 +376,7 @@ export function StudentModal({
             {!isEditMode && (
               <FormField
                 control={form.control}
-                name='password'
+                name="password"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
@@ -385,7 +385,7 @@ export function StudentModal({
                         : "Student Password"}
                     </FormLabel>
                     <FormControl>
-                      <div className='relative'>
+                      <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder={
@@ -394,19 +394,19 @@ export function StudentModal({
                               : "Enter student password"
                           }
                           {...field}
-                          className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                          className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                         />
                         <Button
-                          type='button'
-                          variant='ghost'
-                          size='icon'
-                          className='absolute right-0 top-0 h-full px-3'
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? (
-                            <EyeOff className='h-4 w-4' />
+                            <EyeOff className="h-4 w-4" />
                           ) : (
-                            <Eye className='h-4 w-4' />
+                            <Eye className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
@@ -417,19 +417,19 @@ export function StudentModal({
               />
             )}
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name='phone'
+                name="phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='(123) 456-7890'
+                        placeholder="(123) 456-7890"
                         {...field}
                         value={field.value || ""}
-                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                        className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -438,16 +438,16 @@ export function StudentModal({
               />
               <FormField
                 control={form.control}
-                name='address'
+                name="address"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Address</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='123 Main St, City, State, Zip'
+                        placeholder="123 Main St, City, State, Zip"
                         {...field}
                         value={field.value || ""}
-                        className='border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                        className="border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -458,14 +458,14 @@ export function StudentModal({
 
             <FormField
               control={form.control}
-              name='notes'
+              name="notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder='Additional information about the student'
-                      className='resize-none border-[#e6f4ff] focus-visible:ring-[#007acc]'
+                      placeholder="Additional information about the student"
+                      className="resize-none border-[#e6f4ff] focus-visible:ring-[#007acc]"
                       {...field}
                       value={field.value || ""}
                     />
@@ -476,19 +476,19 @@ export function StudentModal({
             />
             <DialogFooter>
               <Button
-                type='button'
-                variant='outline'
+                type="button"
+                variant="outline"
                 onClick={onClose}
-                className='border-[#e6f4ff]'
+                className="border-[#e6f4ff]"
               >
                 Cancel
               </Button>
               <Button
-                type='submit'
+                type="submit"
                 disabled={isPending}
-                className='bg-[#007acc] hover:bg-[#0062a3] text-white'
+                className="bg-[#007acc] hover:bg-[#0062a3] text-white"
               >
-                {isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {student ? "Update Student" : "Add Student"}
               </Button>
             </DialogFooter>

@@ -42,7 +42,7 @@ export default function LoginPage() {
             is_signup: false,
           }),
         });
-        console.log("Google token:", tokenResponse.access_token);
+        // console.log("Google token:", tokenResponse.access_token);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Google login failed");
 
@@ -89,6 +89,9 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!localStorage.getItem("theme")) {
+      localStorage.setItem("theme", "light");
+    }
 
     try {
       const res = await fetch(`${origin}/users/login/`, {
@@ -98,9 +101,9 @@ export default function LoginPage() {
         credentials: "include", // أضيفي ده لو الـ backend بيستخدم cookies
       });
 
-      console.log("Login response status:", res.status);
+      // console.log("Login response status:", res.status);
       const data = await res.json();
-      console.log("Login response data:", data);
+      // console.log("Login response data:", data);
 
       if (!res.ok) throw new Error(data.error || "Login failed");
 

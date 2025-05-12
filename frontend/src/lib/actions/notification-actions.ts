@@ -35,7 +35,7 @@ interface Notification {
  
 export async function sendNotification(params: SendNotificationParams): Promise<NotificationResponse> {
   try {
-    console.log(origin)
+    // console.log(origin)
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
@@ -57,7 +57,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
     const data = await response.json();
 
     // طباعة الاستجابة في الـ console
-    console.log("Notification sent:", data);
+    // console.log("Notification sent:", data);
 
     // إذا كانت الحالة 200، نعرض رسالة النجاح
     if (response.status === 200) {
@@ -102,7 +102,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
   try {
     // This is a mock implementation since your backend might not support this yet
     // You would typically make a POST request to your backend
-    console.log(`Marking notification ${notificationId} as read`)
+    // console.log(`Marking notification ${notificationId} as read`)
 
     // Revalidate the notifications page
     revalidatePath("/dashboard_student/notifications")
@@ -116,7 +116,7 @@ export async function markAllNotificationsAsRead(): Promise<void> {
   try {
     // This is a mock implementation since your backend might not support this yet
     // You would typically make a POST request to your backend
-    console.log("Marking all notifications as read")
+    // console.log("Marking all notifications as read")
 
     // Revalidate the notifications page
     revalidatePath("/dashboard_student/notifications")

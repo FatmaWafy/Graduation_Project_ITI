@@ -4,7 +4,7 @@ const origin = process.env.NEXT_PUBLIC_API_URL;
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    console.log("Received run-code request:", data)
+    // console.log("Received run-code request:", data)
 
     // Get the access token
     let token = request.headers.get("Authorization")?.split(" ")[1]
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    console.log("Points being sent:", data.points)
+    // console.log("Points being sent:", data.points)
 
     if (!response.ok) {
       const errorText = await response.text()

@@ -13,7 +13,7 @@ export async function uploadProfileImage(userId: number, imageFile: File) {
     const formData = new FormData()
     formData.append("profile_image", imageFile)
 
-    console.log(`Uploading profile image for user ID: ${userId}`)
+    // console.log(`Uploading profile image for user ID: ${userId}`)
 
     const response = await fetch(`${origin}/users/upload-profile-image/${userId}/`, {
       method: "POST",

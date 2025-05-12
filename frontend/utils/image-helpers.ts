@@ -22,7 +22,7 @@ export function getImageUrl(imagePath: string | null | undefined): string {
     }
   
     // Log the constructed URL for debugging
-    console.log("Constructed image URL:", fullPath)
+    // console.log("Constructed image URL:", fullPath)
   
     return fullPath
   }
