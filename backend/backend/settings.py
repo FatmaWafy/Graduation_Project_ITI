@@ -249,7 +249,15 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://examsystem-psi.vercel.app",
+    
+
 ]
+CSRF_TRUSTED_ORIGINS = [
+    "https://examsystem-psi.vercel.app",
+    "http://localhost:3000",
+    "https://graduationprojectiti-production.up.railway.app",
+]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
