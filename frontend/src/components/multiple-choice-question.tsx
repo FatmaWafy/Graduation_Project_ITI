@@ -34,16 +34,16 @@ export default function MultipleChoiceQuestion({
   onPrevQuestion,
 }: MultipleChoiceQuestionProps) {
   useEffect(() => {
-    console.log("Question ID:", question.id, "Selected option:", selectedOption);
+    // console.log("Question ID:", question.id, "Selected option:", selectedOption);
   }, [question.id, selectedOption]);
 
   return (
-    <div className='p-6 bg-background text-foreground'>
-      <h2 className='text-xl font-bold mb-4'>{question.title}</h2>
-      <p className='mb-4'>{question.question}</p>
+    <div className="p-6 bg-background text-foreground">
+      <h2 className="text-xl font-bold mb-4">{question.title}</h2>
+      <p className="mb-4">{question.question}</p>
 
       {question.code && (
-        <pre className='bg-muted p-4 rounded-md mb-6 overflow-x-auto text-muted-foreground'>
+        <pre className="bg-muted p-4 rounded-md mb-6 overflow-x-auto text-muted-foreground">
           <code>{question.code}</code>
         </pre>
       )}
@@ -52,7 +52,7 @@ export default function MultipleChoiceQuestion({
         key={question.id} // Force remount on question change
         value={selectedOption || ""} // Fallback to empty string
         onValueChange={onAnswerChange}
-        className='space-y-3'
+        className="space-y-3"
       >
         {question.options.map((option) => (
           <div
@@ -88,19 +88,19 @@ export default function MultipleChoiceQuestion({
       </RadioGroup>
 
       {(onNextQuestion || onPrevQuestion) && (
-        <div className='flex justify-between pt-4 mt-6 border-t border-border'>
+        <div className="flex justify-between pt-4 mt-6 border-t border-border">
           <Button
-            variant='outline'
+            variant="outline"
             onClick={onPrevQuestion}
             disabled={isFirstQuestion || !onPrevQuestion}
-            className='gap-1'
+            className="gap-1"
           >
             Previous
           </Button>
           <Button
             onClick={onNextQuestion}
             disabled={isLastQuestion || !onNextQuestion}
-            className='gap-1'
+            className="gap-1"
           >
             Next
           </Button>

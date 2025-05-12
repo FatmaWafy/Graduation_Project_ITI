@@ -79,16 +79,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const token = response.data.access;
-      console.log("Token received:", token);
+      // console.log("Token received:", token);
 
       // 2. Decode the token to get user_id
       const decoded: JWTTokenPayload = jwtDecode(token);
       const userId = decoded.user_id;
-      console.log("Decoded user_id:", userId);
+      // console.log("Decoded user_id:", userId);
 
       // 3. Fetch user data using user_id
       const userRes = await axios.get(`${origin}/users/students/${userId}/`);
-      console.log("User data received:", userRes.data);
+      // console.log("User data received:", userRes.data);
 
       const userData: User = {
         id: userRes.data.id,
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("Registered user:", { name, email, password });
+      // console.log("Registered user:", { name, email, password });
     } catch (error) {
       console.error("Registration failed", error);
       throw error;
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Password reset requested for:", email);
+      // console.log("Password reset requested for:", email);
     } catch (error) {
       console.error("Password reset request failed", error);
       throw error;
@@ -156,12 +156,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log(
-        "Password reset with token:",
-        token,
-        "New password:",
-        newPassword
-      );
+      // console.log(
+      //   "Password reset with token:",
+      //   token,
+      //   "New password:",
+      //   newPassword
+      // );
     } catch (error) {
       console.error("Password reset failed", error);
       throw error;

@@ -45,7 +45,7 @@ export default function InstructorDashboard() {
 
   useEffect(() => {
     const user = {}; // Replace with actual user data or context retrieval logic
-    console.log("User data from context:", user);
+    // console.log("User data from context:", user);
 
     const fetchStudentData = async () => {
       try {
@@ -55,14 +55,14 @@ export default function InstructorDashboard() {
         const decoded: any = jwtDecode(token);
         const userId = decoded.user_id;
 
-        console.log("User ID from token in Dashboard:", userId);
+        // console.log("User ID from token in Dashboard:", userId);
 
         const res = await fetch(`${origin}/users/instructors/${userId}/`);
         if (!res.ok) throw new Error("Failed to fetch student data");
 
         const data = await res.json();
         setStudentData(data);
-        console.log("Student data fetched:", data);
+        // console.log("Student data fetched:", data);
       } catch (error) {
         console.error("Error fetching student data:", error);
         setStudentData(null);

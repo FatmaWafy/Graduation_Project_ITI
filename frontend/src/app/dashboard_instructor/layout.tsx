@@ -298,7 +298,7 @@ export default function InstructorLayout({
         const decoded: any = jwtDecode(token);
         const userId = decoded.user_id;
 
-        console.log("User ID from token in Dashboard:", userId);
+        // console.log("User ID from token in Dashboard:", userId);
 
         const res = await fetch(`${origin}/users/instructors/${userId}/`, {
           headers: {
@@ -314,7 +314,7 @@ export default function InstructorLayout({
 
         const data: InstructorData = await res.json();
         setInstructorData(data);
-        console.log("Instructor data fetched:", data);
+        // console.log("Instructor data fetched:", data);
 
         // Update user state with fetched data
         setUser({
