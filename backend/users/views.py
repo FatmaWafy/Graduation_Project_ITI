@@ -1293,3 +1293,69 @@ class GoogleLoginAPIView(APIView):
             return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
  
+ # views.py
+from django.core.mail import send_mail
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import pandas as pd
+import tempfile
+import os
+
+@csrf_exempt
+def send_instructor_invitations(request):
+    if request.method == 'POST':
+        csv_file = request.FILES.get('csv_file')
+        
+        if not csv_file:
+            return JsonResponse({'status': 'error', 'message': 'No file uploaded'}, status=400)
+        
+        try:
+            # Save the uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                for chunk in csv_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            
+            # Read the file
+            if csv_file.name.endswith('.csv'):
+                df = pd.read_csv(tmp_path)
+            else:
+                df = pd.read_excel(tmp_path)
+            
+            # Clean up
+            os.unlink(tmp_path)
+            
+            # Check for email column
+            if 'email' not in df.columns:
+                return JsonResponse({'status': 'error', 'message': 'CSV must contain an "email" column'}, status=400)
+            
+            emails = df['email'].dropna().unique()
+            success_count = 0
+            
+            # Send emails
+            for email in emails:
+                try:
+                    send_mail(
+                        'Instructor Signup Invitation',
+                        f'Please signup here as an instructor in titi from this link: "https://link.com"',
+                        'no-reply@example.com',  # From email
+                        [email],  # To email
+                        fail_silently=False,
+                    )
+                    success_count += 1
+                except Exception as e:
+                    print(f"Failed to send to {email}: {str(e)}")
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Successfully sent {success_count} out of {len(emails)} invitations'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+def instructor_invitation_page(request):
+    return render(request, 'instructor_invitation.html')

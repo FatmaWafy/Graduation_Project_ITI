@@ -1,4 +1,6 @@
 from django.urls import path, include
+
+from backend.api import views
 from .views import  (
     ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
     BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView,
@@ -52,12 +54,15 @@ urlpatterns = [
     # Course URLs
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroyView.as_view(), name='course-retrieve-update-destroy'),
-        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
-        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
-        path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
+    path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
 
+
+    path('instructor-invitation/', views.instructor_invitation_page, name='instructor_invitation'),
+    path('send-invitations/', views.send_instructor_invitations, name='send_instructor_invitations'),
 
     path('', include(router.urls)),
 

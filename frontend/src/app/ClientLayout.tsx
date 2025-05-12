@@ -116,35 +116,34 @@ export default function ClientLayout({
   //   }
   // }, []);
 
-
   return (
     <>
       <Head>
         <title>{pageTitle}</title>
 
         <link
-          rel='preload'
-          href='/_next/static/chunks/main-app-f2ab8f5a96aa974a9.js'
-          as='script'
+          rel="preload"
+          href="/_next/static/chunks/main-app-f2ab8f5a96aa974a9.js"
+          as="script"
         />
         <link
-          rel='preload'
-          href='/_next/static/chunks/main-5488f16c6226a992.js'
-          as='script'
+          rel="preload"
+          href="/_next/static/chunks/main-5488f16c6226a992.js"
+          as="script"
         />
 
-        <link rel='manifest' href='/manifest.json' />
-        <meta name='theme-color' content='#000000' />
-        <link rel='icon' href='/favicon.ico' type='image/x-icon' />
-        <link rel='apple-touch-icon' href='/logo2.png' type='image/png' />
-        <link rel='apple-touch-icon' href='/favicon.ico' />
-        <link rel='apple-touch-icon' href='/apple-touch-icon.png' />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="apple-touch-icon" href="/logo2.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </Head>
 
-      <GoogleOAuthProvider clientId='447648497550-vnin1f0m7e9t39aem07cfmhjb5gtbtu9.apps.googleusercontent.com'>
+      <GoogleOAuthProvider clientId="447648497550-vnin1f0m7e9t39aem07cfmhjb5gtbtu9.apps.googleusercontent.com">
         <ThemeProvider
-          attribute='class'
-          defaultTheme='system'
+          attribute="class"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
