@@ -53,7 +53,6 @@ pydantic==2.11.4
 pydantic_core==2.33.2
 pyfcm==2.0.8
 PyJWT==2.9.0
-
 PySocks==1.7.1
 pytest==8.3.5
 pytest-mock==3.14.0
