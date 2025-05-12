@@ -2,7 +2,7 @@ from django.urls import path, include
 
 from api import views
 from .views import  (
-    ApproveInstructorAPIView, ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
+    ApproveInstructorAPIView, ChangeAdminPasswordAPIView, ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
     BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView, PendingInstructorsAPIView,
     RegisterInstructorAPIView,
     LoginAPIView,
@@ -67,7 +67,7 @@ urlpatterns = [
     path('instructors/reject/<int:user_id>/', RejectInstructorAPIView.as_view(), name='reject-instructor'),
     path("current-admin/", CurrentAdminView.as_view(), name="current-admin"),
     path('update-admin-profile/<int:user_id>/', UpdateAdminProfile.as_view(), name='update-profile'),
-
+    path("admin/change-password/", ChangeAdminPasswordAPIView.as_view(), name="change_admin_password"),
 
     path('', include(router.urls)),
 

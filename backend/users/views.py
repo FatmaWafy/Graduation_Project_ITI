@@ -1416,3 +1416,29 @@ class UpdateAdminProfile(APIView):
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# views.py
+# from .serializers import ChangePasswordSerializer
+
+class ChangeAdminPasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]  # لازم يكون مسجل دخول
+
+    def post(self, request):
+        user = request.user
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+
+        if user.role != "admin":
+            return Response({"error": "You are not authorized to perform this action"}, status=status.HTTP_403_FORBIDDEN)
+
+        if not user.check_password(current_password):
+            return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)

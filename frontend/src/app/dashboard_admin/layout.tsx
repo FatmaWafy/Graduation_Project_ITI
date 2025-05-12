@@ -59,7 +59,7 @@ export default function DashboardLayout({
                 <span>Profile</span>
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link
                 href="#"
                 className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100"
@@ -76,7 +76,7 @@ export default function DashboardLayout({
                 <Settings className="h-5 w-5" />
                 <span>Settings</span>
               </Link>
-            </li>
+            </li> */}
           </ul>
         </nav>
 
