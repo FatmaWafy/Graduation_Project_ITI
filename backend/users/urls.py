@@ -17,6 +17,8 @@ from .views import  (
     InstructorViewSet ,
     InstructorTrackListAPIView,
     GoogleLoginAPIView,
+    UpdateAdminProfile,
+    CurrentAdminView,  # Added missing import
 )
 from rest_framework.routers import DefaultRouter
  
@@ -63,6 +65,9 @@ urlpatterns = [
     path('instructors/pending/', PendingInstructorsAPIView.as_view(), name='pending-instructors'),
     path('instructors/approve/<int:user_id>/', ApproveInstructorAPIView.as_view(), name='approve-instructor'),
     path('instructors/reject/<int:user_id>/', RejectInstructorAPIView.as_view(), name='reject-instructor'),
+    path("current-admin/", CurrentAdminView.as_view(), name="current-admin"),
+    path('update-admin-profile/<int:user_id>/', UpdateAdminProfile.as_view(), name='update-profile'),
+
 
     path('', include(router.urls)),
 

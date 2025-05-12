@@ -136,6 +136,27 @@ class ApproveInstructorAPIView(APIView):
             user = User.objects.get(id=user_id)
             user.role = "instructor"
             user.save()
+
+            # Send email notification to the user
+            email_subject = "Instructor Approval Notification"
+            email_message = f"""
+            Hi {user.username},
+
+            Congratulations! Your registration has been approved.
+            You can now log in to the platform using your email and password.
+
+            Best regards,
+            Your Platform Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
             return Response({"message": f"User {user.email} approved as instructor."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -1347,3 +1368,51 @@ def send_instructor_invitations(request):
 
 def instructor_invitation_page(request):
     return render(request, 'instructor_invitation.html')
+
+
+
+
+class CurrentAdminView(APIView):
+    permission_classes = [IsAuthenticated]  # التحقق من أن المستخدم عامل login
+
+    def get(self, request):
+        user = request.user  # الـ user اللي عامل login
+
+        if user.role != "admin":  # لو مش أدمن، هنعمل Error
+            return Response({"detail": "You are not an admin."}, status=403)
+
+        serializer = UserSerializer(user)  # استخدام السيرايلزر عشان نعرض بيانات الأدمن
+        return Response(serializer.data)
+    
+
+class UpdateAdminProfile(APIView):
+    permission_classes = [IsAuthenticated]  # التأكد من أن المستخدم عامل لوج إن
+
+    def patch(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)  # حاول تجيب المستخدم
+
+            if user != request.user:  # التأكد من أن المستخدم اللي عايز يعدل البيانات هو نفسه اللي عامل لوج إن
+                return Response({"detail": "You don't have permission to edit this user."}, status=status.HTTP_403_FORBIDDEN)
+
+            # هنعمل سيريلزاير للتحقق من البيانات التي يتم إرسالها
+            serializer = UserSerializer(user, data=request.data, partial=True)
+
+            if serializer.is_valid():
+                user_instance = serializer.save()
+
+                # لو كان فيه صورة جديدة
+                if 'profile_image' in request.FILES:
+                    return UploadUserProfileImage().post(request, user_id)
+
+                return Response({
+                    "message": "User data updated successfully",
+                    "user": UserSerializer(user_instance).data  # إرسال بيانات المستخدم المحدثة
+                }, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
