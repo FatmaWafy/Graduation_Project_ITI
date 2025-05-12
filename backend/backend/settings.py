@@ -245,7 +245,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
 
-CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     # "https://examsystem-psi.vercel.app",
@@ -271,7 +271,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # افتراضيًا، كل الـ endpoints محمية
     ],
 }
-
+CORS_ALLOW_CREDENTIALS = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
