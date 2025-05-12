@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
@@ -104,12 +104,14 @@ export default function ProfilePage() {
   useEffect(() => {
     if (studentData?.user?.profile_image) {
       const imageUrl = studentData.user.profile_image.startsWith("http")
-        ? `${studentData.user.profile_image}?t=${new Date().getTime()}`
-        : `${origin}${studentData.user.profile_image
-        }?t=${new Date().getTime()}`;
+        ? studentData.user.profile_image
+        : `${origin}${studentData.user.profile_image}`;
       setProfileImage(imageUrl);
+    } else {
+      setProfileImage(null);
     }
-  }, [studentData]);
+    console.log("Image URL:", profileImage || studentData?.user?.profile_image);
+  }, [profileImage, studentData]);
 
   const fetchTracks = async () => {
     try {
@@ -323,7 +325,7 @@ export default function ProfilePage() {
 
         if (!imageResponse.ok) {
           const errorText = await imageResponse.text();
-          throw new Error("Failed to upload profile image");
+          throw new Error(`Failed to upload profile image: ${errorText}`);
         }
 
         const updatedImageResponse = await fetch(
@@ -343,6 +345,9 @@ export default function ProfilePage() {
             ? updatedData.user.profile_image
             : `${origin}${updatedData.user.profile_image}`;
           setProfileImage(newImageUrl);
+          setStudentData(updatedData);
+        } else {
+          throw new Error("Failed to fetch updated profile data");
         }
       }
 
@@ -378,7 +383,6 @@ export default function ProfilePage() {
     return <div>No student data available</div>;
   }
 
-  // Get track name using the same logic as SetExamPage
   const trackName =
     tracks.find((t) => t.id === studentData.track)?.name || "Not assigned";
 
@@ -517,37 +521,6 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
-                  {/* <div className="space-y-2">
-                    <Label htmlFor="github_profile">GitHub Profile</Label>
-                    {isEditing ? (
-                      <Input
-                        id="github_profile"
-                        name="github_profile"
-                        value={formState.github_profile}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      <div className="p-2 border rounded-md bg-muted/20">
-                        {formState.github_profile || "Not provided"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="leetcode_profile">LeetCode Profile</Label>
-                    {isEditing ? (
-                      <Input
-                        id="leetcode_profile"
-                        name="leetcode_profile"
-                        value={formState.leetcode_profile}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      <div className="p-2 border rounded-md bg-muted/20">
-                        {formState.leetcode_profile || "Not provided"}
-                      </div>
-                    )}
-                  </div> */}
-
                 </div>
               </CardContent>
               {isEditing && (
@@ -757,8 +730,6 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </TabsContent>
-
-
 
         <TabsContent value="account" className="space-y-4 pt-4">
           <Card>

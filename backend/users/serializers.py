@@ -153,35 +153,45 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = "__all__"
 
+# class UserProfileImageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User  # نموذج المستخدم الأساسي
+#         fields = ['profile_image']  # الحقل اللي هنشتغل عليه
+
+#     def validate_profile_image(self, value):
+#         if value:
+#             # التحقق من أن الملف صورة صالحة
+#             try:
+#                 img = Image.open(value)  # فتح الملف باستخدام Pillow
+#                 img.verify()  # التحقق من أن الملف صورة صالحة
+#                 value.seek(0)  # إعادة المؤشر للبداية بعد التحقق
+#             except Exception:
+#                 raise serializers.ValidationError(
+#                     "The uploaded file is not a valid image.")
+
+#             # التحقق من حجم الملف (الحد الأقصى 2 ميجابايت)
+#             if value.size > 2 * 1024 * 1024:  # 2MB = 2 * 1024 * 1024 بايت
+#                 raise serializers.ValidationError(
+#                     "The uploaded file is too large. Maximum size is 2MB.")
+
+#             # يمكنك إضافة تحققات إضافية مثل نوع الملف
+#             valid_formats = ['image/jpeg', 'image/png', 'image/gif']
+#             if value.content_type not in valid_formats:
+#                 raise serializers.ValidationError(
+#                     "Only JPEG, PNG, and GIF images are supported.")
+
+#         return value
+
 class UserProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User  # نموذج المستخدم الأساسي
-        fields = ['profile_image']  # الحقل اللي هنشتغل عليه
+        model = User
+        fields = ['profile_image']
 
     def validate_profile_image(self, value):
-        if value:
-            # التحقق من أن الملف صورة صالحة
-            try:
-                img = Image.open(value)  # فتح الملف باستخدام Pillow
-                img.verify()  # التحقق من أن الملف صورة صالحة
-                value.seek(0)  # إعادة المؤشر للبداية بعد التحقق
-            except Exception:
-                raise serializers.ValidationError(
-                    "The uploaded file is not a valid image.")
-
-            # التحقق من حجم الملف (الحد الأقصى 2 ميجابايت)
-            if value.size > 2 * 1024 * 1024:  # 2MB = 2 * 1024 * 1024 بايت
-                raise serializers.ValidationError(
-                    "The uploaded file is too large. Maximum size is 2MB.")
-
-            # يمكنك إضافة تحققات إضافية مثل نوع الملف
-            valid_formats = ['image/jpeg', 'image/png', 'image/gif']
-            if value.content_type not in valid_formats:
-                raise serializers.ValidationError(
-                    "Only JPEG, PNG, and GIF images are supported.")
-
+        if value and not value.startswith("http"):
+            raise serializers.ValidationError("Invalid image URL.")
         return value
-    
+
 class TrackSerializer(serializers.ModelSerializer):
     instructors = InstructorSerializer(many=True)  
 
