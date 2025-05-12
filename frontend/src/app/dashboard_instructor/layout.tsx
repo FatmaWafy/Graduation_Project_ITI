@@ -300,15 +300,12 @@ export default function InstructorLayout({
 
         console.log("User ID from token in Dashboard:", userId);
 
-        const res = await fetch(
-          `${origin}/users/instructors/${userId}/`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const res = await fetch(`${origin}/users/instructors/${userId}/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!res.ok) {
           const errorData = await res.json();
@@ -346,20 +343,20 @@ export default function InstructorLayout({
 
   if (loading) {
     return (
-      <div className='flex justify-center items-center h-64'>
-        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className='flex justify-center items-center h-screen'>
-        <div className='text-center'>
-          <p className='text-red-500 text-lg mb-4'>{error}</p>
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <p className="text-red-500 text-lg mb-4">{error}</p>
           <Button
             onClick={() => router.push("/signin")}
-            className='bg-[#007acc] hover:bg-[#007abc] text-white'
+            className="bg-[#007acc] hover:bg-[#007abc] text-white"
           >
             Go to Sign In
           </Button>
@@ -369,26 +366,26 @@ export default function InstructorLayout({
   }
 
   if (role !== "instructor") {
-    return <p className='text-red-500 text-center mt-10'>Access Denied</p>;
+    return <p className="text-red-500 text-center mt-10">Access Denied</p>;
   }
 
   return (
-    <div className='flex min-h-screen'>
+    <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-16"
         } fixed top-0 left-0 h-screen border-r p-4 flex flex-col z-50 transition-all duration-300 bg-white text-black`}
       >
-        <div className='flex justify-between items-center mb-6 border-b'>
+        <div className="flex justify-between items-center mb-6 border-b">
           {sidebarOpen && (
-            <h2 className='text-xl font-bold text-center w-full pb-3'>
+            <h2 className="text-xl font-bold text-center w-full pb-3">
               Instructor Portal
             </h2>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className='text-[#007acc] focus:outline-none flex items-center mb-2'
+            className="text-[#007acc] focus:outline-none flex items-center mb-2"
           >
             <ChevronLeft
               className={`h-6 w-6 transition-transform ${
@@ -398,7 +395,7 @@ export default function InstructorLayout({
           </button>
         </div>
 
-        <nav className='flex flex-col gap-2 flex-1'>
+        <nav className="flex flex-col gap-2 flex-1">
           {[
             { href: "/dashboard_instructor", label: "Dashboard" },
             { href: "/dashboard_instructor/create-exam", label: "Create Exam" },
@@ -418,15 +415,15 @@ export default function InstructorLayout({
             { href: "/dashboard_instructor/profile", label: "Profile" },
           ].map((item, idx) => (
             <Link href={item.href} key={idx}>
-              <p className='bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors'>
+              <p className="bg-[#007acc] hover:bg-[#007abc] text-white rounded-md text-center flex items-center gap-3 px-3 py-2 text-sm transition-colors">
                 {sidebarOpen ? item.label : item.label[0]}
               </p>
             </Link>
           ))}
         </nav>
 
-        <div className='mt-auto pt-4 border-t border-t'>
-          <div className='flex items-center gap-3'>
+        <div className="mt-auto pt-4 border-t border-t">
+          <div className="flex items-center gap-3">
             {/* Always render the Avatar */}
             {instructorData ? (
               <Avatar>
@@ -446,7 +443,7 @@ export default function InstructorLayout({
               </Avatar>
             ) : (
               <Avatar>
-                <AvatarImage src='' alt='Instructor' />
+                <AvatarImage src="" alt="Instructor" />
                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
               </Avatar>
             )}
@@ -454,28 +451,28 @@ export default function InstructorLayout({
             {sidebarOpen && (
               <>
                 {instructorData ? (
-                  <div className='flex flex-1 flex-col overflow-hidden'>
-                    <span className='text-sm font-medium leading-none text-sidebar-foreground'>
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    <span className="text-sm font-medium leading-none text-sidebar-foreground">
                       {instructorData.username}
                     </span>
-                    <span className='text-xs text-muted-foreground'>
+                    <span className="text-xs text-muted-foreground">
                       {instructorData.email}
                     </span>
                   </div>
                 ) : (
-                  <div className='flex-1'>
-                    <p className='text-sm font-medium'>{user.name}</p>
-                    <p className='text-xs text-gray-400'>{user.email}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-gray-400">{user.email}</p>
                   </div>
                 )}
                 {/* Render logout button only when sidebar is open */}
                 <Button
-                  variant='ghost'
-                  size='icon'
+                  variant="ghost"
+                  size="icon"
                   onClick={handleLogout}
-                  className='text-[#007acc] hover:text-[#007abc]'
+                  className="text-[#007acc] hover:text-[#007abc]"
                 >
-                  <LogOut className='h-5 w-5' />
+                  <LogOut className="h-5 w-5" />
                 </Button>
               </>
             )}
