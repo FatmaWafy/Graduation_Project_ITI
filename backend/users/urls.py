@@ -1,10 +1,12 @@
 from django.urls import path, include
+
+from api import views
 from .views import  (
-    ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
-    BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView,
+    ApproveInstructorAPIView, ChangeInstructorPasswordAPIView, CourseListCreateView, CourseRetrieveUpdateDestroyView, 
+    BranchListCreateView, BranchRetrieveUpdateDestroyView, InstructorProfileView, PendingInstructorsAPIView,
     RegisterInstructorAPIView,
     LoginAPIView,
-    RegisterStudentAPIView,
+    RegisterStudentAPIView, RejectInstructorAPIView,
     ResetPasswordRequestAPIView,
     ResetPasswordAPIView,
     StudentViewSet,
@@ -52,12 +54,15 @@ urlpatterns = [
     # Course URLs
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseRetrieveUpdateDestroyView.as_view(), name='course-retrieve-update-destroy'),
-        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
-        path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
+    path('instructors/<int:user_id>/', InstructorProfileView.as_view(), name='instructor-profile'),
     path('instructors/<int:user_id>/update/', InstructorProfileView.as_view(), name='instructor-profile-update'),
-        path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
+    path('instructor/change-password/', ChangeInstructorPasswordAPIView.as_view(), name='change-instructor-password'),
 
+    path('instructors/pending/', PendingInstructorsAPIView.as_view(), name='pending-instructors'),
+    path('instructors/approve/<int:user_id>/', ApproveInstructorAPIView.as_view(), name='approve-instructor'),
+    path('instructors/reject/<int:user_id>/', RejectInstructorAPIView.as_view(), name='reject-instructor'),
 
     path('', include(router.urls)),
 

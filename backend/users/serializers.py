@@ -37,7 +37,7 @@ class InstructorSerializer(serializers.ModelSerializer):
             track_name = validated_data.pop("track_name")
             branch_name = validated_data.pop("branch")
 
-            user_data["role"] = "instructor"
+            user_data["role"] = "user"
             user = User.objects.create_user(**user_data)
 
             branch, _ = Branch.objects.get_or_create(name=branch_name)
@@ -198,3 +198,9 @@ class TrackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Track
         fields = "__all__"
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role', 'profile_image', 'phone_number', 'address']

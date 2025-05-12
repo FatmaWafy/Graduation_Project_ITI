@@ -26,6 +26,7 @@ class User(AbstractUser):
         ('student', 'Student'),
         ('instructor', 'Instructor'),
         ('admin', 'Admin'),
+        ('user', 'User'),
         # ('superuser', 'Superuser'),
     ]
 
