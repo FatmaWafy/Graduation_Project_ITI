@@ -20,14 +20,14 @@ export default function InstructorApprovalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   // const origin = "http://127.0.0.1:8000";
-
+  const origin = process.env.NEXT_PUBLIC_API_URL;
   // Fetch pending instructors for stats
   useEffect(() => {
     const fetchPendingInstructors = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `http://127.0.0.1:8000/users/instructors/pending`
+          `${origin}/users/instructors/pending`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch pending instructors");

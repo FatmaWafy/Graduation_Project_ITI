@@ -28,6 +28,7 @@ export function InstructorTable() {
   const [applicants, setApplicants] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const origin = process.env.NEXT_PUBLIC_API_URL;
   const { toast } = useToast();
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -45,7 +46,7 @@ export function InstructorTable() {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `http://127.0.0.1:8000/users/instructors/pending`
+          `${origin}/users/instructors/pending`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch pending instructors");
@@ -77,7 +78,7 @@ export function InstructorTable() {
   const handleApprove = async (user: User) => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/users/instructors/approve/${user.id}/`,
+        `${origin}/users/instructors/approve/${user.id}/`,
         {
           method: "POST",
           headers: {
@@ -112,7 +113,7 @@ export function InstructorTable() {
   const handleReject = async (user: User) => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/users/instructors/reject/${user.id}/`,
+        `${origin}/users/instructors/reject/${user.id}/`,
         {
           method: "POST",
           headers: {
