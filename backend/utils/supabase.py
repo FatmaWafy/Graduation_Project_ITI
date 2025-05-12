@@ -1,45 +1,33 @@
-import os
-import requests
+from supabase import create_client, Client
+from django.conf import settings
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://your-project-id.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "your-service-role-key")
-BUCKET_NAME = "media"
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_KEY = settings.SUPABASE_KEY
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def upload_media(file, file_path: str) -> str:
-    """Upload a file to Supabase Storage and return its public URL."""
+def upload_media(file, file_path):
     try:
-        file_bytes = file.read()
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/pdf",  # Adjust for dynamic MIME types if needed
-        }
-
-        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
-        response = requests.put(url, headers=headers, data=file_bytes)
-
-        if not response.ok:
-            raise Exception(f"Upload failed: {response.status_code} - {response.text}")
-
-        # Public URL
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{file_path}"
+        print(f"Uploading file to path: {file_path}")
+        # Read the file content as bytes
+        file_content = file.read()
+        response = supabase.storage.from_("labs").upload(file_path, file_content, {
+            "content-type": "application/pdf"
+        })
+        print(f"Upload response: {response}")
+        # No need to check for response.get("error") because if upload fails, an exception will be raised
+        public_url = supabase.storage.from_("labs").get_public_url(file_path)
+        print(f"Public URL: {public_url}")
         return public_url
-
     except Exception as e:
-        raise Exception(f"Error uploading to Supabase: {e}")
+        print(f"Error in upload_media: {str(e)}")
+        raise Exception(f"Error uploading: {str(e)}")
 
-
-def delete_media(file_path: str) -> bool:
-    """Delete a file from Supabase Storage."""
+def delete_media(file_path):
     try:
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-        }
-        url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
-        response = requests.delete(url, headers=headers)
-
-        return response.status_code == 200
+        print(f"Deleting file at path: {file_path}")
+        response = supabase.storage.from_("labs").remove([file_path])
+        print(f"Delete response: {response}")
+        # No need to check for response.get("error") here either
     except Exception as e:
-        raise Exception(f"Error deleting from Supabase: {e}")
+        print(f"Error in delete_media: {str(e)}")
+        raise Exception(f"Error deleting: {str(e)}")

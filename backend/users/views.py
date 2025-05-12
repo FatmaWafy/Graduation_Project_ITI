@@ -115,6 +115,7 @@ Your Admin Team
 
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 

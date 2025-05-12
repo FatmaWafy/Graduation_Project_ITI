@@ -30,6 +30,7 @@ class StudentAdmin(admin.ModelAdmin):
 class InstructorAdmin(admin.ModelAdmin):
     list_display = ("user", "experience_years")
     search_fields = ("user__username", "user__email")
+    
 
 
 class TrackAdmin(admin.ModelAdmin):
