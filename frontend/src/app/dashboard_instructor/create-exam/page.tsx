@@ -244,7 +244,7 @@ export default function AddExamPage() {
       let url = baseUrl;
       if (selectedLanguage !== "all") {
         url = `${baseUrl}?language=${selectedLanguage}`;
-        console.log("Fetching questions with URL:", url);
+        // console.log("Fetching questions with URL:", url);
       }
 
       const response = await fetch(url, {
@@ -260,7 +260,7 @@ export default function AddExamPage() {
       }
 
       const data = await response.json();
-      console.log("Fetched questions:", data);
+      // console.log("Fetched questions:", data);
 
       const questionsWithType = data.map((q: any) => {
         if (questionType === "code") {
@@ -310,9 +310,9 @@ export default function AddExamPage() {
   const handleTypeChange = (index: number, type: "mcq" | "code") => {
     const updatedQuestions = [...questions];
     const currentLanguage = updatedQuestions[index].language || "python";
-    console.log(
-      `Changing question ${index} to type ${type}, language: ${currentLanguage}`
-    );
+    // console.log(
+    //   `Changing question ${index} to type ${type}, language: ${currentLanguage}`
+    // );
     if (type === "mcq") {
       updatedQuestions[index] = {
         ...updatedQuestions[index],
@@ -397,9 +397,9 @@ export default function AddExamPage() {
   const handleLanguageChange = (index: number, value: string) => {
     const updatedQuestions = [...questions];
     const normalizedLanguage = normalizeLanguageForSubmission(value);
-    console.log(
-      `Setting language for question ${index} to ${normalizedLanguage}`
-    );
+    // console.log(
+    //   `Setting language for question ${index} to ${normalizedLanguage}`
+    // );
     updatedQuestions[index].language = normalizedLanguage;
     setQuestions(updatedQuestions);
   };
@@ -472,7 +472,7 @@ export default function AddExamPage() {
       type: currentType,
     };
 
-    console.log(`Adding ${currentType} question to exam:`, questionWithType);
+    // console.log(`Adding ${currentType} question to exam:`, questionWithType);
 
     if (currentType === "mcq") {
       if (!selectedQuestions.some((q) => q.id === question.id)) {
@@ -502,7 +502,7 @@ export default function AddExamPage() {
   };
 
   const validateQuestions = (questions: Question[]) => {
-    console.log("Validating questions:", questions);
+    // console.log("Validating questions:", questions);
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i];
       if (!question.language) {
@@ -598,8 +598,8 @@ export default function AddExamPage() {
           tags: q.tags || [],
         }));
 
-      console.log("Submitting MCQs:", newMCQs);
-      console.log("Submitting Coding Questions:", newCodingQuestions);
+      // console.log("Submitting MCQs:", newMCQs);
+      // console.log("Submitting Coding Questions:", newCodingQuestions);
 
       const createdMCQIds: number[] = [];
       const createdCodingIds: number[] = [];
@@ -809,7 +809,7 @@ export default function AddExamPage() {
       toast.error("No exam created yet. Please create an exam first.");
       return;
     }
-    console.log("Exporting PDF for exam ID:", createdExamId);
+    // console.log("Exporting PDF for exam ID:", createdExamId);
     try {
       const token = getTokenFromCookies();
       if (!token) {

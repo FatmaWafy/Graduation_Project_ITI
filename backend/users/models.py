@@ -26,6 +26,7 @@ class User(AbstractUser):
         ('student', 'Student'),
         ('instructor', 'Instructor'),
         ('admin', 'Admin'),
+        ('user', 'User'),
         # ('superuser', 'Superuser'),
     ]
 
@@ -60,7 +61,6 @@ class Instructor(models.Model):
     experience_years = models.PositiveIntegerField(blank=True, null=True)
     branch = models.ForeignKey("Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="instructors")  # 🔹 الربط بالفرع
     # role = models.CharField(max_length=10, choices=User.ROLE_CHOICES, default='instructor')  # 🔹 إضافة دور المدرب
-
     class Meta:
         verbose_name = "Instructor"
         verbose_name_plural = "Instructors"

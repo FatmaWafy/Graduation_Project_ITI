@@ -225,7 +225,7 @@ export default function CodingQuestion({
       };
 
       // Log payload for debugging
-      console.log("Executing payload:", payload);
+      // console.log("Executing payload:", payload);
 
       const response = await API.post("/execute", payload);
       return response.data;
@@ -360,7 +360,7 @@ conn.close()
         );
 
         // Log for debugging
-        console.log("Executing code:", codeToExecute);
+        // console.log("Executing code:", codeToExecute);
       }
 
       // Execute the code
@@ -516,7 +516,7 @@ conn.close()
         }
       case "javascript":
       case "typescript":
-        return `${code}\n\n// Test the function\nconsole.log(${functionName}(${input}));`;
+        return `${code}\n\n// Test the function\n console.log(${functionName}(${input}));`;
       case "java":
         return `${code}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(${functionName}(${input}));\n    }\n}`;
       case "cpp":

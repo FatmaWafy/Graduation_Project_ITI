@@ -24,7 +24,7 @@ const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export async function sendNotification(params: any): Promise<any> {
   try {
-    console.log(origin);
+    // console.log(origin);
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
@@ -46,7 +46,7 @@ export async function sendNotification(params: any): Promise<any> {
     const data = await response.json();
 
     // طباعة الاستجابة في الـ console
-    console.log("Notification sent:", data);
+    // console.log("Notification sent:", data);
 
     // إذا كانت الحالة 200، نعرض رسالة النجاح
     if (response.status === 200) {
@@ -67,7 +67,7 @@ export async function getUserIdFromToken(): Promise<number | null> {
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
-  console.log("Token from cookie:", token);
+  // console.log("Token from cookie:", token);
 
   if (!token) return null;
 
@@ -222,7 +222,7 @@ export default function SetExamPage() {
         instructor_id: data.id,
       });
 
-      console.log("Instructor ID set:", data.id);
+      // console.log("Instructor ID set:", data.id);
     } catch (error) {
       console.error("Error fetching user data:", error);
       toast.error("Failed to fetch user data");
@@ -246,7 +246,7 @@ export default function SetExamPage() {
         throw new Error("Failed to fetch instructor data");
       }
       const data = await response.json();
-      console.log("Instructor Data:", data);
+      // console.log("Instructor Data:", data);
       setInstructorTracks(data?.tracks || []);
       setInstructorBranches(data?.branches || []);
     } catch (error) {
@@ -471,7 +471,7 @@ export default function SetExamPage() {
       // Get instructor ID from token
       async function fetchInstructorId(): Promise<number> {
         const userId = await getUserIdFromToken();
-        console.log("User ID from token:", userId);
+        // console.log("User ID from token:", userId);
 
         if (!userId) throw new Error("User ID not found in token.");
 
@@ -479,7 +479,7 @@ export default function SetExamPage() {
         if (!res.ok) throw new Error("Failed to fetch instructor ID");
 
         const data = await res.json();
-        console.log("Data from instructor API:", data);
+        // console.log("Data from instructor API:", data);
 
         return data.id;
       }
@@ -494,7 +494,7 @@ export default function SetExamPage() {
         instructor_id: user?.instructor_id, // This will be the instructor ID (5), not the user ID (14)
       };
 
-      console.log("Submitting exam data with instructor ID:", submitData);
+      // console.log("Submitting exam data with instructor ID:", submitData);
 
       const response = await fetch(`${origin}/exam/temp-exams/`, {
         method: "POST",

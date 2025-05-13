@@ -95,7 +95,7 @@ export default function GradesPage() {
         }
 
         const data: { grades: Grade[] } = await response.json();
-        console.log("Fetched grades data:", data);
+        // console.log("Fetched grades data:", data);
 
         const transformedData: StudentGrade[] = data.grades.map((grade) => ({
           id: `${grade.exam_id}-${grade.student_id}`,

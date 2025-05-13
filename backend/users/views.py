@@ -1,5 +1,5 @@
 from rest_framework.decorators import action
-from .serializers import TrackSerializer, UserProfileImageSerializer
+from .serializers import TrackSerializer, UserProfileImageSerializer, UserSerializer
 from .models import Student, Instructor
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
@@ -32,17 +32,64 @@ from datetime import datetime, timezone
 from social_django.utils import psa
 from social_django.utils import load_strategy, load_backend
 from django.contrib.auth import get_user_model
-
-import os
-from supabase import create_client, Client
-supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
-from dotenv import load_dotenv # type: ignore
-load_dotenv()
-import time
+from rest_framework.permissions import IsAdminUser
 
 
 token_generator = PasswordResetTokenGenerator()
 User = get_user_model()
+
+# class RegisterInstructorAPIView(APIView):
+#     permission_classes = [AllowAny]
+
+#     valid_branches = [
+#         "Smart Village", "New Capital", "Cairo University", "Alexandria", "Assiut", 
+#         "Aswan", "Beni Suef", "Fayoum", "Ismailia", "Mansoura", "Menofia", "Minya", 
+#         "Qena", "Sohag", "Tanta", "Zagazig", "New Valley", "Damanhour", "Al Arish", 
+#         "Banha", "Port Said", "Cairo Branch"
+#     ]
+
+#     def post(self, request):
+#         data = request.data.copy()
+#         data["role"] = "instructor"
+
+#         print(f"Request data: {data}")
+
+#         # Check if the email is already used
+#         if User.objects.filter(email=data["email"]).exists():
+#             print("Email already in use")
+#             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Check if branch is provided and valid
+#         if "branch" not in data:
+#             print("Branch is missing")
+#             return Response({"error": "Branch is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         if data["branch"] not in self.valid_branches:
+#             print(f"Invalid branch: {data['branch']}")
+#             return Response({"error": f"The branch '{data['branch']}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Initialize the serializer
+#         serializer = InstructorSerializer(
+#             data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]}
+#         )
+
+#         print("Checking serializer validity...")
+#         if serializer.is_valid():
+#             print("Serializer is valid")
+#             instructor = serializer.save()
+#             print(f"Instructor created: {instructor}, Email: {instructor.user.email}")
+
+#             # Generate JWT tokens
+#             refresh = RefreshToken.for_user(instructor.user)
+#             return Response({
+#                 "access": str(refresh.access_token),
+#                 "refresh": str(refresh),
+#                 "user": serializer.data
+#             }, status=status.HTTP_201_CREATED)
+
+#         print(f"Serializer errors: {serializer.errors}")
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class RegisterInstructorAPIView(APIView):
     permission_classes = [AllowAny]
@@ -56,45 +103,107 @@ class RegisterInstructorAPIView(APIView):
 
     def post(self, request):
         data = request.data.copy()
-        data["role"] = "instructor"
 
-        print(f"Request data: {data}")
+        # Set role as 'user' by default, awaiting approval
+        data["role"] = "user"
 
-        # Check if the email is already used
         if User.objects.filter(email=data["email"]).exists():
-            print("Email already in use")
             return Response({"error": "Email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if branch is provided and valid
-        if "branch" not in data:
-            print("Branch is missing")
-            return Response({"error": "Branch is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if data["branch"] not in self.valid_branches:
-            print(f"Invalid branch: {data['branch']}")
-            return Response({"error": f"The branch '{data['branch']}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
+        if "branch" not in data or data["branch"] not in self.valid_branches:
+            return Response({"error": f"The branch '{data.get('branch')}' is not valid. Please select a valid branch from the list."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Initialize the serializer
-        serializer = InstructorSerializer(
-            data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]}
-        )
+        # Save basic user with role='user' and instructor-related info
+        serializer = InstructorSerializer(data={"user": data, "track_name": data.get("track_name"), "branch": data["branch"]})
 
-        print("Checking serializer validity...")
         if serializer.is_valid():
-            print("Serializer is valid")
             instructor = serializer.save()
-            print(f"Instructor created: {instructor}, Email: {instructor.user.email}")
-
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(instructor.user)
             return Response({
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "user": serializer.data
+                "message": "Registration successful. Await admin approval.",
+                "user_id": instructor.user.id,
+                "email": instructor.user.email,
+                "status": "pending"
             }, status=status.HTTP_201_CREATED)
 
-        print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApproveInstructorAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user.role = "instructor"
+            user.save()
+
+            # Send email notification to the user
+            email_subject = "Instructor Approval Notification"
+            email_message = f"""
+            Hi {user.username},
+
+            Congratulations! Your registration has been approved.
+            You can now log in to the platform using your email and password.
+
+            Best regards,
+            Your Platform Team
+            """
+
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            return Response({"message": f"User {user.email} approved as instructor."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class RejectInstructorAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return Response({"message": f"User {user.email} has been rejected and deleted."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+ 
+# class PendingInstructorsAPIView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def get(self, request):
+#         pending_users = User.objects.filter(role="user")
+#         serializer = UserSerializer(pending_users, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class PendingInstructorsAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Get pending users and prefetch their related instructor data
+        pending_users = User.objects.filter(role="user").select_related('instructor','instructor__branch')
+        
+        
+        # Prepare the response data
+        instructors_data = []
+        for user in pending_users:
+            instructor_data = {
+                "id": user.id,
+                "name": f"{user.username}",
+                "email": user.email,
+                # "branch": user.instructor.branch_id if hasattr(user, 'instructor') else None,
+                "branch": user.instructor.branch.name if hasattr(user, 'instructor') and user.instructor.branch else None,
+                "createdAt": user.date_joined.strftime("%Y-%m-%d %H:%M:%S") if user.date_joined else None
+            }
+            instructors_data.append(instructor_data)
+        
+        return Response(instructors_data, status=status.HTTP_200_OK)
+       
 class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -563,106 +672,6 @@ class TrackListAPIView(APIView):
         tracks = Track.objects.all().values('id', 'name')  # Get both id and name
         return Response((tracks), status=status.HTTP_200_OK)
 
-# class RegisterStudentsFromExcelAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         if request.user.role != "instructor":
-#             return Response({"error": "Only instructors can add students."}, status=status.HTTP_403_FORBIDDEN)
-
-#         if 'file' not in request.FILES:
-#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         file = request.FILES['file']
-
-#         try:
-#             file_data = file.read().decode("utf-8").splitlines()
-#             csv_reader = csv.reader(file_data)
-#             next(csv_reader)  # Skip header
-#         except Exception as e:
-#             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         instructor = Instructor.objects.get(user=request.user)
-
-#         if instructor.tracks.count() == 0:
-#             return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         track_names = [track.name for track in instructor.tracks.all()]
-#         branch = instructor.branch
-
-#         students_added = 0
-#         for row in csv_reader:
-#             if len(row) < 8:
-#                 continue
-
-#             username, email, track_name = row[0], row[1], row[2]
-#             university = row[3]
-#             graduation_year = int(row[4]) if row[4].isdigit() else None
-#             college = row[5]
-#             leetcode_profile = row[6]
-#             github_profile = row[7]
-
-#             if track_name not in track_names:
-#                 continue
-
-#             password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
-
-#             user_instance = User.objects.create_user(
-#                 email=email,
-#                 username=username,
-#                 password=password,
-#                 role='student'
-#             )
-
-#             track = Track.objects.get(name=track_name)
-
-#             student = Student.objects.create(
-#                 user=user_instance,
-#                 track=track,
-#                 branch=branch,
-#                 university=university,
-#                 graduation_year=graduation_year,
-#                 college=college,
-#                 leetcode_profile=leetcode_profile,
-#                 github_profile=github_profile,
-#                 inrollment_date=date.today(),
-#             )
-
-#     # إرسال البريد الإلكتروني (زي ما هو)
-
-
-#             email_subject = "Your Student Account Credentials"
-#             email_message = f"""
-#             Hi {student.user.username},
-
-#             Your student account has been created successfully.
-
-#             Track: {student.track.name}
-#             Email: {student.user.email}
-#             Password: {password}
-
-#             Please change your password after logging in.
-
-#             Best regards,
-#             Your Team
-#             """
-
-#             send_mail(
-#                 subject=email_subject,
-#                 message=email_message,
-#                 from_email=settings.DEFAULT_FROM_EMAIL,
-#                 recipient_list=[student.user.email],
-#                 fail_silently=False,
-#             )
-
-#             students_added += 1
-
-#         return Response({
-#             "message": f"{students_added} students added successfully.",
-#         }, status=status.HTTP_201_CREATED)
-
-
-
 
 class RegisterStudentsFromExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -679,7 +688,7 @@ class RegisterStudentsFromExcelAPIView(APIView):
         try:
             file_data = file.read().decode("utf-8").splitlines()
             csv_reader = csv.reader(file_data, delimiter=',')
-            header = next(csv_reader, None)  # Skip header
+            header = next(csv_reader, None)
             if not header or len(header) < 8:
                 return Response({"error": "Invalid CSV header."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -687,47 +696,92 @@ class RegisterStudentsFromExcelAPIView(APIView):
 
         instructor = Instructor.objects.get(user=request.user)
 
-        if instructor.tracks.count() == 0:
-            return Response({"error": "Instructor has no assigned tracks."}, status=status.HTTP_400_BAD_REQUEST)
+        if not instructor.branch:
+            return Response({"error": "Instructor has no assigned branch."}, status=status.HTTP_400_BAD_REQUEST)
 
-        track_names = [track.name.lower() for track in instructor.tracks.all()]
         branch = instructor.branch
 
         students_added = 0
         duplicates = []
+
         for row in csv_reader:
+            print("🔄 Processing row:", row)
+
             if len(row) < 8:
+                print("❌ Row skipped: insufficient columns")
                 duplicates.append(f"Row {row} - Insufficient columns")
                 continue
 
-            username, email, track_name = row[0], row[1], row[2]
-            university = row[3]
-            graduation_year = int(row[4]) if row[4].isdigit() else 2024  # Default if invalid
-            college = row[5]
-            leetcode_profile = row[6]
-            github_profile = row[7]
+            username, email, track_name = row[0].strip(), row[1].strip(), row[2].strip()
+            university = row[3].strip()
+            graduation_year = int(row[4]) if row[4].isdigit() else 2024
+            college = row[5].strip()
+            leetcode_profile = row[6].strip()
+            github_profile = row[7].strip()
 
-            if track_name.lower() not in track_names:
-                duplicates.append(f"{username} ({email}) - Invalid track '{track_name}'")
-                continue
+            if track_name.lower() == "unknown":
+                print(f"ℹ️ Replacing 'unknown' with 'PHP' for {username}")
+                track_name = "PHP"
 
-            if User.objects.filter(Q(email=email) | Q(username=username)).exists():
-                duplicates.append(f"{username} ({email}) - Already exists")
-                continue
-
-            password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+            print(f"➡️ Trying: {username} - {email} - Track: {track_name}")
 
             try:
-                user_instance = User.objects.create_user(
-                    email=email,
-                    username=username,
-                    password=password,
-                    role='student'
-                )
-
                 track = Track.objects.get(name__iexact=track_name)
+            except Track.DoesNotExist:
+                print(f"❌ Track '{track_name}' does not exist in the system")
+                duplicates.append(f"{username} ({email}) - Track '{track_name}' not found")
+                continue
 
-                student = Student.objects.create(
+            existing_user = User.objects.filter(Q(email=email) | Q(username=username)).first()
+
+            if existing_user:
+                if Student.objects.filter(user=existing_user).exists():
+                    print(f"❌ User already exists: {username} / {email}")
+                    duplicates.append(f"{username} ({email}) - Already exists")
+                    continue
+                else:
+                    print(f"ℹ️ User exists but not student: {username} / {email}")
+                    user_instance = existing_user
+            else:
+                password = ''.join(choice(string.ascii_letters + string.digits) for _ in range(12))
+                try:
+                    user_instance = User.objects.create_user(
+                        email=email,
+                        username=username,
+                        password=password,
+                        role='student'
+                    )
+
+                    email_subject = "Your Student Account Credentials"
+                    email_message = f"""
+Hi {username},
+
+Your student account has been created successfully.
+
+Track: {track_name}
+Email: {email}
+Password: {password}
+
+Please change your password after logging in.
+
+Best regards,
+Your Team
+                    """
+
+                    send_mail(
+                        subject=email_subject,
+                        message=email_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"❌ Error creating user: {str(e)}")
+                    duplicates.append(f"{username} ({email}) - Failed to create user: {str(e)}")
+                    continue
+
+            try:
+                Student.objects.create(
                     user=user_instance,
                     track=track,
                     branch=branch,
@@ -738,115 +792,71 @@ class RegisterStudentsFromExcelAPIView(APIView):
                     github_profile=github_profile,
                     inrollment_date=date.today(),
                 )
-
-                # Send email
-                email_subject = "Your Student Account Credentials"
-                email_message = f"""
-Hi {student.user.username},
-
-Your student account has been created successfully.
-
-Track: {student.track.name}
-Email: {student.user.email}
-Password: {password}
-
-Please change your password after logging in.
-
-Best regards,
-Your Team
-                """
-
-                send_mail(
-                    subject=email_subject,
-                    message=email_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[student.user.email],
-                    fail_silently=False,
-                )
-
                 students_added += 1
-
+                print(f"✅ Student added: {username}")
             except Exception as e:
-                duplicates.append(f"{username} ({email}) - Failed to create: {str(e)}")
-                continue
+                print(f"❌ Error creating student: {str(e)}")
+                duplicates.append(f"{username} ({email}) - Failed to create student: {str(e)}")
 
         response_data = {
             "message": f"{students_added} students added successfully.",
-            "duplicates": duplicates if duplicates else []
+            "duplicates": duplicates
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
-
-
+    
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, user_id):
         try:
-            supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
-            print("Supabase client initialized successfully")
-
-            print(f"Looking for user with ID: {user_id}")
+            # Try to find the student
             student = Student.objects.filter(id=user_id).first()
             if student:
                 user = student.user
-                print(f"Found student: {student.id}")
             else:
+                # If not a student, try instructor
                 instructor = Instructor.objects.filter(id=user_id).first()
                 if instructor:
                     user = instructor.user
-                    print(f"Found instructor: {instructor.id}")
                 else:
-                    print("User not found")
                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-
-            if 'profile_image' not in request.FILES:
-                print("No image file provided")
-                return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-            image_file = request.FILES['profile_image']
-            print(f"Image file received: {image_file.name}")
-
-            timestamp = int(time.time() * 1000)
-            file_name, file_extension = os.path.splitext(image_file.name)
-            new_file_name = f"{file_name}_{timestamp}{file_extension}"
-            file_path = f"{user.id}/{new_file_name}"
-
-            if user.profile_image:
-                profile_image_str = str(user.profile_image)
-                if profile_image_str.startswith('http'):
-                    # جيب اسم الملف من الرابط مباشرة
-                    old_image_path = profile_image_str.split('/')[-1].split('?')[0]  # بنشيل أي query parameters
-                else:
-                    old_image_path = ""  # لو مش رابط، خليه فاضي
-                print(f"Deleting old image: {user.id}/{old_image_path}")
-                response = supabase.storage.from_('profileimages').remove([f"{user.id}/{old_image_path}"])
-                print(f"Delete response: {response}")
-
-            print(f"Uploading new image to: {file_path}")
-            response = supabase.storage.from_('profileimages').upload(file_path, image_file.read(), {
-                'content-type': image_file.content_type,
-            })
-            print(f"Upload response: {response}")
-            if not response or not response.full_path:
-                raise Exception("Failed to upload image to Supabase")
-
-            image_url = supabase.storage.from_('profileimages').get_public_url(file_path)
-            print(f"Public URL: {image_url}")
-
-            user.profile_image = image_url
-            user.save()
-            print(f"User profile_image updated successfully, new URL: {user.profile_image}")
-
-            return Response({
-                "message": "Profile image uploaded successfully",
-                "profile_image": image_url
-            }, status=status.HTTP_200_OK)
-
         except Exception as e:
-            print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        # Check if there's a file in the request
+        if 'profile_image' not in request.FILES:
+            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        image_file = request.FILES['profile_image']
+
+        # Delete old image if exists
+        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
+            try:
+                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
+                print(f"Deleted old profile image: {user.profile_image}")
+            except Exception as e:
+                print(f"Error deleting old profile image: {e}")
+
+        # Update the profile image
+        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            user_instance = serializer.save()
+
+            # Create image URL
+            if user_instance.profile_image:
+                host = request.get_host()
+                protocol = 'https' if request.is_secure() else 'http'
+                image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
+
+                return Response({
+                    "message": "Profile image uploaded successfully",
+                    "profile_image": image_url
+                }, status=status.HTTP_200_OK)
+
+            return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
@@ -1292,3 +1302,143 @@ class GoogleLoginAPIView(APIView):
             return Response({"error": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
  
+ # views.py
+from django.core.mail import send_mail
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import pandas as pd
+import tempfile
+import os
+
+@csrf_exempt
+def send_instructor_invitations(request):
+    if request.method == 'POST':
+        csv_file = request.FILES.get('csv_file')
+        
+        if not csv_file:
+            return JsonResponse({'status': 'error', 'message': 'No file uploaded'}, status=400)
+        
+        try:
+            # Save the uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                for chunk in csv_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            
+            # Read the file
+            if csv_file.name.endswith('.csv'):
+                df = pd.read_csv(tmp_path)
+            else:
+                df = pd.read_excel(tmp_path)
+            
+            # Clean up
+            os.unlink(tmp_path)
+            
+            # Check for email column
+            if 'email' not in df.columns:
+                return JsonResponse({'status': 'error', 'message': 'CSV must contain an "email" column'}, status=400)
+            
+            emails = df['email'].dropna().unique()
+            success_count = 0
+            
+            # Send emails
+            for email in emails:
+                try:
+                    send_mail(
+                        'Instructor Signup Invitation',
+                        f'Please signup here as an instructor in titi from this link: "https://link.com"',
+                        'no-reply@example.com',  # From email
+                        [email],  # To email
+                        fail_silently=False,
+                    )
+                    success_count += 1
+                except Exception as e:
+                    print(f"Failed to send to {email}: {str(e)}")
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Successfully sent {success_count} out of {len(emails)} invitations'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+def instructor_invitation_page(request):
+    return render(request, 'instructor_invitation.html')
+
+
+
+
+class CurrentAdminView(APIView):
+    permission_classes = [IsAuthenticated]  # التحقق من أن المستخدم عامل login
+
+    def get(self, request):
+        user = request.user  # الـ user اللي عامل login
+
+        if user.role != "admin":  # لو مش أدمن، هنعمل Error
+            return Response({"detail": "You are not an admin."}, status=403)
+
+        serializer = UserSerializer(user)  # استخدام السيرايلزر عشان نعرض بيانات الأدمن
+        return Response(serializer.data)
+    
+
+class UpdateAdminProfile(APIView):
+    permission_classes = [IsAuthenticated]  # التأكد من أن المستخدم عامل لوج إن
+
+    def patch(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)  # حاول تجيب المستخدم
+
+            if user != request.user:  # التأكد من أن المستخدم اللي عايز يعدل البيانات هو نفسه اللي عامل لوج إن
+                return Response({"detail": "You don't have permission to edit this user."}, status=status.HTTP_403_FORBIDDEN)
+
+            # هنعمل سيريلزاير للتحقق من البيانات التي يتم إرسالها
+            serializer = UserSerializer(user, data=request.data, partial=True)
+
+            if serializer.is_valid():
+                user_instance = serializer.save()
+
+                # لو كان فيه صورة جديدة
+                if 'profile_image' in request.FILES:
+                    return UploadUserProfileImage().post(request, user_id)
+
+                return Response({
+                    "message": "User data updated successfully",
+                    "user": UserSerializer(user_instance).data  # إرسال بيانات المستخدم المحدثة
+                }, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# views.py
+# from .serializers import ChangePasswordSerializer
+
+class ChangeAdminPasswordAPIView(APIView):
+    permission_classes = [AllowAny]  # لازم يكون مسجل دخول
+
+    def post(self, request):
+        user = request.user
+        current_password = request.data.get("currentPassword")
+        new_password = request.data.get("newPassword")
+
+        if user.role != "admin":
+            return Response({"error": "You are not authorized to perform this action"}, status=status.HTTP_403_FORBIDDEN)
+
+        if not user.check_password(current_password):
+            return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
