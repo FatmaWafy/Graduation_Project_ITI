@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     } else {
       setProfileImage(null);
     }
-    // console.log("Image URL:", profileImage || studentData?.user?.profile_image);
+    console.log("Image URL:", profileImage || studentData?.user?.profile_image);
   }, [profileImage, studentData]);
 
   const fetchTracks = async () => {
@@ -149,11 +149,14 @@ export default function ProfilePage() {
       }
 
       const userId = Number(decoded.user_id);
-      const res = await fetch(`${origin}/users/students/${userId}/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `${origin}/users/students/${userId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error("Failed to fetch student profile");
@@ -207,11 +210,14 @@ export default function ProfilePage() {
         return;
       }
 
-      const res = await axios.post(`${origin}/users/change-password/`, {
-        student_id: studentData.id,
-        currentPassword: passwordValues.currentPassword,
-        newPassword: passwordValues.newPassword,
-      });
+      const res = await axios.post(
+        `${origin}/users/change-password/`,
+        {
+          student_id: studentData.id,
+          currentPassword: passwordValues.currentPassword,
+          newPassword: passwordValues.newPassword,
+        }
+      );
 
       alert("Password changed successfully!");
       setPasswordValues({
