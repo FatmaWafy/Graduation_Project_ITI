@@ -346,14 +346,25 @@ export default function LabsPage() {
       setUploadProgress(100);
       setUploadSuccess(true);
 
-      const instructorId = await getUserIdFromToken();
-      // console.log("Instructor ID from token:", instructorId); // Add this to debug
+   async function fetchInstructorId(): Promise<number> {
+      const userId = await getUserIdFromToken();
+      console.log("User ID from token:", userId);
+      if (!userId) throw new Error("User ID not found in token.");
+      const res = await fetch(
+        `${origin}/users/instructors/${userId}`
+      );
+      const data = await res.json();
+      console.log("Data from student API:", data);
+      return data.id;
+    }
+          const instructor_id = await fetchInstructorId();
 
-      await sendNotification({
-        instructor_id: instructorId,
-        track_id: responseData.track,
-        message: `New lab "${responseData.name}" has been uploaded.`,
-      });
+    
+    await sendNotification({
+      instructor_id: instructor_id,
+      track_id: responseData.track,
+      message: `New lab "${responseData.name}" has been uploaded.`,
+    });
 
       toast({
         title: "Upload successful",

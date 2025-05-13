@@ -203,4 +203,9 @@ class TrackSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'profile_image', 'phone_number', 'address']
+        fields = ['id', 'username', 'email', 'role', 'profile_image', 'phone_number', 'address','date_joined']
+
+class ChangePasswordSerializer(serializers.Serializer):
+    currentPassword = serializers.CharField(write_only=True)
+    newPassword = serializers.CharField(write_only=True)
+    admin_id = serializers.IntegerField()
