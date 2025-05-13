@@ -251,12 +251,12 @@ CSRF_COOKIE_SAMESITE = "Lax"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://graduationprojectiti-production.up.railway.app",
-    "https://graduation-project-iti-ntxg.vercel.app",
+    "https://examsystem-hazel.vercel.app",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "https://graduationprojectiti-production.up.railway.app",
-    "https://graduation-project-iti-ntxg.vercel.app"
+    "https://examsystem-hazel.vercel.app"
 ]
 
 
@@ -279,7 +279,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
- 
+
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
