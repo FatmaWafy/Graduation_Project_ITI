@@ -258,7 +258,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://graduationprojectiti-production.up.railway.app/",
     "https://graduation-project-iti-ntxg.vercel.app/"
 ]
-# graduation-project-iti-ntxg.vercel.app
 
 
 CORS_ALLOW_HEADERS = list(default_headers) + [

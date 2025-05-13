@@ -7,14 +7,20 @@ import { usePathname } from "next/navigation"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { LayoutDashboard, UserCircle, School, Users, Settings, LogOut } from "lucide-react"
-
+import Cookies from "js-cookie";
+import { Button } from "@/components/ui/button";
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-
+  const handleLogout = () => {
+    Cookies.remove("role");
+    Cookies.remove("token");
+    Cookies.remove("user");
+    window.location.href = "/";
+  };
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar */}
@@ -81,10 +87,19 @@ export default function DashboardLayout({
         </nav>
 
         <div className="p-2 border-t border-gray-100">
-          <button className="flex w-full items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100">
+          {/* <button className="flex w-full items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100">
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
-          </button>
+          </button> */}
+           <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <LogOut className="h-5 w-5" />
+                            <span>Logout</span>
+                          </Button>
         </div>
       </aside>
 
