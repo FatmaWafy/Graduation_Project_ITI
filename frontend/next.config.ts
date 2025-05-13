@@ -7,8 +7,9 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'export', // Static Export
   images: {
-    domains: ['biuqxuvacrwdlyzlsimj.supabase.co'],  
+    domains: ['biuqxuvacrwdlyzlsimj.supabase.co'],
   },
   async rewrites() {
     return [
