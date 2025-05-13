@@ -88,11 +88,11 @@ export default function LandingPage() {
               Signup
             </Button>
           </Link>
-          <Link href='/faq' onClick={toggleMenu}>
+          {/* <Link href='/faq' onClick={toggleMenu}>
             <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 w-32 text-center'>
               FAQ
             </Button>
-          </Link>
+          </Link> */}
         </div>
       </nav>
 
