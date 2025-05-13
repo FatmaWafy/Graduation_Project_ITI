@@ -59,11 +59,11 @@ export default function LandingPage() {
               Signup
             </Button>
           </Link>
-          <Link href='/faq'>
+          {/* <Link href='/faq'>
             <Button className='bg-primary  text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 '>
               FAQ
             </Button>
-          </Link>
+          </Link> */}
         </div>
 
         {/* Mobile Menu (Visible when Burger Menu is Open) */}
