@@ -249,15 +249,14 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    # "https://examsystem-psi.vercel.app",
-    "https://graduationprojectiti-production.up.railway.app",
-
+    "http://localhost:3000/",
+    "https://graduationprojectiti-production.up.railway.app/",
+    "https://graduation-project-iti-rcvb.vercel.app/",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    # "https://examsystem-psi.vercel.app",
-    "http://localhost:3000",
-    "https://graduationprojectiti-production.up.railway.app",
+    "http://localhost:3000/",
+    "https://graduationprojectiti-production.up.railway.app/",
+    "https://graduation-project-iti-rcvb.vercel.app/"
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
