@@ -1,4 +1,6 @@
-// @ts-nocheck // لتجنب أخطاء TypeScript إذا كنت تستخدمين TypeScript مع sw.js
+// @ts-nocheck // لتجنب أخطاء TypeScript إذا كنت تستخدم TypeScript مع sw.js
+
+// --- كود PWA للتخزين المؤقت ---
 const CACHE_NAME = "exam-system-cache-v8";
 const CACHE_EXPIRATION_TIME = 60 * 60 * 1000;
 
@@ -132,49 +134,54 @@ self.addEventListener("fetch", (event) => {
     );
   } else {
     event.respondWith(
-      fetch(event.request).catch(() => {
+fetch(event.request).catch(() => {
         return caches.match(event.request);
       })
     );
   }
 });
 
-// إعداد Firebase لـ FCM
+// --- كود Firebase لإشعارات الدفع ---
 importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js");
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID",
+  apiKey: "AIzaSyDWANNVIpbojCSl-kS3OcWBCYF4-6Eolvk",
+  authDomain: "examination-system-829b8.firebaseapp.com",
+  projectId: "examination-system-829b8",
+  storageBucket: "examination-system-829b8.firebasestorage.app",
+  messagingSenderId: "1083210379552",
+  appId: "1:1083210379552:web:5ee81f69baf6d04cabe745",
+  measurementId: "G-33G2CPT88M"
 };
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 self.addEventListener("push", (event) => {
-  // // console.log("Push event received:", event);
-  const data = event.data?.json() || { title: "New Notification", body: "You have a new notification!" };
-  // // console.log("Push data:", data);
+  console.log("Push event received:", event);
+  let data;
+  try {
+    data = event.data?.json() || { title: "New Notification", body: "You have a new notification!" };
+  } catch (e) {
+    data = { title: "New Notification", body: "You have a new notification!" };
+  }
+  console.log("Push data:", data);
+
+  const link = data.fcmOptions?.link || data.data?.link || `/dashboard_student?notification_id=${data.id || ''}`;
 
   const options = {
-    body: data.body,
+    body: data.notification?.body || data.body,
     icon: "/android-chrome-192x192.png",
     badge: "/android-chrome-192x192.png",
     sound: "/notification.mp3",
     vibrate: [200, 100, 200],
-    data: {
-      url: `/dashboard_student?notification_id=${data.id}`,
-    },
+    data: { url: link },
     requireInteraction: true,
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.notification?.title || data.title, options)
   );
 
   self.clients.matchAll().then((clients) => {
@@ -185,8 +192,22 @@ self.addEventListener("push", (event) => {
 });
 
 self.addEventListener("notificationclick", (event) => {
+  console.log("Notification click received.");
   event.notification.close();
+
+  const url = event.notification.data.url || "/dashboard_student";
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === url && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
   );
 });
