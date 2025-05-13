@@ -1,11 +1,7 @@
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-});
+import withPWA from 'next-pwa';
+import type { NextConfig } from 'next';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'export', // Static Export
   images: {
@@ -19,8 +15,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
-    // إعدادات Webpack لتجاهل 'fs' في الـ client-side
+  webpack(config, { isServer }) {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -31,4 +26,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+export default withPWA(nextConfig);
