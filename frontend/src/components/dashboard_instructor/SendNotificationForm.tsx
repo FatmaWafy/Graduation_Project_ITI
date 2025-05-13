@@ -17,11 +17,9 @@ import {
 } from "lucide-react";
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
-
- 
 export async function sendNotification(params: any): Promise<any> {
   try {
-    console.log(origin)
+    // console.log(origin)
     const response = await fetch(`${origin}/notifications/send-note/`, {
       method: "POST",
       headers: {
@@ -33,9 +31,9 @@ export async function sendNotification(params: any): Promise<any> {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        `Failed to send notification: ${response.status} ${response.statusText}${
-          errorData ? ` - ${JSON.stringify(errorData)}` : ""
-        }`
+        `Failed to send notification: ${response.status} ${
+          response.statusText
+        }${errorData ? ` - ${JSON.stringify(errorData)}` : ""}`
       );
     }
 
@@ -43,7 +41,7 @@ export async function sendNotification(params: any): Promise<any> {
     const data = await response.json();
 
     // طباعة الاستجابة في الـ console
-    console.log("Notification sent:", data);
+    // console.log("Notification sent:", data);
 
     // إذا كانت الحالة 200، نعرض رسالة النجاح
     if (response.status === 200) {
@@ -59,7 +57,6 @@ export async function sendNotification(params: any): Promise<any> {
     throw error;
   }
 }
-
 
 import { Button } from "../ui/button";
 import {
@@ -93,7 +90,7 @@ export async function getUserIdFromToken(): Promise<number | null> {
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
-  console.log("Token from cookie:", token);
+  // console.log("Token from cookie:", token);
 
   if (!token) return null;
 
@@ -183,7 +180,7 @@ export function SendNotificationForm() {
           throw new Error("Failed to fetch students");
         }
         const data = await response.json();
-        console.log("Students data:", data);
+        // console.log("Students data:", data);
         setStudents(data || []);
       } catch (error) {
         console.error("Failed to fetch students:", error);
@@ -193,19 +190,17 @@ export function SendNotificationForm() {
     const fetchInstructorTracks = async () => {
       try {
         const userId = await getUserIdFromToken();
-        console.log("User ID from token:", userId);
+        // console.log("User ID from token:", userId);
         if (!userId) throw new Error("User ID not found in token.");
-        const res = await fetch(
-          `${origin}/users/instructors/${userId}`
-        );
+        const res = await fetch(`${origin}/users/instructors/${userId}`);
         const instructorData = await res.json();
         const instructorId = instructorData.id;
-        console.log("Instructor ID:", instructorId);
+        // console.log("Instructor ID:", instructorId);
         const trackRes = await fetch(
           `${origin}/users/instructor/${instructorId}/tracks/`
         );
         const trackData = await trackRes.json();
-        console.log("Tracks for instructor:", trackData);
+        // console.log("Tracks for instructor:", trackData);
         setTracks(trackData);
       } catch (error) {
         console.error("Failed to fetch instructor tracks:", error);
@@ -230,18 +225,16 @@ export function SendNotificationForm() {
     setIsSubmitting(true);
     async function fetchInstructorId(): Promise<number> {
       const userId = await getUserIdFromToken();
-      console.log("User ID from token:", userId);
+      // console.log("User ID from token:", userId);
       if (!userId) throw new Error("User ID not found in token.");
-      const res = await fetch(
-        `${origin}/users/instructors/${userId}`
-      );
+      const res = await fetch(`${origin}/users/instructors/${userId}`);
       const data = await res.json();
-      console.log("Data from student API:", data);
+      // console.log("Data from student API:", data);
       return data.id;
     }
     try {
       const instructor_id = await fetchInstructorId();
-      console.log("Instructor ID:", instructor_id);
+      // console.log("Instructor ID:", instructor_id);
       const payload = {
         instructor_id,
         message: values.message,
@@ -249,9 +242,9 @@ export function SendNotificationForm() {
           ? { student_id: Number.parseInt(values.student_id!) }
           : { track_id: Number.parseInt(values.track_id!) }),
       };
-      console.log("Payload:", payload);
+      // console.log("Payload:", payload);
       const result = await sendNotification(payload);
-      console.log("Response from notification API:", result);
+      // console.log("Response from notification API:", result);
       if (
         result.message &&
         (result.message.includes("Notes sent to all students") ||
@@ -292,25 +285,25 @@ export function SendNotificationForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        <div className='flex items-center gap-2 mb-2'>
-          <Bell className='h-5 w-5 text-[#007acc]' />
-          <h3 className='text-lg font-medium text-gray-700'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="flex items-center gap-2 mb-2">
+          <Bell className="h-5 w-5 text-[#007acc]" />
+          <h3 className="text-lg font-medium text-gray-700">
             Notification Details
           </h3>
         </div>
 
         <FormField
           control={form.control}
-          name='recipientType'
+          name="recipientType"
           render={({ field }) => (
-            <FormItem className='space-y-4'>
-              <div className='flex items-center justify-between'>
-                <FormLabel className='text-[#007acc] text-base font-medium'>
+            <FormItem className="space-y-4">
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-[#007acc] text-base font-medium">
                   Recipient Type
                 </FormLabel>
-                <div className='flex items-center text-xs text-gray-500'>
-                  <Info className='h-3 w-3 mr-1' />
+                <div className="flex items-center text-xs text-gray-500">
+                  <Info className="h-3 w-3 mr-1" />
                   <span>Who will receive this notification?</span>
                 </div>
               </div>
@@ -320,7 +313,7 @@ export function SendNotificationForm() {
                     handleRecipientTypeChange(value)
                   }
                   defaultValue={field.value}
-                  className='grid grid-cols-1 md:grid-cols-2 gap-4'
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
                   <div
                     className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
@@ -329,11 +322,11 @@ export function SendNotificationForm() {
                         : "border-gray-200 bg-white hover:border-[#c7e5ff]"
                     }`}
                   >
-                    <div className='absolute top-2 right-2'>
+                    <div className="absolute top-2 right-2">
                       <RadioGroupItem
-                        value='student'
-                        id='student'
-                        className='sr-only'
+                        value="student"
+                        id="student"
+                        className="sr-only"
                       />
                       <div
                         className={`h-4 w-4 rounded-full border flex items-center justify-center ${
@@ -343,13 +336,13 @@ export function SendNotificationForm() {
                         }`}
                       >
                         {watchRecipientType === "student" && (
-                          <div className='h-2 w-2 rounded-full bg-white'></div>
+                          <div className="h-2 w-2 rounded-full bg-white"></div>
                         )}
                       </div>
                     </div>
                     <Label
-                      htmlFor='student'
-                      className='flex flex-col items-center p-6 cursor-pointer'
+                      htmlFor="student"
+                      className="flex flex-col items-center p-6 cursor-pointer"
                     >
                       <UserCheck
                         className={`h-10 w-10 mb-3 ${
@@ -367,7 +360,7 @@ export function SendNotificationForm() {
                       >
                         Individual Student
                       </span>
-                      <span className='text-xs text-gray-500 mt-1 text-center'>
+                      <span className="text-xs text-gray-500 mt-1 text-center">
                         Send to a specific student
                       </span>
                     </Label>
@@ -379,11 +372,11 @@ export function SendNotificationForm() {
                         : "border-gray-200 bg-white hover:border-[#c7e5ff]"
                     }`}
                   >
-                    <div className='absolute top-2 right-2'>
+                    <div className="absolute top-2 right-2">
                       <RadioGroupItem
-                        value='track'
-                        id='track'
-                        className='sr-only'
+                        value="track"
+                        id="track"
+                        className="sr-only"
                       />
                       <div
                         className={`h-4 w-4 rounded-full border flex items-center justify-center ${
@@ -393,13 +386,13 @@ export function SendNotificationForm() {
                         }`}
                       >
                         {watchRecipientType === "track" && (
-                          <div className='h-2 w-2 rounded-full bg-white'></div>
+                          <div className="h-2 w-2 rounded-full bg-white"></div>
                         )}
                       </div>
                     </div>
                     <Label
-                      htmlFor='track'
-                      className='flex flex-col items-center p-6 cursor-pointer'
+                      htmlFor="track"
+                      className="flex flex-col items-center p-6 cursor-pointer"
                     >
                       <UsersRound
                         className={`h-10 w-10 mb-3 ${
@@ -417,14 +410,14 @@ export function SendNotificationForm() {
                       >
                         Entire Track
                       </span>
-                      <span className='text-xs text-gray-500 mt-1 text-center'>
+                      <span className="text-xs text-gray-500 mt-1 text-center">
                         Send to all students in a track
                       </span>
                     </Label>
                   </div>
                 </RadioGroup>
               </FormControl>
-              <FormMessage className='text-red-500' />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
@@ -432,26 +425,26 @@ export function SendNotificationForm() {
         {watchRecipientType === "student" ? (
           <FormField
             control={form.control}
-            name='student_id'
+            name="student_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className='text-[#007acc] text-base font-medium flex items-center gap-2'>
-                  <User className='h-4 w-4' />
+                <FormLabel className="text-[#007acc] text-base font-medium flex items-center gap-2">
+                  <User className="h-4 w-4" />
                   Select Student
                 </FormLabel>
                 <Select
                   value={field.value}
                   onValueChange={(value: string) => {
-                    console.log("Selected student ID:", value);
+                    // console.log("Selected student ID:", value);
                     field.onChange(value);
                   }}
                 >
                   <FormControl>
-                    <SelectTrigger className='w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black'>
-                      <SelectValue placeholder='Choose a student to notify' />
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black">
+                      <SelectValue placeholder="Choose a student to notify" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent className='border-gray-200'>
+                  <SelectContent className="border-gray-200">
                     {students.length > 0 ? (
                       students.map((student) => (
                         <SelectItem key={student.id} value={String(student.id)}>
@@ -459,42 +452,42 @@ export function SendNotificationForm() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value='no-students' disabled>
+                      <SelectItem value="no-students" disabled>
                         No students available
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-                <FormDescription className='text-gray-500 text-sm mt-2'>
+                <FormDescription className="text-gray-500 text-sm mt-2">
                   The notification will be sent only to this student.
                 </FormDescription>
-                <FormMessage className='text-red-500' />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
         ) : (
           <FormField
             control={form.control}
-            name='track_id'
+            name="track_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className='text-[#007acc] text-base font-medium flex items-center gap-2'>
-                  <Users className='h-4 w-4' />
+                <FormLabel className="text-[#007acc] text-base font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
                   Select Track
                 </FormLabel>
                 <Select
                   value={field.value}
                   onValueChange={(value: string) => {
-                    console.log("Selected Track ID:", value);
+                    // console.log("Selected Track ID:", value);
                     field.onChange(value);
                   }}
                 >
                   <FormControl>
-                    <SelectTrigger className='w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black'>
-                      <SelectValue placeholder='Choose a track' />
+                    <SelectTrigger className="w-full bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] h-12 mt-2 text-black">
+                      <SelectValue placeholder="Choose a track" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent className='border-gray-200'>
+                  <SelectContent className="border-gray-200">
                     {tracks.length > 0 ? (
                       tracks.map((track) => (
                         <SelectItem key={track.id} value={String(track.id)}>
@@ -502,16 +495,16 @@ export function SendNotificationForm() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value='no-tracks' disabled>
+                      <SelectItem value="no-tracks" disabled>
                         No tracks available
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-                <FormDescription className='text-gray-500 text-sm mt-2'>
+                <FormDescription className="text-gray-500 text-sm mt-2">
                   The notification will be sent to all students in this track.
                 </FormDescription>
-                <FormMessage className='text-red-500' />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -523,52 +516,52 @@ export function SendNotificationForm() {
         {/* Message Input */}
         <FormField
           control={form.control}
-          name='message'
+          name="message"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='text-[#007acc] text-base font-medium flex items-center gap-2'>
-                <MessageSquare className='h-4 w-4' />
+              <FormLabel className="text-[#007acc] text-base font-medium flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
                 Message Content
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder='Type your notification message here or select a predefined message above...'
-                  className='min-h-40 resize-none bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] mt-2 text-base text-black'
+                  placeholder="Type your notification message here or select a predefined message above..."
+                  className="min-h-40 resize-none bg-white border-gray-300 focus:ring-[#007acc] focus:border-[#007acc] mt-2 text-base text-black"
                   {...field}
                 />
               </FormControl>
-              <FormDescription className='text-gray-500 text-sm mt-2 flex items-start gap-2'>
-                <Info className='h-4 w-4 text-[#007acc] mt-0.5 flex-shrink-0' />
+              <FormDescription className="text-gray-500 text-sm mt-2 flex items-start gap-2">
+                <Info className="h-4 w-4 text-[#007acc] mt-0.5 flex-shrink-0" />
                 <span>
                   Write a clear and concise message or choose a predefined one.
                   Students will receive this notification in their dashboard and
                   via email.
                 </span>
               </FormDescription>
-              <FormMessage className='text-red-500' />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
 
         <Button
-          type='submit'
+          type="submit"
           disabled={isSubmitting}
-          className='w-full bg-[#007acc] hover:bg-[#0062a3] text-white py-2.5'
+          className="w-full bg-[#007acc] hover:bg-[#0062a3] text-white py-2.5"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Sending notification...
             </>
           ) : (
             <>
-              <Send className='mr-2 h-4 w-4' />
+              <Send className="mr-2 h-4 w-4" />
               Send Notification
             </>
           )}
         </Button>
       </form>
-      <ToastContainer position='bottom-right' />
+      <ToastContainer position="bottom-right" />
     </Form>
   );
 }

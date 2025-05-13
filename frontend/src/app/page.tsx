@@ -54,11 +54,11 @@ export default function LandingPage() {
               Login
             </Button>
           </Link>
-          {/* <Link href='/signup'>
-            <Button className='bg-transparent border text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 delay-100'>
+          <Link href='/signup'>
+            <Button className='bg-primary  text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500'>
               Signup
             </Button>
-          </Link> */}
+          </Link>
           <Link href='/faq'>
             <Button className='bg-primary  text-white hover:border-transparent hover:text-white/80 font-medium rounded-xl px-4 animate-fade-in duration-500 '>
               FAQ

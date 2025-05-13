@@ -398,7 +398,7 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     track_name: "",
-    branch_name: "",
+    branch: "",
   });
   const [branches, setBranches] = useState([]);
   const [error, setError] = useState("");
@@ -451,21 +451,13 @@ export default function SignupPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    const { name, email, password, confirmPassword, track_name, branch_name } =
-      formData;
-
-    if (
-      !name ||
-      !email ||
-      !password ||
-      !confirmPassword ||
-      !track_name ||
-      !branch_name
-    ) {
+  
+    const { name, email, password, confirmPassword, track_name, branch } = formData;
+  
+    if (!name || !email || !password || !confirmPassword || !track_name || !branch) {
       setError("All fields are required");
       return;
     }
@@ -477,17 +469,15 @@ export default function SignupPage() {
       setError("Password must be at least 8 characters long");
       return;
     }
-
+  
     const payload = {
       username: name,
       email,
       password,
       track_name: track_name.trim(),
-      branch: branch_name,
+      branch
     };
-
-    console.log("Sending payload:", payload);
-
+  
     try {
       setIsSubmitting(true);
       const response = await fetch(`${origin}/users/register/`, {
@@ -495,28 +485,29 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create account");
       }
-
+  
       router.push("/signin");
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   // دالة تسجيل الاشتراك باستخدام Google
   const googleLogin = useGoogleLogin({
     scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid",
     onSuccess: async (tokenResponse) => {
       try {
-        const { track_name, branch_name } = formData;
+        const { track_name, branch } = formData;
 
-        if (!track_name || !branch_name) {
+        if (!track_name || !branch) {
           setError("Please select a track and branch");
           return;
         }
@@ -527,7 +518,7 @@ export default function SignupPage() {
           body: JSON.stringify({
             token: tokenResponse.access_token,
             track_name,
-            branch_name,
+            branch,
             is_signup: true,
           }),
         });
@@ -682,8 +673,8 @@ export default function SignupPage() {
                 <div className='space-y-1'>
                   <Label className='text-sm font-medium'>Branch</Label>
                   <select
-                    name='branch_name'
-                    value={formData.branch_name}
+                    name='branch'
+                    value={formData.branch}
                     onChange={handleChange}
                     className='w-full h-10 rounded-md border border-input bg-background px-3'
                     required
@@ -729,7 +720,7 @@ export default function SignupPage() {
               variant='outline'
               className='w-full h-10'
               onClick={() => googleLogin()}
-              disabled={!formData.track_name || !formData.branch_name}
+              disabled={!formData.track_name || !formData.branch}
               aria-label='Sign up with Google'
             >
               <img src='/google.png' alt='Google' className='w-4 h-4 mr-2' />

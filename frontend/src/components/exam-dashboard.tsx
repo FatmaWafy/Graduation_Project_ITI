@@ -351,7 +351,7 @@ conn.close()
       };
 
       // Log payload for debugging
-      console.log("Executing payload:", payload);
+      // console.log("Executing payload:", payload);
 
       const response = await API.post("/execute", payload);
       return response.data;

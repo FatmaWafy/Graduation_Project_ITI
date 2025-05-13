@@ -31,7 +31,7 @@ export default function ClientLayout({
 
   useEffect(() => {
     document.title = pageTitle;
-    console.log("Current pathname:", pathname);
+    // console.log("Current pathname:", pathname);
   }, [pathname, pageTitle]);
 
   // useEffect(() => {
@@ -41,12 +41,12 @@ export default function ClientLayout({
   //         const registration = await navigator.serviceWorker.register("/sw.js", {
   //           scope: "/",
   //         });
-  //         console.log("Service Worker registered:", registration);
+  //         // console.log("Service Worker registered:", registration);
 
   //         // طلب إذن الإشعارات
   //         const permission = await Notification.requestPermission();
   //         if (permission === "granted") {
-  //           console.log("👍 المستخدم وافق على الإشعارات");
+  //           // console.log("👍 المستخدم وافق على الإشعارات");
 
   //           // تهيئة Firebase
   //           const firebaseConfig = {
@@ -69,7 +69,7 @@ export default function ClientLayout({
   //           // });
 
   //           if (token) {
-  //             console.log("FCM Token:", token);
+  //             // console.log("FCM Token:", token);
 
   //             // إرسال التوكن للـ Backend
   //             const authToken = Cookies.get("token");
@@ -89,7 +89,7 @@ export default function ClientLayout({
 
   //             const responseData = await response.json();
   //             if (response.ok) {
-  //               console.log("FCM token sent to backend:", token);
+  //               // console.log("FCM token sent to backend:", token);
   //             } else {
   //               // console.error("Failed to send FCM token to backend:", responseData);
   //             }
@@ -97,7 +97,7 @@ export default function ClientLayout({
   //             console.error("No FCM token available");
   //           }
   //         } else {
-  //           console.log("👎 المستخدم رفض الإشعارات");
+  //           // console.log("👎 المستخدم رفض الإشعارات");
   //         }
   //       } catch (error) {
   //         console.error("Service Worker registration or FCM setup failed:", error);
@@ -109,13 +109,12 @@ export default function ClientLayout({
   //     if (token) {
   //       registerServiceWorker();
   //     } else {
-  //       console.log("Waiting for user to log in before registering service worker");
+  //       // console.log("Waiting for user to log in before registering service worker");
   //     }
   //   } else {
-  //     console.log("Service Worker or Notifications not supported in this browser");
+  //     // console.log("Service Worker or Notifications not supported in this browser");
   //   }
   // }, []);
-
 
   return (
     <>
@@ -123,28 +122,28 @@ export default function ClientLayout({
         <title>{pageTitle}</title>
 
         <link
-          rel='preload'
-          href='/_next/static/chunks/main-app-f2ab8f5a96aa974a9.js'
-          as='script'
+          rel="preload"
+          href="/_next/static/chunks/main-app-f2ab8f5a96aa974a9.js"
+          as="script"
         />
         <link
-          rel='preload'
-          href='/_next/static/chunks/main-5488f16c6226a992.js'
-          as='script'
+          rel="preload"
+          href="/_next/static/chunks/main-5488f16c6226a992.js"
+          as="script"
         />
 
-        <link rel='manifest' href='/manifest.json' />
-        <meta name='theme-color' content='#000000' />
-        <link rel='icon' href='/favicon.ico' type='image/x-icon' />
-        <link rel='apple-touch-icon' href='/logo2.png' type='image/png' />
-        <link rel='apple-touch-icon' href='/favicon.ico' />
-        <link rel='apple-touch-icon' href='/apple-touch-icon.png' />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="apple-touch-icon" href="/logo2.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </Head>
 
-      <GoogleOAuthProvider clientId='447648497550-vnin1f0m7e9t39aem07cfmhjb5gtbtu9.apps.googleusercontent.com'>
+      <GoogleOAuthProvider clientId="447648497550-vnin1f0m7e9t39aem07cfmhjb5gtbtu9.apps.googleusercontent.com">
         <ThemeProvider
-          attribute='class'
-          defaultTheme='system'
+          attribute="class"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

@@ -94,7 +94,7 @@ async function updateStudent(student: Student): Promise<Student> {
     headers: getAuthHeaders(),
     body: JSON.stringify(student),
   })
-  console.log("API Response:", response)
+  // console.log("API Response:", response)
   if (!response.ok) {
     const error = new Error(`Failed to update student with ID ${student.id}`) as ApiError
     error.status = response.status

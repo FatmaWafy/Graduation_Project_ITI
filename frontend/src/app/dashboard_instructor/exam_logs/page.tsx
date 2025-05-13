@@ -79,7 +79,7 @@ export default function ExamLogsIndexPage() {
       }
 
       const responseData = await examsResponse.json();
-      console.log("Response Data:", responseData);
+      // console.log("Response Data:", responseData);
       const examsData = Array.isArray(responseData)
         ? responseData
         : [responseData];
@@ -155,21 +155,21 @@ export default function ExamLogsIndexPage() {
   // No exams found
   if (exams.length === 0) {
     return (
-      <div className='container mx-auto p-6 flex flex-col items-center justify-center min-h-[50vh]'>
-        <Card className='max-w-md w-full text-center'>
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[50vh]">
+        <Card className="max-w-md w-full text-center">
           <CardHeader>
-            <CardTitle className='text-2xl font-semibold'>
+            <CardTitle className="text-2xl font-semibold">
               No Exam Logs Available
             </CardTitle>
-            <CardDescription className='text-gray-600'>
-              It looks like there are no exams logs to display. Create a new exam to
-              get started!
+            <CardDescription className="text-gray-600">
+              It looks like there are no exams logs to display. Create a new
+              exam to get started!
             </CardDescription>
           </CardHeader>
-          <CardContent className='flex flex-col items-center gap-4'>
-            <FileText className='w-16 h-16 text-gray-400' />
-            <Link href='/dashboard_instructor/create-exam' passHref>
-              <Button className='bg-[#007acc] hover:bg-[#007abc] text-white'>
+          <CardContent className="flex flex-col items-center gap-4">
+            <FileText className="w-16 h-16 text-gray-400" />
+            <Link href="/dashboard_instructor/create-exam" passHref>
+              <Button className="bg-[#007acc] hover:bg-[#007abc] text-white">
                 Create New Exam
               </Button>
             </Link>
@@ -181,56 +181,56 @@ export default function ExamLogsIndexPage() {
 
   // Exams found
   return (
-    <div className='container mx-auto py-10 px-4  text-white bg-white'>
-      <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10'>
+    <div className="container mx-auto py-10 px-4  text-white bg-white">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
         <div>
-          <h1 className='text-3xl font-bold tracking-tight flex items-center gap-2 text-[#007acc] hover:text-[#007abc]'>
-            <FileText className='h-8 w-8' />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-[#007acc] hover:text-[#007abc]">
+            <FileText className="h-8 w-8" />
             Exam Cheating Logs
           </h1>
-          <p className='text-gray-400 mt-1'>Select an exam to view its logs</p>
+          <p className="text-gray-400 mt-1">Select an exam to view its logs</p>
         </div>
       </div>
 
-      <div className='container mx-auto p-6'>
+      <div className="container mx-auto p-6">
         {loading ? (
-          <div className='flex flex-col justify-center items-center h-40 gap-4'>
-            <div className='animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500'></div>
-            <p className='text-gray-400'>Loading exam logs...</p>
+          <div className="flex flex-col justify-center items-center h-40 gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+            <p className="text-gray-400">Loading exam logs...</p>
           </div>
         ) : error ? (
-          <div className='text-center text-red-400'>Error: {error}</div>
+          <div className="text-center text-red-400">Error: {error}</div>
         ) : exams.length === 0 ? (
-          <div className='bg-gray-900 border border-gray-700 rounded-lg p-8 text-center'>
-            <FileText className='h-12 w-12 text-gray-500 mx-auto mb-4' />
-            <h3 className='text-lg font-medium text-gray-200 mb-2'>
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
+            <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-200 mb-2">
               No Exams Found
             </h3>
-            <p className='text-gray-400 max-w-md mx-auto mb-6'>
+            <p className="text-gray-400 max-w-md mx-auto mb-6">
               There are no exams available to view logs for.
             </p>
           </div>
         ) : (
-          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {exams.map((exam) => (
               <Card
                 key={exam.temp_exam_id}
-                className='hover:shadow-lg transition-shadow duration-300'
+                className="hover:shadow-lg transition-shadow duration-300"
               >
-                <CardHeader className='bg-gray-100 rounded-t-lg'>
-                  <CardTitle className='text-lg font-semibold text-[#000000]'>
+                <CardHeader className="bg-gray-100 rounded-t-lg">
+                  <CardTitle className="text-lg font-semibold text-[#000000]">
                     {exam.exam_title}
                   </CardTitle>
-                  <CardDescription className='text-sm text-gray-600'>
+                  <CardDescription className="text-sm text-gray-600">
                     Exam ID: {exam.temp_exam_id}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className='flex justify-center py-4'>
+                <CardContent className="flex justify-center py-4">
                   <Link
                     href={`/dashboard_instructor/exam_logs/${exam.temp_exam_id}`}
                     passHref
                   >
-                    <Button className='bg-[#007acc] hover:bg-[#007abc] text-white px-6 py-2 rounded-md'>
+                    <Button className="bg-[#007acc] hover:bg-[#007abc] text-white px-6 py-2 rounded-md">
                       View Logs
                     </Button>
                   </Link>
