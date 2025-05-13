@@ -249,14 +249,14 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000/",
-    "https://graduationprojectiti-production.up.railway.app/",
-    "https://graduation-project-iti-ntxg.vercel.app/",
+    "http://localhost:3000",
+    "https://graduationprojectiti-production.up.railway.app",
+    "https://graduation-project-iti-ntxg.vercel.app",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000/",
-    "https://graduationprojectiti-production.up.railway.app/",
-    "https://graduation-project-iti-ntxg.vercel.app/"
+    "http://localhost:3000",
+    "https://graduationprojectiti-production.up.railway.app",
+    "https://graduation-project-iti-ntxg.vercel.app"
 ]
 
 
