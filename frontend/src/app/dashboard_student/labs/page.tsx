@@ -307,12 +307,14 @@ import Cookies from "js-cookie";
 interface Lab {
   id: number;
   name: string;
-  url: string;
+  file: string;
   track: string;
+  track_name: string;
   created_at: string;
   size: string;
   description?: string;
   submission_link?: string;
+  is_submitted: boolean;
 }
 
 export default function StudentLabsPage() {
@@ -372,8 +374,8 @@ export default function StudentLabsPage() {
       );
     }
 
-    if (activeTab !== "all") {
-      filtered = filtered.filter((lab) => lab.track === activeTab);
+    if (activeTab === "submitted") {
+      filtered = filtered.filter((lab) => lab.is_submitted);
     }
 
     setFilteredLabs(filtered);
@@ -382,8 +384,8 @@ export default function StudentLabsPage() {
   const handleDownload = async (lab: Lab) => {
     try {
       toast({
-        title: "Downloading...",
-        description: `Downloading ${lab.name}`,
+        title: "Preparing download...",
+        description: `Fetching ${lab.name}`,
       });
 
       const token = Cookies.get("token");
@@ -400,14 +402,14 @@ export default function StudentLabsPage() {
         throw new Error(`Download failed: ${response.status} - ${errorText}`);
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const data = await response.json();
+      if (!data.url) throw new Error("File URL not found");
+
       const a = document.createElement("a");
-      a.href = url;
+      a.href = data.url;
       a.download = lab.name.endsWith(".pdf") ? lab.name : `${lab.name}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       a.remove();
 
       toast({
@@ -424,6 +426,52 @@ export default function StudentLabsPage() {
     }
   };
 
+  const handleSubmit = async (lab: Lab) => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) throw new Error("No authentication token found");
+
+      // Open the submission link in a new tab
+      if (lab.submission_link) {
+        window.open(lab.submission_link, "_blank");
+      }
+
+      // Record the submission in the backend
+      const response = await fetch(`${origin}/labs/${lab.id}/submit/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ submission_link: lab.submission_link }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Submission failed: ${response.status} - ${errorText}`);
+      }
+
+      // Update the lab's is_submitted status locally
+      setLabs((prevLabs) =>
+        prevLabs.map((l) =>
+          l.id === lab.id ? { ...l, is_submitted: true } : l
+        )
+      );
+
+      toast({
+        title: "Submission recorded",
+        description: `Your submission for ${lab.name} has been recorded`,
+      });
+    } catch (error) {
+      console.error("Submission error details:", error);
+      toast({
+        title: "Submission failed",
+        description: `Failed to record the submission: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -433,100 +481,95 @@ export default function StudentLabsPage() {
     });
   };
 
-  const uniqueTracks = Array.from(new Set(labs.map((lab) => lab.track)));
-
   return (
-    <div className='space-y-6'>
+    <div className="space-y-6">
       <div>
-        <h1 className='text-3xl font-bold tracking-tight'>Lab Materials</h1>
-        <p className='text-muted-foreground'>
+        <h1 className="text-3xl font-bold tracking-tight">Lab Materials</h1>
+        <p className="text-muted-foreground">
           Access and download lab materials for your courses
         </p>
       </div>
 
-      <div className='flex flex-col md:flex-row gap-4 items-start md:items-center justify-between'>
-        <div className='relative w-full md:w-64'>
-          <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            type='search'
-            placeholder='Search labs...'
-            className='pl-8'
+            type="search"
+            placeholder="Search labs..."
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
         <Button
-          variant='outline'
-          size='sm'
+          variant="outline"
+          size="sm"
           onClick={fetchLabs}
           disabled={isLoading}
         >
-          {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : "Refresh"}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
         </Button>
       </div>
 
-      <Tabs defaultValue='all' value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className='mb-4'>
-          <TabsTrigger value='all'>All Labs</TabsTrigger>
-          {uniqueTracks.map((track) => (
-            <TabsTrigger key={track} value={track}>
-              {track}
-            </TabsTrigger>
-          ))}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="all">All Labs</TabsTrigger>
+          <TabsTrigger value="submitted">Submitted Labs</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab}>
           {isLoading ? (
             <LabsSkeleton />
           ) : filteredLabs.length === 0 ? (
-            <div className='text-center py-12'>
-              <FileText className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
-              <h3 className='text-lg font-medium'>No labs found</h3>
-              <p className='text-muted-foreground mt-1'>
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No labs found</h3>
+              <p className="text-muted-foreground mt-1">
                 {searchQuery
                   ? "Try adjusting your search query"
-                  : "No lab materials are available for this track yet"}
+                  : activeTab === "submitted"
+                  ? "You haven't submitted any labs yet"
+                  : "No lab materials are available yet"}
               </p>
             </div>
           ) : (
-            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredLabs.map((lab) => (
-                <Card key={lab.id} className='overflow-hidden'>
-                  <div className='bg-muted p-4 flex items-center justify-center h-32'>
-                    <File className='h-16 w-16 text-muted-foreground' />
+                <Card key={lab.id} className="overflow-hidden">
+                  <div className="bg-muted p-4 flex items-center justify-center h-32">
+                    <File className="h-16 w-16 text-muted-foreground" />
                   </div>
-                  <CardHeader className='pb-2'>
-                    <div className='flex justify-between items-start'>
-                      <CardTitle className='text-lg'>{lab.name}</CardTitle>
-                      <Badge variant='outline'>{lab.track}</Badge>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{lab.name}</CardTitle>
+                      <Badge variant="outline">{lab.track_name}</Badge>
                     </div>
                     <CardDescription>{lab.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className='flex justify-between items-center text-sm text-muted-foreground mb-4'>
-                      <div className='flex items-center'>
-                        <Calendar className='h-4 w-4 mr-1' />
+                    <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
                         {formatDate(lab.created_at)}
                       </div>
                       <div>{lab.size}</div>
                     </div>
                     <Button
-                      className='w-full'
+                      className="w-full"
                       onClick={() => handleDownload(lab)}
                     >
-                      <Download className='h-4 w-4 mr-2' />
+                      <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
                     {lab.submission_link && (
                       <Button
-                        variant='outline'
-                        className='w-full mt-2'
-                        onClick={() =>
-                          window.open(lab.submission_link, "_blank")
-                        }
+                        variant="outline"
+                        className="w-full mt-2"
+                        onClick={() => handleSubmit(lab)}
+                        disabled={lab.is_submitted}
                       >
-                        Submit Solution
+                        {lab.is_submitted ? "Submitted" : "Submit Solution"}
                       </Button>
                     )}
                   </CardContent>
@@ -542,21 +585,21 @@ export default function StudentLabsPage() {
 
 function LabsSkeleton() {
   return (
-    <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <Card key={i} className='overflow-hidden'>
-          <Skeleton className='h-32 w-full' />
-          <CardHeader className='pb-2'>
-            <Skeleton className='h-6 w-3/4 mb-2' />
-            <Skeleton className='h-4 w-full' />
-            <Skeleton className='h-4 w-2/3 mt-1' />
+        <Card key={i} className="overflow-hidden">
+          <Skeleton className="h-32 w-full" />
+          <CardHeader className="pb-2">
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3 mt-1" />
           </CardHeader>
           <CardContent>
-            <div className='flex justify-between items-center mb-4'>
-              <Skeleton className='h-4 w-24' />
-              <Skeleton className='h-4 w-16' />
+            <div className="flex justify-between items-center mb-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
             </div>
-            <Skeleton className='h-10 w-full' />
+            <Skeleton className="h-10 w-full" />
           </CardContent>
         </Card>
       ))}
