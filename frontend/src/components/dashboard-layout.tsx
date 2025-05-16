@@ -157,6 +157,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-3">
             {/* Always render the Avatar */}
             {studentData ? (
+              <Link href='/dashboard_student/profile'>
               <Avatar>
                 <AvatarImage
                   src={
@@ -172,11 +173,14 @@ export default function DashboardLayout({
                   {studentData.username.charAt(0)}
                 </AvatarFallback>
               </Avatar>
+              </Link>
             ) : (
+              <Link href='/dashboard_student/profile'>
               <Avatar>
                 <AvatarImage src="" alt="Instructor" />
                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
               </Avatar>
+              </Link>
             )}
             {/* Render username and email only when sidebar is open */}
             {isSidebarOpen && (
