@@ -26,8 +26,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { extractExamDateFromMessage } from "../lib/utils/data-parser";
 import { useExamCalendar } from "@/hooks/use-exam-calendar";
-import { useRouter } from "next/navigation"
-
+import { useRouter } from "next/navigation";
 
 interface Notification {
   id: string;
@@ -47,7 +46,6 @@ export function NotificationsDropdown() {
   const { toast } = useToast();
   const { addExamEvent, processNotification } = useExamCalendar();
   const router = useRouter();
-
 
   const fetchNotifications = async () => {
     setIsLoading(true);
@@ -242,18 +240,14 @@ export function NotificationsDropdown() {
 
     if (message.includes("lab")) {
       router.push("/dashboard_student/labs");
-      return;
-    }
-
-    if (message.includes("exam")) {
+    } else if (message.includes("exam")) {
       router.push("/dashboard_student/exams");
-      return;
     }
 
+    // Then mark as read (after navigation)
     if (!notification.read) {
       markAsRead(notification.id);
     }
-    
   };
 
   const addToCalendar = (notification: Notification) => {
