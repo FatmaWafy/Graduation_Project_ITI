@@ -15,7 +15,7 @@ import os
 import dj_database_url
 from dotenv import load_dotenv # type: ignore
 from datetime import timedelta
-from corsheaders.defaults import default_headers
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -123,8 +123,6 @@ DATABASES = {
     'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
 print("DATABASE_URL", os.getenv("DATABASE_URL"))
-
-
 # DATABASES = {
 #         'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -247,6 +245,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
 
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -259,12 +258,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://examsystem-hazel.vercel.app"
 ]
 
-
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'content-type',
-    'authorization',
-]
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -273,13 +266,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # افتراضيًا، كل الـ endpoints محمية
     ],
 }
-CORS_ALLOW_CREDENTIALS = True
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-
+ 
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
@@ -306,6 +299,8 @@ VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 VAPID_EMAIL = os.getenv("VAPID_EMAIL")
 
 
-# Supabase configuration
+
+
+ # Supabase configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

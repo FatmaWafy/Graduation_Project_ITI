@@ -35,6 +35,13 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAdminUser
 
 
+import os
+from supabase import create_client, Client
+supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+from dotenv import load_dotenv # type: ignore
+load_dotenv()
+import time
+
 token_generator = PasswordResetTokenGenerator()
 User = get_user_model()
 
@@ -805,58 +812,158 @@ Your Team
 
         return Response(response_data, status=status.HTTP_201_CREATED)
     
+# class UploadUserProfileImage(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def post(self, request, user_id):
+#         try:
+#             supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+#             print("Supabase client initialized successfully")
+
+#             print(f"Looking for user with ID: {user_id}")
+#             student = Student.objects.filter(id=user_id).first()
+#             if student:
+#                 user = student.user
+#                 print(f"Found student: {student.id}")
+#             else:
+#                 instructor = Instructor.objects.filter(id=user_id).first()
+#                 if instructor:
+#                     user = instructor.user
+#                     print(f"Found instructor: {instructor.id}")
+#                 else:
+#                     print("User not found")
+#                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#             if 'profile_image' not in request.FILES:
+#                 print("No image file provided")
+#                 return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+#             image_file = request.FILES['profile_image']
+#             print(f"Image file received: {image_file.name}")
+
+#             timestamp = int(time.time() * 1000)
+#             file_name, file_extension = os.path.splitext(image_file.name)
+#             new_file_name = f"{file_name}_{timestamp}{file_extension}"
+#             file_path = f"{user.id}/{new_file_name}"
+
+#             if user.profile_image:
+#                 profile_image_str = str(user.profile_image)
+#                 if profile_image_str.startswith('http'):
+#                     # جيب اسم الملف من الرابط مباشرة
+#                     old_image_path = profile_image_str.split('/')[-1].split('?')[0]  # بنشيل أي query parameters
+#                 else:
+#                     old_image_path = ""  # لو مش رابط، خليه فاضي
+#                 print(f"Deleting old image: {user.id}/{old_image_path}")
+#                 response = supabase.storage.from_('profileimages').remove([f"{user.id}/{old_image_path}"])
+#                 print(f"Delete response: {response}")
+
+#             print(f"Uploading new image to: {file_path}")
+#             response = supabase.storage.from_('profileimages').upload(file_path, image_file.read(), {
+#                 'content-type': image_file.content_type,
+#             })
+#             print(f"Upload response: {response}")
+#             if not response or not response.full_path:
+#                 raise Exception("Failed to upload image to Supabase")
+
+#             image_url = supabase.storage.from_('profileimages').get_public_url(file_path)
+#             print(f"Public URL: {image_url}")
+
+#             user.profile_image = image_url
+#             user.save()
+#             print(f"User profile_image updated successfully, new URL: {user.profile_image}")
+
+#             return Response({
+#                 "message": "Profile image uploaded successfully",
+#                 "profile_image": image_url
+#             }, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             print(f"Error: {str(e)}")
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class UploadUserProfileImage(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, user_id):
         try:
-            # Try to find the student
+            supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+            print("Supabase client initialized successfully")
+
+            # تحقق من وجود المستخدم
+            print(f"Looking for user with ID: {user_id}")
             student = Student.objects.filter(id=user_id).first()
             if student:
                 user = student.user
+                print(f"Found student: {student.id}")
             else:
-                # If not a student, try instructor
                 instructor = Instructor.objects.filter(id=user_id).first()
                 if instructor:
                     user = instructor.user
+                    print(f"Found instructor: {instructor.id}")
                 else:
+                    print("User not found")
                     return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            # تحقق من وجود ملف الصورة
+            if 'profile_image' not in request.FILES:
+                print("No image file provided")
+                return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+            image_file = request.FILES['profile_image']
+            print(f"Image file received: {image_file.name}")
+
+            # تحقق من نوع الصورة
+            if image_file.content_type not in ['image/jpeg', 'image/png', 'image/gif']:
+                return Response({"error": "Invalid image format"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # تحقق من حجم الملف
+            MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+            if image_file.size > MAX_FILE_SIZE:
+                return Response({"error": "File size exceeds 5MB"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # إنشاء اسم ملف جديد
+            timestamp = int(time.time() * 1000)
+            file_name, file_extension = os.path.splitext(image_file.name)
+            new_file_name = f"{file_name}_{timestamp}{file_extension}"
+            file_path = f"{user.id}/{new_file_name}"
+
+            # حذف الصورة القديمة إن وجدت
+            if user.profile_image and str(user.profile_image).startswith('http'):
+                old_image_path = str(user.profile_image).split('/')[-1].split('?')[0]
+                print(f"Deleting old image: {user.id}/{old_image_path}")
+                try:
+                    response = supabase.storage.from_('profileimages').remove([f"{user.id}/{old_image_path}"])
+                    print(f"Delete response: {response}")
+                except Exception as e:
+                    print(f"Failed to delete old image: {str(e)}")
+
+            # رفع الصورة الجديدة
+            print(f"Uploading new image to: {file_path}")
+            response = supabase.storage.from_('profileimages').upload(file_path, image_file.read(), {
+                'content-type': image_file.content_type,
+            })
+            print(f"Upload response: {response}")
+            if not response:
+                raise Exception(f"Failed to upload image to Supabase: {response}")
+
+            # جلب الـ public URL
+            image_url = supabase.storage.from_('profileimages').get_public_url(file_path)
+            print(f"Public URL: {image_url}")
+
+            # تحديث الصورة في قاعدة البيانات
+            user.profile_image = image_url
+            user.save()
+            print(f"User profile_image updated successfully, new URL: {user.profile_image}")
+
+            return Response({
+                "message": "Profile image uploaded successfully",
+                "profile_image": image_url
+            }, status=status.HTTP_200_OK)
+
         except Exception as e:
+            print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Check if there's a file in the request
-        if 'profile_image' not in request.FILES:
-            return Response({"error": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-        image_file = request.FILES['profile_image']
-
-        # Delete old image if exists
-        if user.profile_image and os.path.isfile(os.path.join(settings.MEDIA_ROOT, str(user.profile_image))):
-            try:
-                os.remove(os.path.join(settings.MEDIA_ROOT, str(user.profile_image)))
-                print(f"Deleted old profile image: {user.profile_image}")
-            except Exception as e:
-                print(f"Error deleting old profile image: {e}")
-
-        # Update the profile image
-        serializer = UserProfileImageSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            user_instance = serializer.save()
-
-            # Create image URL
-            if user_instance.profile_image:
-                host = request.get_host()
-                protocol = 'https' if request.is_secure() else 'http'
-                image_url = f"{protocol}://{host}{settings.MEDIA_URL}{user_instance.profile_image.name}"
-
-                return Response({
-                    "message": "Profile image uploaded successfully",
-                    "profile_image": image_url
-                }, status=status.HTTP_200_OK)
-
-            return Response({"message": "Profile image could not be saved"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [AllowAny]  # هتحتاجي تغيري دا بعدين لما تضبطي التوكنات
