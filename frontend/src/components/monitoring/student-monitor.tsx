@@ -231,12 +231,11 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
               const newCount = prev + 1
 
               // Show warning at 2 consecutive failures
-              if (newCount === 2) {
+              if (newCount === 5) {
                 showAlert("Please ensure your face is visible in the camera frame.", "warn", "no-face-warning")
               }
 
-              // Show error at 3 consecutive failures
-              if (newCount === 3) {
+              if (newCount === 8) {
                 showAlert(
                   "Face not detected! You will be removed from the exam if your face is not detected.",
                   "error",
@@ -244,8 +243,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
                 )
               }
 
-              // Kick out at 4 consecutive failures
-              if (newCount >= 4) {
+              if (newCount >= 10) {
                 logCheating("No face detected for extended period - automatic removal")
                 showAlert(
                   "You have been removed from the exam due to extended face absence.",
@@ -254,6 +252,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
                 )
                 markExamAsViolated("Face not detected for extended period - automatic removal")
               }
+
 
               return newCount
             })
