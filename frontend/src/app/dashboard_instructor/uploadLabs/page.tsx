@@ -737,7 +737,7 @@ export default function LabsPage() {
                           <TableCell className='text-right'>
                             <div className='flex justify-end gap-2'>
                               <Button
-                                className='w-full'
+                                className='w-50 bg-[#007acc] hover:bg-[#007abc]'
                                 onClick={() => handleDownload(lab)}
                                 disabled={isDownloading}
                               >
