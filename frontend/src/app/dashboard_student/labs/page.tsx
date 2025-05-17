@@ -151,7 +151,9 @@ export default function StudentLabsPage() {
       console.error("Download error details:", error);
       toast({
         title: "Download failed",
-        description: `Failed to download the lab: ${error.message}`,
+        description: `Failed to download the lab: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
         variant: "destructive",
       });
     } finally {
