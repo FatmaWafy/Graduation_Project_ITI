@@ -311,7 +311,7 @@ export function NotificationsDropdown() {
               <RefreshCcw className='h-4 w-4 animate-spin text-muted-foreground' />
             )}
             {unreadCount > 0 && (
-              <Button onClick={markAllAsRead} className='bg-transparent text-muted-foreground h-auto p-0 text-sm font-normal hover:bg-transparent hover:color-muted focus:outline-none focus:ring-0'>
+              <Button onClick={markAllAsRead} className='bg-transparent text-muted-foreground h-auto p-0 text-sm font-normal hover:bg-transparent hover:text-primary focus:outline-none focus:ring-0'>
                 <CheckCheck className='mr-1 h-3 w-3' />
                 Mark all as read
               </Button>
