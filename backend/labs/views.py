@@ -135,7 +135,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
-from .models import Lab, Submission
+from .models import Lab
 from .serializers import LabSerializer
 from users.models import Track, Student
 from utils.supabase import upload_media, delete_media
@@ -190,7 +190,7 @@ class LabViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         try:
             file_path = f"labs/{instance.track.id}/{instance.name}"
-            delete_media(file_path)
+            delete_media(file_path)  # Function to delete from Supabase
             instance.delete()
         except Exception as e:
             raise serializers.ValidationError({"error": f"Failed to delete file from storage: {str(e)}"})
@@ -229,34 +229,4 @@ class LabViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Track not found"},
                 status=status.HTTP_404_NOT_FOUND
-            )
-
-    @action(detail=True, methods=['post'])
-    def submit(self, request, pk=None):
-        try:
-            lab = self.get_object()
-            submission_link = request.data.get('submission_link', lab.submission_link)
-
-            submission, created = Submission.objects.get_or_create(
-                student=request.user,
-                lab=lab,
-                defaults={'submission_link': submission_link}
-            )
-
-            if not created:
-                return Response(
-                    {"error": "You have already submitted this lab"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            return Response({"message": "Submission recorded successfully"})
-        except Lab.DoesNotExist:
-            return Response(
-                {"error": "Lab not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"error": f"An error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

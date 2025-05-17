@@ -41,15 +41,3 @@ class Lab(models.Model):
 
     def __str__(self):
         return self.name
-
-class Submission(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
-    lab = models.ForeignKey(Lab, on_delete=models.CASCADE, related_name='submissions')
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    submission_link = models.URLField(blank=True, null=True)
-
-    class Meta:
-        unique_together = ("student", "lab")
-
-    def __str__(self):
-        return f"{self.student.username} - {self.lab.name}"
