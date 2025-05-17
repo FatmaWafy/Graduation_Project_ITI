@@ -231,12 +231,11 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
               const newCount = prev + 1
 
               // Show warning at 2 consecutive failures
-              if (newCount === 2) {
+              if (newCount === 5) {
                 showAlert("Please ensure your face is visible in the camera frame.", "warn", "no-face-warning")
               }
 
-              // Show error at 3 consecutive failures
-              if (newCount === 3) {
+              if (newCount === 8) {
                 showAlert(
                   "Face not detected! You will be removed from the exam if your face is not detected.",
                   "error",
@@ -244,8 +243,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
                 )
               }
 
-              // Kick out at 4 consecutive failures
-              if (newCount >= 4) {
+              if (newCount >= 10) {
                 logCheating("No face detected for extended period - automatic removal")
                 showAlert(
                   "You have been removed from the exam due to extended face absence.",
@@ -254,6 +252,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
                 )
                 markExamAsViolated("Face not detected for extended period - automatic removal")
               }
+
 
               return newCount
             })
@@ -276,60 +275,63 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
 
     setDetectionInterval(interval)
   }
-
-  const markExamAsViolated = (reason: string) => {
+  const markExamAsViolated = async (reason: string) => {
+    const alreadyViolated = localStorage.getItem(`exam_violated_${examId}`)
+    if (alreadyViolated === "true") return // 🛑 منع التكرار
+  
     localStorage.setItem(`exam_violated_${examId}`, "true")
     localStorage.setItem(`exam_violation_reason_${examId}`, reason)
-
+  
+    await logCheating(reason)
+  
+    const token = getCookie("token")
+    if (token) {
+      try {
+        await axios.post(
+          `${origin}/exam/exams/logs/`,
+          {
+            exam_id: examId,
+            reason,
+            timestamp: new Date().toISOString(),
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+      } catch (apiError) {
+        console.error("Failed to send final log to server")
+      }
+    }
+  
     showAlert("Exam violation detected. Redirecting to dashboard...", "error", "exam-violated")
-
     setTimeout(() => router.push("/dashboard_student"), 3000)
   }
+  
+  
 
   const logCheating = async (reason: string) => {
     try {
-      // Get existing logs
       const logsStr = localStorage.getItem("exam_logs")
       let logs = logsStr ? JSON.parse(logsStr) : []
-
-      // Limit logs to most recent 50 entries to prevent excessive storage
+  
       if (logs.length >= 50) {
-        logs = logs.slice(-49) // Keep only the most recent 49 entries
+        logs = logs.slice(-49)
       }
-
-      // Add new log
+  
       logs.push({
         exam_id: examId,
         reason,
         timestamp: new Date().toISOString(),
       })
-
-      // Save logs
+  
       localStorage.setItem("exam_logs", JSON.stringify(logs))
-
-      // Send to server if token exists
-      const token = getCookie("token")
-      if (token) {
-        try {
-          await axios.post(
-            `${origin}/exam/exams/logs/`,
-            {
-              exam_id: examId,
-              reason,
-              timestamp: new Date().toISOString(),
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          )
-        } catch (apiError) {
-          console.error("Failed to send log to server, but saved locally")
-        }
-      }
+  
+      // ❌ شيل الـ POST من هنا
     } catch (error) {
       console.error("Failed to log activity")
     }
   }
+  
 
   const getCookie = (name: string): string | null => {
     const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"))

@@ -219,7 +219,7 @@ class LoginAPIView(APIView):
         password = request.data.get("password")
 
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)  # <-- هنا التعديل
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -233,6 +233,7 @@ class LoginAPIView(APIView):
             "refresh": str(refresh),
             "role": user.role
         }, status=status.HTTP_200_OK)
+
 
 class ResetPasswordRequestAPIView(APIView):
     permission_classes = [AllowAny]

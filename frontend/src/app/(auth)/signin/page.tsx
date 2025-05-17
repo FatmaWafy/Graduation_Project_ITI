@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { googleLogout, useGoogleLogin } from "@react-oauth/google";
+import { useEffect } from "react";
+
 const origin = process.env.NEXT_PUBLIC_API_URL;
 
 export default function LoginPage() {
@@ -86,7 +88,32 @@ export default function LoginPage() {
       setError("Google login failed. Please try again.");
     },
   });
-
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      alert("Inspect is disabled on this page.");
+    };
+  
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
+        (e.ctrlKey && e.key === "U")
+      ) {
+        e.preventDefault();
+        alert("Inspect is disabled.");
+      }
+    };
+  
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("keydown", handleKeyDown);
+  
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     seIsSigning(true);
     e.preventDefault();
