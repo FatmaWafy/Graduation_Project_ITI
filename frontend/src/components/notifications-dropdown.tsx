@@ -293,10 +293,10 @@ export function NotificationsDropdown() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button className='relative'>
-          <Bell className='h-5 w-5' />
+        <Button variant="outline" className='  relative bg-transparent hover:bg-transparent focus:outline-none focus:ring-0'>
+          <Bell className='' />
           {unreadCount > 0 && (
-            <span className='absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white'>
+            <span className='absolute -right-[-8px] top-[3px] flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white'>
               {unreadCount}
             </span>
           )}
@@ -306,12 +306,12 @@ export function NotificationsDropdown() {
       <DropdownMenuContent align='end' className='w-80'>
         <div className='flex items-center justify-between p-4'>
           <h3 className='font-medium'>Notifications</h3>
-          <div className='flex gap-2'>
+          <div className=' flex gap-2'>
             {isLoading && (
               <RefreshCcw className='h-4 w-4 animate-spin text-muted-foreground' />
             )}
             {unreadCount > 0 && (
-              <Button onClick={markAllAsRead} className='h-auto p-0 text-xs'>
+              <Button onClick={markAllAsRead} className='bg-transparent text-muted-foreground h-auto p-0 text-sm font-normal hover:bg-transparent hover:color-muted focus:outline-none focus:ring-0'>
                 <CheckCheck className='mr-1 h-3 w-3' />
                 Mark all as read
               </Button>

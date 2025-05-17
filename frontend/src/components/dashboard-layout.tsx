@@ -36,7 +36,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard_student", icon: Home },
   { title: "Exams", href: "/dashboard_student/exams", icon: BookOpen },
-  { title: "Labs", href: "/dashboard_student/labs", icon: Menu },
+  { title: "Assigments", href: "/dashboard_student/labs", icon: Menu },
   { title: "Grades", href: "/dashboard_student/grades", icon: BookOpen },
   { title: "Calendar", href: "/dashboard_student/calendar", icon: Calendar },
   { title: "Profile", href: "/dashboard_student/profile", icon: User },
@@ -281,8 +281,8 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-card px-4 md:px-6">
-          <div className="ml-auto flex items-center gap-2">
-            <NotificationsDropdown />
+          <div className="ml-auto flex items-center gap-1 bg">
+            <NotificationsDropdown   />
             <ThemeToggle />
           </div>
         </header>

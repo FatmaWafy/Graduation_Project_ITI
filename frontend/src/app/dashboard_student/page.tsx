@@ -255,46 +255,56 @@ export default function DashboardPage() {
       </div>
 
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Upcoming Exams
-            </CardTitle>
-            <FileText className='h-4 w-4 text-muted-foreground' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{upcomingExams.length}</div>
-            <p className='text-xs text-muted-foreground'>
-              Due this week: {examsThisWeek}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Average Grade</CardTitle>
-            <GraduationCap className='h-4 w-4 text-muted-foreground' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>{averageGrade.toFixed(1)}%</div>
-            <p className='text-xs text-muted-foreground'>Across all exams</p>
-          </CardContent>
-        </Card>
-        <Card className='bg-card'>
-          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
-              Completed Tasks
-            </CardTitle>
-            <CheckCircle className='h-4 w-4 text-muted-foreground' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {completedAssignments.length}
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              Out of {assignments.length} total
-            </p>
-          </CardContent>
-        </Card>
+        <Link href='/dashboard_student/exams'>
+          <Card className='bg-card'>
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
+                Upcoming Exams
+              </CardTitle>
+              <FileText className='h-4 w-4 text-muted-foreground' />
+            </CardHeader>
+            <CardContent>
+              <div className='text-2xl font-bold'>{upcomingExams.length}</div>
+              <p className='text-xs text-muted-foreground'>
+                Due this week: {examsThisWeek}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href='/dashboard_student/grades'>
+          <Card className='bg-card'>
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
+                Average Grade
+              </CardTitle>
+              <GraduationCap className='h-4 w-4 text-muted-foreground' />
+            </CardHeader>
+            <CardContent>
+              <div className='text-2xl font-bold'>
+                {averageGrade.toFixed(1)}%
+              </div>
+              <p className='text-xs text-muted-foreground'>Across all exams</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href='/dashboard_student/labs'>
+          <Card className='bg-card'>
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+              <CardTitle className='text-sm font-medium'>
+                Completed Tasks
+              </CardTitle>
+              <CheckCircle className='h-4 w-4 text-muted-foreground' />
+            </CardHeader>
+            <CardContent>
+              <div className='text-2xl font-bold'>
+                {completedAssignments.length}
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                Out of {assignments.length} total
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
@@ -349,8 +359,8 @@ export default function DashboardPage() {
                     <path
                       className='text-muted stroke-current'
                       d='M18 2.0845
-                 a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831'
                       fill='none'
                       strokeWidth='2'
                     />
@@ -361,8 +371,8 @@ export default function DashboardPage() {
                         100
                       )}, 100`}
                       d='M18 2.0845
-                 a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831'
                       fill='none'
                       strokeWidth='2'
                     />
@@ -389,8 +399,8 @@ export default function DashboardPage() {
                     <path
                       className='text-muted stroke-current'
                       d='M18 2.0845
-                 a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831'
                       fill='none'
                       strokeWidth='2'
                     />
@@ -403,8 +413,8 @@ export default function DashboardPage() {
                         100
                       )}, 100`}
                       d='M18 2.0845
-                 a 15.9155 15.9155 0 0 1 0 31.831
-                 a 15.9155 15.9155 0 0 1 0 -31.831'
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831'
                       fill='none'
                       strokeWidth='2'
                     />
@@ -481,6 +491,7 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+
         <Card className='bg-card'>
           <CardHeader>
             <CardTitle>Recent Exam Scores</CardTitle>
