@@ -95,9 +95,7 @@ export default function ExamRulesPage() {
   const startExam = () => {
     if (isViolated) {
       toast.error("You cannot take this exam due to previous violations.", {
-        toastId: "exam-violated",
-        style: { backgroundColor: "#EF4444", color: "#FFFFFF" },
-        autoClose: 3000,
+        duration: 3000,
       });
       return;
     }
@@ -111,9 +109,7 @@ export default function ExamRulesPage() {
       .catch((err) => {
         console.error("Failed to enable fullscreen:", err);
         toast.error("You must allow fullscreen mode to start the exam.", {
-          toastId: "fullscreen-error",
-          style: { backgroundColor: "#EF4444", color: "#FFFFFF" },
-          autoClose: 3000,
+          duration: 3000,
         });
       });
   };
