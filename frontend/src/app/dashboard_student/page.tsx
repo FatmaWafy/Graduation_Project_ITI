@@ -246,7 +246,10 @@ export default function DashboardPage() {
       <div className='flex flex-col gap-4 md:flex-row'>
         <div className='flex-1'>
           <h1 className='text-3xl font-bold tracking-tight'>
-            Welcome back, {studentData?.username || user?.name}
+            Welcome back,{" "}
+            <span className='text-primary'>
+              {studentData?.username || user?.name}
+            </span>
           </h1>
           <p className='text-muted-foreground'>
             Here's an overview of your academic progress
