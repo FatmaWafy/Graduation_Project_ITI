@@ -263,7 +263,7 @@ export default function ExamsPage() {
                       className="w-full"
                     >
                       <Button variant="default" className="w-full">
-                        {inProgress ? "Continue Exam" : "Start Exam"}
+                        {inProgress ? "Continue To Exam" : "Start Exam"}
                       </Button>
                     </Link>
                   )}

@@ -211,7 +211,8 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     return () =>
       document.removeEventListener("copy", handleCopy as EventListener);
   }, []);
-
+  
+  //handle Full screen Change
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
@@ -229,6 +230,26 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  //handle Focus Change
+  useEffect(() => {
+  const handleFocusChange = () => {
+    if (document.hasFocus()) {
+      console.log("App is in focus");
+    } else {
+      showAlert("Warning: App lost focus. Please stay on the exam.", "warn", "focus-loss");
+      logCheating("App lost focus - possible split screen usage");
+      markExamAsViolated("App lost focus detected");
+    }
+  };
+
+  window.addEventListener("focus", handleFocusChange);
+  window.addEventListener("blur", handleFocusChange);
+  return () => {
+    window.removeEventListener("focus", handleFocusChange);
+    window.removeEventListener("blur", handleFocusChange);
+  };
+}, []);
 
   const startFaceDetection = () => {
     if (!videoRef.current || !canvasRef.current || !modelsLoaded) {
