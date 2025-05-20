@@ -37,6 +37,8 @@ ALLOWED_HOSTS = [
     'graduation_project_iti.railway.internal',
     'localhost',
     '127.0.0.1',
+    '35.173.124.25',
+    'ec2-35-173-124-25.compute-1.amazonaws.com',
     'graduationprojectiti-production.up.railway.app', 
 ]
 
@@ -272,7 +274,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
- 
+
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',

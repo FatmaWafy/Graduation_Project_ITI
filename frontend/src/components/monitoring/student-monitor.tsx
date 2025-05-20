@@ -34,7 +34,6 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
   );
   const [consecutiveNoFaceDetections, setConsecutiveNoFaceDetections] =
     useState(0);
-
   // Utility to debounce alerts
   const showAlert = (message: string, type: "warn" | "error", id: string) => {
     const now = Date.now();
@@ -56,6 +55,47 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
       autoClose: 3000,
     });
   };
+  const EXAM_STATE_KEY = `exam_state_${examId}`;
+
+  useEffect(() => {
+    const preventDuplicate = (e: BeforeUnloadEvent) => {
+      if (localStorage.getItem(EXAM_STATE_KEY) !== "active") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+      localStorage.setItem(EXAM_STATE_KEY, "terminated"); 
+    };
+    window.addEventListener("beforeunload", preventDuplicate);
+
+    // نحدد إن الامتحان active في البداية
+    localStorage.setItem(EXAM_STATE_KEY, "active");
+
+    return () => {
+      window.removeEventListener("beforeunload", preventDuplicate);
+    };
+  }, [examId]);
+
+  useEffect(() => {
+    const checkExamState = () => {
+      const state = localStorage.getItem(EXAM_STATE_KEY);
+      if (state === "terminated") {
+        showAlert(
+          "Exam is terminated. Please close this tab.",
+          "error",
+          "exam-terminated"
+        );
+        markExamAsViolated("Duplicate tab detected after termination");
+      }
+    };
+
+    window.addEventListener("storage", checkExamState);
+
+    checkExamState();
+
+    return () => {
+      window.removeEventListener("storage", checkExamState);
+    };
+  }, [examId]);
 
   // Load face-api models
   useEffect(() => {
@@ -211,7 +251,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
     return () =>
       document.removeEventListener("copy", handleCopy as EventListener);
   }, []);
-  
+
   //handle Full screen Change
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -233,23 +273,27 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
 
   //handle Focus Change
   useEffect(() => {
-  const handleFocusChange = () => {
-    if (document.hasFocus()) {
-      console.log("App is in focus");
-    } else {
-      showAlert("Warning: App lost focus. Please stay on the exam.", "warn", "focus-loss");
-      logCheating("App lost focus - possible split screen usage");
-      markExamAsViolated("App lost focus detected");
-    }
-  };
+    const handleFocusChange = () => {
+      if (document.hasFocus()) {
+        console.log("App is in focus");
+      } else {
+        showAlert(
+          "Warning: App lost focus. Please stay on the exam.",
+          "warn",
+          "focus-loss"
+        );
+        logCheating("App lost focus - possible split screen usage");
+        markExamAsViolated("App lost focus detected");
+      }
+    };
 
-  window.addEventListener("focus", handleFocusChange);
-  window.addEventListener("blur", handleFocusChange);
-  return () => {
-    window.removeEventListener("focus", handleFocusChange);
-    window.removeEventListener("blur", handleFocusChange);
-  };
-}, []);
+    window.addEventListener("focus", handleFocusChange);
+    window.addEventListener("blur", handleFocusChange);
+    return () => {
+      window.removeEventListener("focus", handleFocusChange);
+      window.removeEventListener("blur", handleFocusChange);
+    };
+  }, []);
 
   const startFaceDetection = () => {
     if (!videoRef.current || !canvasRef.current || !modelsLoaded) {
@@ -391,6 +435,7 @@ export default function StudentMonitor({ examId }: StudentMonitorProps) {
       "error",
       "exam-violated"
     );
+    localStorage.setItem(EXAM_STATE_KEY, "terminated"); // إضافة terminateExam هنا
     setTimeout(() => router.push("/dashboard_student"), 3000);
   };
 
