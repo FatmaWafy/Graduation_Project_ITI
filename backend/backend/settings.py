@@ -34,12 +34,12 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
 
 ALLOWED_HOSTS = [
-    'graduation_project_iti.railway.internal',
+    'ec2-35-173-124-25.compute-1.amazonaws.com',
     'localhost',
     '127.0.0.1',
     '35.173.124.25',
-    'ec2-35-173-124-25.compute-1.amazonaws.com',
-    'graduationprojectiti-production.up.railway.app', 
+    # 'graduation_project_iti.railway.internal',
+    # 'graduationprojectiti-production.up.railway.app', 
 ]
 
 # CORS_ALLOW_ALL_ORIGINS = True
@@ -251,12 +251,14 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://graduationprojectiti-production.up.railway.app",
+    # "https://graduationprojectiti-production.up.railway.app",
+    "http://ec2-35-173-124-25.compute-1.amazonaws.com"
     "https://examsystem-hazel.vercel.app",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
-    "https://graduationprojectiti-production.up.railway.app",
+    # "https://graduationprojectiti-production.up.railway.app",
+    "http://ec2-35-173-124-25.compute-1.amazonaws.com"
     "https://examsystem-hazel.vercel.app"
 ]
 
