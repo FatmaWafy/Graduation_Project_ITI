@@ -249,10 +249,12 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    # "https://graduationprojectiti-production.up.railway.app",
-    "http://ec2-35-173-124-25.compute-1.amazonaws.com"
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000",
+    # # "https://graduationprojectiti-production.up.railway.app",
+    # "http://ec2-35-173-124-25.compute-1.amazonaws.com"
+    # "https://examsystem-hazel.vercel.app",
+
+     "http://ec2-35-173-124-25.compute-1.amazonaws.com",
     "https://examsystem-hazel.vercel.app",
 ]
 CSRF_TRUSTED_ORIGINS = [
