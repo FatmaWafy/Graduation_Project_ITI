@@ -34,7 +34,6 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 from os import getenv
 
 ALLOWED_HOSTS = [
-    'activated-submission-filename-occupations.trycloudflare.com',
     'ec2-35-173-124-25.compute-1.amazonaws.com',
     'localhost',
     '127.0.0.1',
@@ -255,14 +254,12 @@ CORS_ALLOWED_ORIGINS = [
     # "https://graduationprojectiti-production.up.railway.app",
     "http://ec2-35-173-124-25.compute-1.amazonaws.com"
     "https://examsystem-hazel.vercel.app",
-     "https://activated-submission-filename-occupations.trycloudflare.com",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     # "https://graduationprojectiti-production.up.railway.app",
     "http://ec2-35-173-124-25.compute-1.amazonaws.com"
     "https://examsystem-hazel.vercel.app"
-     "https://activated-submission-filename-occupations.trycloudflare.com",
 ]
 
 REST_FRAMEWORK = {
